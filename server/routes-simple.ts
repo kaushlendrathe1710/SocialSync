@@ -117,13 +117,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid or expired OTP" });
       }
 
-      await storage.markOtpCodeUsed(validOtp.id);
-
       let user = await storage.getUserByEmail(email);
       
       if (!user) {
         // New user - need to collect details
         if (name && username) {
+          // Creating new user - mark OTP as used
+          await storage.markOtpCodeUsed(validOtp.id);
+          
           user = await storage.createUser({
             name,
             email,
@@ -138,10 +139,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.json({ user, isNewUser: true });
         } else {
           // Return flag indicating this is a new user who needs to provide details
+          // Don't mark OTP as used yet - they still need to complete registration
           res.json({ isNewUser: true, needsDetails: true });
         }
       } else {
-        // Returning user - go straight to dashboard
+        // Returning user - mark OTP as used and log them in
+        await storage.markOtpCodeUsed(validOtp.id);
         res.json({ user, isNewUser: false });
       }
     } catch (error) {
