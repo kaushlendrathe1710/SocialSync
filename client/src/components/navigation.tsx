@@ -18,13 +18,17 @@ import {
   Bell, 
   Settings,
   LogOut,
-  Plus
+  Plus,
+  Monitor,
+  HelpCircle,
+  Shield
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import SearchDropdown from "./search-dropdown";
 import NotificationsDropdown from "./notifications-dropdown";
 import MessagesDropdown from "./messages-dropdown";
 import CreateDropdown from "./create-dropdown";
+import SettingsModal from "./settings-modal";
 
 export default function Navigation() {
   const { user, logout } = useAuth();
@@ -33,6 +37,8 @@ export default function Navigation() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsModalType, setSettingsModalType] = useState<'settings' | 'privacy' | 'help' | 'display'>('settings');
 
   // Get real-time counts for notifications and messages
   const { data: notifications = [] } = useQuery({
@@ -213,19 +219,31 @@ export default function Navigation() {
                   </div>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => {
+                setSettingsModalType('privacy');
+                setShowSettingsModal(true);
+              }}>
+                <Shield className="mr-2 h-4 w-4" />
                 <span>Settings & Privacy</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => {
+                setSettingsModalType('help');
+                setShowSettingsModal(true);
+              }}>
+                <HelpCircle className="mr-2 h-4 w-4" />
                 <span>Help & Support</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => {
+                setSettingsModalType('display');
+                setShowSettingsModal(true);
+              }}>
+                <Monitor className="mr-2 h-4 w-4" />
                 <span>Display & Accessibility</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setSettingsModalType('settings');
+                setShowSettingsModal(true);
+              }}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
@@ -237,6 +255,13 @@ export default function Navigation() {
           </DropdownMenu>
         </div>
       </div>
+      
+      {/* Modals */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        type={settingsModalType}
+      />
     </nav>
   );
 }
