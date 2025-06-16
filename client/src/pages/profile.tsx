@@ -54,11 +54,7 @@ export default function ProfilePage() {
 
   const { data: profileUser, isLoading: userLoading } = useQuery({
     queryKey: ['/api/users', profileUserId],
-    queryFn: async () => {
-      if (!profileUserId) return null;
-      const response = await api.getUser(profileUserId);
-      return response.json() as Promise<User>;
-    },
+    queryFn: () => fetch(`/api/users/${profileUserId}`).then(res => res.json()) as Promise<User>,
     enabled: !!profileUserId,
   });
 
@@ -266,7 +262,7 @@ export default function ProfilePage() {
                   <strong>{following?.length || 0}</strong> following
                 </span>
                 <span>
-                  Joined {formatDistanceToNow(new Date(profileUser.createdAt!), { addSuffix: true })}
+                  Joined {profileUser.createdAt ? formatDistanceToNow(new Date(profileUser.createdAt), { addSuffix: true }) : 'recently'}
                 </span>
               </div>
               
@@ -360,7 +356,7 @@ export default function ProfilePage() {
               <div className="flex items-start space-x-3">
                 <Calendar className="w-4 h-4 text-muted-foreground mt-0.5" />
                 <span>
-                  Joined {formatDistanceToNow(new Date(profileUser.createdAt!), { addSuffix: true })}
+                  Joined {profileUser.createdAt ? formatDistanceToNow(new Date(profileUser.createdAt), { addSuffix: true }) : 'recently'}
                 </span>
               </div>
             </div>
