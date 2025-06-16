@@ -17,13 +17,19 @@ import nodemailer from "nodemailer";
 
 // Email configuration
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: false,
+  secure: process.env.SMTP_PORT === "465", // true for 465, false for other ports
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 60000,
+  greetingTimeout: 30000,
+  socketTimeout: 60000,
 });
 
 // Generate 6-digit OTP
@@ -37,6 +43,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Basic health check
   app.get("/api/health", (req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Test email configuration
+  app.get("/api/test-email", async (req: Request, res: Response) => {
+    try {
+      await transporter.verify();
+      res.json({ status: "Email service connected successfully" });
+    } catch (error: any) {
+      console.error("Email service test failed:", error);
+      res.status(500).json({ 
+        status: "Email service failed", 
+        error: error.message,
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT 
+      });
+    }
   });
 
   // Auth endpoints (simplified for now)
