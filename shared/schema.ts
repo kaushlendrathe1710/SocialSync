@@ -50,7 +50,17 @@ export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   postId: integer("post_id").notNull(),
+  parentCommentId: integer("parent_comment_id"), // For nested comments
   content: text("content").notNull(),
+  likesCount: integer("likes_count").default(0),
+  repliesCount: integer("replies_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const commentLikes = pgTable("comment_likes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  commentId: integer("comment_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -117,6 +127,13 @@ export const insertLikeSchema = createInsertSchema(likes).omit({
 export const insertCommentSchema = createInsertSchema(comments).omit({
   id: true,
   createdAt: true,
+  likesCount: true,
+  repliesCount: true,
+});
+
+export const insertCommentLikeSchema = createInsertSchema(commentLikes).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertFollowSchema = createInsertSchema(follows).omit({
@@ -155,6 +172,9 @@ export type InsertLike = z.infer<typeof insertLikeSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 
+export type CommentLike = typeof commentLikes.$inferSelect;
+export type InsertCommentLike = z.infer<typeof insertCommentLikeSchema>;
+
 export type Follow = typeof follows.$inferSelect;
 export type InsertFollow = z.infer<typeof insertFollowSchema>;
 
@@ -168,10 +188,16 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 // Extended types for API responses
+export type CommentWithUser = Comment & {
+  user: User;
+  isLiked?: boolean;
+  replies?: CommentWithUser[];
+};
+
 export type PostWithUser = Post & {
   user: User;
   isLiked?: boolean;
-  comments?: (Comment & { user: User })[];
+  comments?: CommentWithUser[];
 };
 
 export type MessageWithUser = Message & {
