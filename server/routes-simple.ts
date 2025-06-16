@@ -85,25 +85,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.markOtpCodeUsed(validOtp.id);
 
       let user = await storage.getUserByEmail(email);
-      if (!user && name && username) {
-        user = await storage.createUser({
-          name,
-          email,
-          username,
-          bio: null,
-          avatar: null,
-          coverPhoto: null,
-          location: null,
-          website: null,
-          isVerified: false,
-        });
-      }
-
+      
       if (!user) {
-        return res.status(400).json({ message: "User not found. Please provide name and username." });
+        // New user - need to collect details
+        if (name && username) {
+          user = await storage.createUser({
+            name,
+            email,
+            username,
+            bio: null,
+            avatar: null,
+            coverPhoto: null,
+            location: null,
+            website: null,
+            isVerified: false,
+          });
+          res.json({ user, isNewUser: true });
+        } else {
+          // Return flag indicating this is a new user who needs to provide details
+          res.json({ isNewUser: true, needsDetails: true });
+        }
+      } else {
+        // Returning user - go straight to dashboard
+        res.json({ user, isNewUser: false });
       }
-
-      res.json({ user });
     } catch (error) {
       console.error("Verify OTP error:", error);
       res.status(500).json({ message: "Failed to verify OTP" });

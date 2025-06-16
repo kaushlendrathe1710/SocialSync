@@ -119,7 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username 
     });
     const data = await response.json();
-    setUser(data.user);
+    
+    if (data.user) {
+      setUser(data.user);
+    }
+    
+    return data; // Return the full response for handling in components
   };
 
   const logout = async () => {

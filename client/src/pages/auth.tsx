@@ -76,22 +76,35 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
-      await login(email, otp);
-      toast({
-        title: "Welcome!",
-        description: "Successfully logged in",
-      });
-    } catch (error: any) {
-      if (error.message.includes("provide name and username")) {
+      const data = await login(email, otp);
+      
+      if (data.needsDetails) {
+        // New user needs to provide details
         setNeedsSignup(true);
         setStep('signup');
-      } else {
         toast({
-          title: "Error",
-          description: error.message || "Invalid OTP",
-          variant: "destructive",
+          title: "Welcome!",
+          description: "Please complete your profile to continue",
+        });
+      } else if (data.isNewUser === false) {
+        // Returning user - logged in successfully
+        toast({
+          title: "Welcome back!",
+          description: "Successfully logged in",
+        });
+      } else if (data.user) {
+        // New user with details provided - logged in successfully
+        toast({
+          title: "Welcome!",
+          description: "Account created successfully",
         });
       }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Invalid OTP",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
