@@ -1,4 +1,4 @@
-import { useAuthContext } from '../lib/auth.tsx';
+import { useAuthContext } from '../lib/auth';
 
 export function useAuth() {
   return useAuthContext();

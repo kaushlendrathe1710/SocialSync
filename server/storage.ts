@@ -123,8 +123,16 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.getNextId();
     const user: User = {
-      ...insertUser,
       id,
+      name: insertUser.name,
+      email: insertUser.email,
+      username: insertUser.username,
+      bio: insertUser.bio ?? null,
+      avatar: insertUser.avatar ?? null,
+      coverPhoto: insertUser.coverPhoto ?? null,
+      location: insertUser.location ?? null,
+      website: insertUser.website ?? null,
+      isVerified: insertUser.isVerified ?? null,
       createdAt: new Date(),
     };
     this.users.set(id, user);
@@ -144,8 +152,11 @@ export class MemStorage implements IStorage {
   async createOtpCode(insertOtp: InsertOtpCode): Promise<OtpCode> {
     const id = this.getNextId();
     const otp: OtpCode = {
-      ...insertOtp,
       id,
+      email: insertOtp.email,
+      code: insertOtp.code,
+      expiresAt: insertOtp.expiresAt,
+      used: insertOtp.used ?? null,
       createdAt: new Date(),
     };
     this.otpCodes.set(id, otp);
@@ -173,8 +184,12 @@ export class MemStorage implements IStorage {
   async createPost(insertPost: InsertPost): Promise<Post> {
     const id = this.getNextId();
     const post: Post = {
-      ...insertPost,
       id,
+      userId: insertPost.userId,
+      content: insertPost.content ?? null,
+      imageUrl: insertPost.imageUrl ?? null,
+      videoUrl: insertPost.videoUrl ?? null,
+      privacy: insertPost.privacy ?? null,
       likesCount: 0,
       commentsCount: 0,
       sharesCount: 0,
@@ -369,8 +384,12 @@ export class MemStorage implements IStorage {
   async createStory(insertStory: InsertStory): Promise<Story> {
     const id = this.getNextId();
     const story: Story = {
-      ...insertStory,
       id,
+      userId: insertStory.userId,
+      expiresAt: insertStory.expiresAt,
+      imageUrl: insertStory.imageUrl ?? null,
+      videoUrl: insertStory.videoUrl ?? null,
+      text: insertStory.text ?? null,
       createdAt: new Date(),
     };
     this.stories.set(id, story);
@@ -400,8 +419,11 @@ export class MemStorage implements IStorage {
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
     const id = this.getNextId();
     const message: Message = {
-      ...insertMessage,
       id,
+      content: insertMessage.content,
+      senderId: insertMessage.senderId,
+      receiverId: insertMessage.receiverId,
+      readAt: insertMessage.readAt ?? null,
       createdAt: new Date(),
     };
     this.messages.set(id, message);
@@ -459,8 +481,12 @@ export class MemStorage implements IStorage {
   async createNotification(insertNotification: InsertNotification): Promise<Notification> {
     const id = this.getNextId();
     const notification: Notification = {
-      ...insertNotification,
       id,
+      type: insertNotification.type,
+      userId: insertNotification.userId,
+      fromUserId: insertNotification.fromUserId,
+      postId: insertNotification.postId ?? null,
+      isRead: insertNotification.isRead ?? null,
       createdAt: new Date(),
     };
     this.notifications.set(id, notification);
