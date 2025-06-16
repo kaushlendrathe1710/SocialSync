@@ -23,6 +23,7 @@ export default function AuthPage() {
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [needsSignup, setNeedsSignup] = useState(false);
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
 
   const { sendOTP, login } = useAuth();
   const { toast } = useToast();
@@ -82,6 +83,7 @@ export default function AuthPage() {
         // New user needs to provide details
         setNeedsSignup(true);
         setStep('signup');
+        setVerificationToken(data.verificationToken);
         toast({
           title: "Welcome!",
           description: "Please complete your profile to continue",
@@ -127,7 +129,7 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
-      const data = await login(email, otp, name, username);
+      const data = await login(email, otp, name, username, verificationToken);
       if (data.user) {
         toast({
           title: "Welcome!",

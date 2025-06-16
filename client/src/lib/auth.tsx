@@ -79,7 +79,7 @@ export function getUserFullName(user: User | null): string {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, code: string, name?: string, username?: string) => Promise<any>;
+  login: (email: string, code: string, name?: string, username?: string, verificationToken?: string | null) => Promise<any>;
   logout: () => Promise<void>;
   sendOTP: (email: string) => Promise<void>;
 }
@@ -111,12 +111,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await apiRequest('POST', '/api/auth/send-otp', { email });
   };
 
-  const login = async (email: string, code: string, name?: string, username?: string) => {
+  const login = async (email: string, code: string, name?: string, username?: string, verificationToken?: string | null) => {
     const response = await apiRequest('POST', '/api/auth/verify-otp', { 
       email, 
       code, 
       name, 
-      username 
+      username,
+      verificationToken
     });
     const data = await response.json();
     

@@ -118,9 +118,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/verify-otp", async (req: Request, res: Response) => {
     try {
-      const { email, code, name, username } = req.body;
+      const { email, code, name, username, verificationToken } = req.body;
       
-      // Find valid OTP code first
+      // Handle new user registration completion with verification token
+      if (name && username && verificationToken) {
+        // Check if verification token is valid
+        if (!global.verificationTokens) {
+          global.verificationTokens = new Map();
+        }
+        
+        const tokenData = global.verificationTokens.get(verificationToken);
+        if (!tokenData || tokenData.expires < Date.now() || tokenData.email !== email) {
+          return res.status(400).json({ message: "Invalid or expired verification token" });
+        }
+        
+        // Create user with verified email
+        const user = await storage.createUser({
+          name,
+          email,
+          username,
+          bio: null,
+          avatar: null,
+          coverPhoto: null,
+          location: null,
+          website: null,
+          isVerified: false,
+        });
+        
+        // Clean up verification token
+        global.verificationTokens.delete(verificationToken);
+        
+        return res.json({ user, isNewUser: true });
+      }
+      
+      // Find valid OTP code for initial verification
       const validOtp = await storage.getValidOtpCode(email, code);
       if (!validOtp) {
         return res.status(400).json({ message: "Invalid or expired OTP" });
@@ -129,32 +160,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getUserByEmail(email);
       
       if (!user) {
-        // New user flow
-        if (name && username) {
-          // Complete registration - create user and mark OTP as used
-          await storage.markOtpCodeUsed(validOtp.id);
-          
-          user = await storage.createUser({
-            name,
-            email,
-            username,
-            bio: null,
-            avatar: null,
-            coverPhoto: null,
-            location: null,
-            website: null,
-            isVerified: false,
-          });
-          
-          return res.json({ user, isNewUser: true });
-        } else {
-          // Initial verification - show profile form but keep OTP valid
-          return res.json({ 
-            isNewUser: true, 
-            needsDetails: true,
-            otpValid: true
-          });
+        // New user flow - initial verification
+        // Generate a temporary verification token for completing registration
+        const verificationToken = Math.random().toString(36).substring(2, 15);
+        
+        // Store verification token temporarily
+        if (!global.verificationTokens) {
+          global.verificationTokens = new Map();
         }
+        global.verificationTokens.set(verificationToken, { 
+          email, 
+          verified: true,
+          expires: Date.now() + 5 * 60 * 1000 // 5 minutes
+        });
+        
+        await storage.markOtpCodeUsed(validOtp.id);
+        
+        return res.json({ 
+          isNewUser: true, 
+          needsDetails: true,
+          verificationToken
+        });
       } else {
         // Returning user - mark OTP as used and login
         await storage.markOtpCodeUsed(validOtp.id);
