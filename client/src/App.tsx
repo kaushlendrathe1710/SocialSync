@@ -33,18 +33,21 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(210,36%,96%)]">
+    <div className="min-h-screen bg-gray-100">
       <Navigation />
-      <main className="pt-16 pb-20 md:pb-4">
-        <Switch>
-          <Route path="/" component={FeedPage} />
-          <Route path="/profile/:id?" component={ProfilePage} />
-          <Route path="/explore" component={ExplorePage} />
-          <Route path="/messages" component={MessagesPage} />
-          <Route path="/notifications" component={NotificationsPage} />
-          <Route component={NotFound} />
-        </Switch>
-      </main>
+      <div className="flex pt-14">
+        <Sidebar />
+        <main className="flex-1 ml-64 min-h-screen">
+          <Switch>
+            <Route path="/" component={FeedPage} />
+            <Route path="/profile/:id?" component={ProfilePage} />
+            <Route path="/explore" component={ExplorePage} />
+            <Route path="/messages" component={MessagesPage} />
+            <Route path="/notifications" component={NotificationsPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </main>
+      </div>
     </div>
   );
 }

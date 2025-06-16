@@ -36,9 +36,9 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-  connectionTimeout: 60000,
-  greetingTimeout: 30000,
-  socketTimeout: 60000,
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 10000,
 });
 
 // Generate 6-digit OTP
@@ -233,7 +233,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Posts endpoints
   app.get("/api/posts", async (req: Request, res: Response) => {
     try {
-      const posts = await storage.getPosts();
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      
+      const posts = await storage.getPosts(userId, limit, offset);
       res.json(posts);
     } catch (error) {
       console.error("Get posts error:", error);
@@ -241,13 +245,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPost(postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      res.json(post);
+    } catch (error) {
+      console.error("Get post error:", error);
+      res.status(500).json({ message: "Failed to get post" });
+    }
+  });
+
   app.post("/api/posts", async (req: Request, res: Response) => {
     try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
       const { content, imageUrl, videoUrl, privacy } = req.body;
-      const userId = 1; // Hardcoded for now
       
       const post = await storage.createPost({
-        userId,
+        userId: req.session.userId,
         content: content || null,
         imageUrl: imageUrl || null,
         videoUrl: videoUrl || null,
@@ -259,6 +282,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create post error:", error);
       res.status(500).json({ error: "Failed to create post" });
+    }
+  });
+
+  // Like/unlike post endpoint
+  app.post("/api/posts/:id/like", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const postId = parseInt(req.params.id);
+      const userId = req.session.userId;
+
+      // Check if already liked
+      const userLikes = await storage.getUserLikes(userId);
+      const alreadyLiked = userLikes.some(like => like.postId === postId);
+
+      if (alreadyLiked) {
+        await storage.deleteLike(userId, postId);
+        res.json({ liked: false });
+      } else {
+        await storage.createLike({ userId, postId });
+        res.json({ liked: true });
+      }
+    } catch (error) {
+      console.error("Like post error:", error);
+      res.status(500).json({ message: "Failed to like post" });
+    }
+  });
+
+  // Comments endpoints
+  app.get("/api/posts/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const comments = await storage.getPostComments(postId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Get comments error:", error);
+      res.status(500).json({ message: "Failed to get comments" });
+    }
+  });
+
+  app.post("/api/posts/:id/comments", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const postId = parseInt(req.params.id);
+      const { content } = req.body;
+
+      const comment = await storage.createComment({
+        userId: req.session.userId,
+        postId,
+        content,
+      });
+
+      res.json(comment);
+    } catch (error) {
+      console.error("Create comment error:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Stories endpoints
+  app.get("/api/stories", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const stories = await storage.getActiveStories(userId);
+      res.json(stories);
+    } catch (error) {
+      console.error("Get stories error:", error);
+      res.status(500).json({ message: "Failed to get stories" });
+    }
+  });
+
+  app.post("/api/stories", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { text, imageUrl, videoUrl } = req.body;
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      const story = await storage.createStory({
+        userId: req.session.userId,
+        text: text || null,
+        imageUrl: imageUrl || null,
+        videoUrl: videoUrl || null,
+        expiresAt,
+      });
+
+      res.json(story);
+    } catch (error) {
+      console.error("Create story error:", error);
+      res.status(500).json({ message: "Failed to create story" });
+    }
+  });
+
+  // Search endpoint
+  app.get("/api/search", async (req: Request, res: Response) => {
+    try {
+      const query = req.query.q as string;
+      const type = req.query.type as string || 'all';
+
+      if (!query?.trim()) {
+        return res.json({ users: [], posts: [] });
+      }
+
+      let users: any[] = [];
+      let posts: any[] = [];
+
+      if (type === 'all' || type === 'users') {
+        users = await storage.searchUsers(query);
+      }
+
+      if (type === 'all' || type === 'posts') {
+        posts = await storage.searchPosts(query);
+      }
+
+      res.json({ users, posts });
+    } catch (error) {
+      console.error("Search error:", error);
+      res.status(500).json({ message: "Failed to search" });
     }
   });
 
@@ -275,6 +423,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Search users error:", error);
       res.status(500).json({ error: "Failed to search users" });
+    }
+  });
+
+  // Notifications endpoints
+  app.get("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const notifications = await storage.getUserNotifications(req.session.userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Get notifications error:", error);
+      res.status(500).json({ message: "Failed to get notifications" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const notificationId = parseInt(req.params.id);
+      await storage.markNotificationRead(notificationId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark notification read error:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Messages endpoints
+  app.get("/api/conversations", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const conversations = await storage.getConversations(req.session.userId);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Get conversations error:", error);
+      res.status(500).json({ message: "Failed to get conversations" });
+    }
+  });
+
+  app.get("/api/conversations/:userId", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const otherUserId = parseInt(req.params.userId);
+      const messages = await storage.getConversation(req.session.userId, otherUserId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Get conversation error:", error);
+      res.status(500).json({ message: "Failed to get conversation" });
+    }
+  });
+
+  app.post("/api/messages", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { receiverId, content } = req.body;
+
+      const message = await storage.createMessage({
+        senderId: req.session.userId,
+        receiverId,
+        content,
+        isRead: false,
+      });
+
+      res.json(message);
+    } catch (error) {
+      console.error("Send message error:", error);
+      res.status(500).json({ message: "Failed to send message" });
     }
   });
 
