@@ -127,11 +127,14 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
-      await login(email, otp, name, username);
-      toast({
-        title: "Welcome!",
-        description: "Account created successfully",
-      });
+      const data = await login(email, otp, name, username);
+      if (data.user) {
+        toast({
+          title: "Welcome!",
+          description: "Account created successfully",
+        });
+        // User will be automatically redirected to dashboard via App.tsx
+      }
     } catch (error: any) {
       toast({
         title: "Error",

@@ -79,7 +79,7 @@ export function getUserFullName(user: User | null): string {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, code: string, name?: string, username?: string) => Promise<void>;
+  login: (email: string, code: string, name?: string, username?: string) => Promise<any>;
   logout: () => Promise<void>;
   sendOTP: (email: string) => Promise<void>;
 }
