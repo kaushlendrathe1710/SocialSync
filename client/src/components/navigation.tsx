@@ -240,13 +240,6 @@ export default function Navigation() {
                 <Monitor className="mr-2 h-4 w-4" />
                 <span>Display & Accessibility</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setSettingsModalType('settings');
-                setShowSettingsModal(true);
-              }}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
               <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
