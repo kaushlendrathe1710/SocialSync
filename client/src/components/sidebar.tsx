@@ -79,18 +79,42 @@ export default function Sidebar() {
 
           {/* Additional Options */}
           <div className="px-2 mt-8 space-y-1">
-            <button className="w-full flex items-center px-3 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors">
-              <Users className="mr-3 h-5 w-5 text-gray-400" />
-              Friends
-            </button>
-            <button className="w-full flex items-center px-3 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors">
-              <Bookmark className="mr-3 h-5 w-5 text-gray-400" />
-              Saved
-            </button>
-            <button className="w-full flex items-center px-3 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors">
-              <Settings className="mr-3 h-5 w-5 text-gray-400" />
-              Settings
-            </button>
+            <Link href="/friends">
+              <button 
+                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  location === "/friends"
+                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Users className={`mr-3 h-5 w-5 ${location === "/friends" ? "text-blue-600" : "text-gray-400"}`} />
+                Friends
+              </button>
+            </Link>
+            <Link href="/saved">
+              <button 
+                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  location === "/saved"
+                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Bookmark className={`mr-3 h-5 w-5 ${location === "/saved" ? "text-blue-600" : "text-gray-400"}`} />
+                Saved
+              </button>
+            </Link>
+            <Link href="/settings">
+              <button 
+                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  location === "/settings"
+                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Settings className={`mr-3 h-5 w-5 ${location === "/settings" ? "text-blue-600" : "text-gray-400"}`} />
+                Settings
+              </button>
+            </Link>
           </div>
         </nav>
 

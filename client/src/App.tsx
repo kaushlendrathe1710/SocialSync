@@ -11,6 +11,9 @@ import ProfilePage from "@/pages/profile";
 import ExplorePage from "@/pages/explore";
 import MessagesPage from "@/pages/messages";
 import NotificationsPage from "@/pages/notifications";
+import FriendsPage from "@/pages/friends";
+import SavedPage from "@/pages/saved";
+import SettingsPage from "@/pages/settings";
 import Navigation from "@/components/navigation";
 import Sidebar from "@/components/sidebar";
 import NotFound from "@/pages/not-found";
@@ -46,6 +49,9 @@ function AppContent() {
             <Route path="/explore" component={ExplorePage} />
             <Route path="/messages" component={MessagesPage} />
             <Route path="/notifications" component={NotificationsPage} />
+            <Route path="/friends" component={FriendsPage} />
+            <Route path="/saved" component={SavedPage} />
+            <Route path="/settings" component={SettingsPage} />
             <Route component={NotFound} />
           </Switch>
         </main>
