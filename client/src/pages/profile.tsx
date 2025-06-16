@@ -232,51 +232,38 @@ export default function ProfilePage() {
             backgroundPosition: 'center',
           }}
         >
-          {/* Hover overlay */}
-          {isOwnProfile && (
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center">
-              <Button 
-                variant="secondary" 
-                size="sm"
-                className="bg-white/95 hover:bg-white text-gray-800 shadow-lg border-0 font-medium px-4 py-2"
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) {
-                      // TODO: Implement actual cover photo upload
-                      console.log('Cover photo selected:', file.name);
-                    }
-                  };
-                  input.click();
-                }}
-              >
-                <Camera className="w-4 h-4 mr-2" />
-                Edit Cover Photo
-              </Button>
-            </div>
-          )}
+
           
           {/* Static Edit button for better visibility */}
           {isOwnProfile && (
             <Button 
               variant="secondary" 
               size="sm"
-              className="absolute bottom-4 right-4 bg-white/95 hover:bg-white text-gray-800 shadow-lg border-0 font-medium backdrop-blur-sm"
-              onClick={() => {
+              className="absolute bottom-4 right-4 bg-white/95 hover:bg-white text-gray-800 shadow-lg border-0 font-medium backdrop-blur-sm z-10"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Edit Cover Photo button clicked!');
+                
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
-                input.onchange = (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0];
+                input.style.display = 'none';
+                
+                input.onchange = (event) => {
+                  const target = event.target as HTMLInputElement;
+                  const file = target.files?.[0];
                   if (file) {
                     console.log('Cover photo selected:', file.name);
+                    console.log('File size:', file.size, 'bytes');
+                    console.log('File type:', file.type);
                     // TODO: Implement actual upload to server
                   }
                 };
+                
+                document.body.appendChild(input);
                 input.click();
+                document.body.removeChild(input);
               }}
             >
               <Camera className="w-4 h-4 mr-2" />
