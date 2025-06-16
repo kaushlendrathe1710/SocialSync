@@ -13,6 +13,18 @@ import {
   insertMessageSchema,
   insertNotificationSchema 
 } from "@shared/schema";
+import nodemailer from "nodemailer";
+
+// Email configuration
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "587"),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 // Generate 6-digit OTP
 function generateOTP(): string {
@@ -36,8 +48,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.createOtpCode({ email, code: otp, expiresAt });
       
-      // For development, just log the OTP instead of sending email
-      console.log(`OTP for ${email}: ${otp}`);
+      // Send OTP via email
+      await transporter.sendMail({
+        from: process.env.FROM_EMAIL || "noreply@example.com",
+        to: email,
+        subject: "Your Login Code",
+        text: `Your login code is: ${otp}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
+            <h2 style="color: #333;">Your Login Code</h2>
+            <p>Use this code to complete your login:</p>
+            <div style="background: #f5f5f5; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb;">${otp}</span>
+            </div>
+            <p style="color: #666;">This code will expire in 10 minutes.</p>
+          </div>
+        `,
+      });
       
       res.json({ message: "OTP sent successfully" });
     } catch (error) {

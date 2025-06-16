@@ -18,15 +18,11 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// Type declarations for session
-interface SessionData {
-  userId?: number;
-  destroy: (callback: () => void) => void;
-}
-
-interface AuthenticatedRequest extends Request {
-  session: SessionData;
-  user?: any;
+// Extend Express Session interface
+declare module 'express-session' {
+  interface SessionData {
+    userId?: number;
+  }
 }
 
 // Configure multer for file uploads
