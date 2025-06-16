@@ -35,10 +35,10 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 
 // Helper function to safely format dates
-const safeFormatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return 'recently';
+const safeFormatDate = (dateValue: any): string => {
+  if (!dateValue) return 'recently';
   try {
-    const date = new Date(dateString);
+    const date = new Date(dateValue);
     if (isNaN(date.getTime())) return 'recently';
     return formatDistanceToNow(date, { addSuffix: true });
   } catch {
