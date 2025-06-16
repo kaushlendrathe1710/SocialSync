@@ -23,6 +23,23 @@ export default function FeedPage() {
   const [selectedStory, setSelectedStory] = useState<(Story & { user: User }) | null>(null);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
 
+  // Listen for navigation events
+  useEffect(() => {
+    const handleOpenCreatePost = () => setIsCreatePostModalOpen(true);
+    const handleOpenCreateStory = () => {
+      // For now, just open the post modal - can be extended for story creation
+      setIsCreatePostModalOpen(true);
+    };
+
+    window.addEventListener('openCreatePost', handleOpenCreatePost);
+    window.addEventListener('openCreateStory', handleOpenCreateStory);
+
+    return () => {
+      window.removeEventListener('openCreatePost', handleOpenCreatePost);
+      window.removeEventListener('openCreateStory', handleOpenCreateStory);
+    };
+  }, []);
+
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: ['/api/posts'],
   });

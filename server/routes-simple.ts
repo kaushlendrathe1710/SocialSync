@@ -498,13 +498,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         senderId: req.session.userId,
         receiverId,
         content,
-        isRead: false,
       });
 
       res.json(message);
     } catch (error) {
       console.error("Send message error:", error);
       res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Enhanced search endpoint with comprehensive results
+  app.get("/api/search", async (req: Request, res: Response) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.trim().length === 0) {
+        return res.json({ users: [], posts: [] });
+      }
+
+      const [users, posts] = await Promise.all([
+        storage.searchUsers(q.trim()),
+        storage.searchPosts(q.trim())
+      ]);
+
+      res.json({ users, posts });
+    } catch (error) {
+      console.error("Search error:", error);
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.post("/api/notifications/mark-all-read", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      await storage.markAllNotificationsRead(req.session.userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark all notifications read error:", error);
+      res.status(500).json({ message: "Failed to mark notifications as read" });
     }
   });
 

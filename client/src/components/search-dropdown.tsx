@@ -166,12 +166,12 @@ export default function SearchDropdown({
             </div>
           ) : (
             <div className="space-y-1">
-              {searchResults?.users?.length > 0 && (
+              {(searchResults as any)?.users?.length > 0 && (
                 <div className="mb-4">
                   <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     People
                   </h4>
-                  {searchResults.users.map((user: User) => (
+                  {(searchResults as any)?.users?.map((user: UserType) => (
                     <Link 
                       key={user.id} 
                       href={`/profile/${user.username}`}
@@ -194,19 +194,19 @@ export default function SearchDropdown({
                           </div>
                           <div className="text-xs text-gray-500">@{user.username}</div>
                         </div>
-                        <User className="h-4 w-4 text-gray-400" />
+                        <UserIcon className="h-4 w-4 text-gray-400" />
                       </div>
                     </Link>
                   ))}
                 </div>
               )}
 
-              {searchResults?.posts?.length > 0 && (
+              {(searchResults as any)?.posts?.length > 0 && (
                 <div>
                   <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     Posts
                   </h4>
-                  {searchResults.posts.map((post: PostWithUser) => (
+                  {(searchResults as any).posts.map((post: PostWithUser) => (
                     <div 
                       key={post.id}
                       className="flex items-start p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
@@ -235,7 +235,7 @@ export default function SearchDropdown({
                 </div>
               )}
 
-              {(!searchResults?.users?.length && !searchResults?.posts?.length) && (
+              {(!(searchResults as any)?.users?.length && !(searchResults as any)?.posts?.length) && (
                 <div className="text-center py-8">
                   <Search className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                   <div className="text-sm text-gray-500">

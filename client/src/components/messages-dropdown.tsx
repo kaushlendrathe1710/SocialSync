@@ -14,8 +14,7 @@ import {
   Edit,
   Phone,
   Video,
-  MoreHorizontal,
-  Online
+  MoreHorizontal
 } from "lucide-react";
 import type { MessageWithUser } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
