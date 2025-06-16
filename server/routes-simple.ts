@@ -370,18 +370,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const postId = parseInt(req.params.id);
-      const { content } = req.body;
+      const { content, parentCommentId } = req.body;
 
       const comment = await storage.createComment({
         userId: req.session.userId,
         postId,
         content,
+        parentCommentId: parentCommentId || null,
       });
 
       res.json(comment);
     } catch (error) {
       console.error("Create comment error:", error);
       res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Get replies for a comment
+  app.get("/api/comments/:id/replies", async (req: Request, res: Response) => {
+    try {
+      const commentId = parseInt(req.params.id);
+      const replies = await storage.getCommentReplies(commentId);
+      res.json(replies);
+    } catch (error) {
+      console.error("Get replies error:", error);
+      res.status(500).json({ message: "Failed to get replies" });
+    }
+  });
+
+  // Update comment
+  app.put("/api/comments/:id", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const commentId = parseInt(req.params.id);
+      const { content } = req.body;
+
+      if (!content?.trim()) {
+        return res.status(400).json({ message: "Content is required" });
+      }
+
+      const comment = await storage.updateComment(commentId, content.trim());
+      
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+
+      res.json(comment);
+    } catch (error) {
+      console.error("Update comment error:", error);
+      res.status(500).json({ message: "Failed to update comment" });
+    }
+  });
+
+  // Delete comment
+  app.delete("/api/comments/:id", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const commentId = parseInt(req.params.id);
+      const success = await storage.deleteComment(commentId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+
+      res.json({ message: "Comment deleted" });
+    } catch (error) {
+      console.error("Delete comment error:", error);
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
+  // Like/unlike comment
+  app.post("/api/comments/:id/like", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const commentId = parseInt(req.params.id);
+      const userId = req.session.userId;
+
+      // Check if user already liked this comment
+      const existingLikes = await storage.getCommentLikes(commentId);
+      const userLike = existingLikes.find(like => like.userId === userId);
+
+      if (userLike) {
+        // Unlike
+        await storage.deleteCommentLike(userId, commentId);
+        res.json({ message: "Comment unliked" });
+      } else {
+        // Like
+        await storage.createCommentLike({ userId, commentId });
+        res.json({ message: "Comment liked" });
+      }
+    } catch (error) {
+      console.error("Like comment error:", error);
+      res.status(500).json({ message: "Failed to like comment" });
     }
   });
 

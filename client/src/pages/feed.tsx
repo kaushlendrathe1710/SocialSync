@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserInitials } from "@/lib/auth";
-import PostCard from "@/components/post-card";
+import EnhancedPostCard from "@/components/enhanced-post-card";
 import StoryViewer from "@/components/story-viewer";
 import CreatePostModal from "@/components/create-post-modal";
 import { 
@@ -196,7 +196,7 @@ export default function FeedPage() {
             </Card>
           ) : (
             posts.map((post: PostWithUser) => (
-              <PostCard key={post.id} post={post} />
+              <EnhancedPostCard key={post.id} post={post} />
             ))
           )}
         </div>

@@ -34,7 +34,7 @@ import {
   type NotificationWithUser,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, like, or, gt } from "drizzle-orm";
+import { eq, and, desc, asc, like, or, gt, isNull, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
