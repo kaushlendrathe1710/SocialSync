@@ -4,6 +4,7 @@ import {
   posts,
   likes,
   comments,
+  commentLikes,
   follows,
   stories,
   messages,
@@ -18,6 +19,8 @@ import {
   type InsertLike,
   type Comment,
   type InsertComment,
+  type CommentLike,
+  type InsertCommentLike,
   type Follow,
   type InsertFollow,
   type Story,
@@ -61,7 +64,14 @@ export interface IStorage {
   // Comment methods
   createComment(comment: InsertComment): Promise<Comment>;
   getPostComments(postId: number): Promise<(Comment & { user: User })[]>;
+  getCommentReplies(commentId: number): Promise<(Comment & { user: User })[]>;
   deleteComment(id: number): Promise<boolean>;
+  updateComment(id: number, content: string): Promise<Comment | undefined>;
+
+  // Comment like methods
+  createCommentLike(commentLike: InsertCommentLike): Promise<CommentLike>;
+  deleteCommentLike(userId: number, commentId: number): Promise<boolean>;
+  getCommentLikes(commentId: number): Promise<CommentLike[]>;
 
   // Follow methods
   createFollow(follow: InsertFollow): Promise<Follow>;
@@ -227,7 +237,21 @@ export class DatabaseStorage implements IStorage {
       })
       .from(comments)
       .innerJoin(users, eq(comments.userId, users.id))
-      .where(eq(comments.postId, postId))
+      .where(and(eq(comments.postId, postId), isNull(comments.parentCommentId)))
+      .orderBy(asc(comments.createdAt));
+
+    return result.map(({ comment, user }) => ({ ...comment, user }));
+  }
+
+  async getCommentReplies(commentId: number): Promise<(Comment & { user: User })[]> {
+    const result = await db
+      .select({
+        comment: comments,
+        user: users,
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
+      .where(eq(comments.parentCommentId, commentId))
       .orderBy(asc(comments.createdAt));
 
     return result.map(({ comment, user }) => ({ ...comment, user }));
@@ -236,6 +260,53 @@ export class DatabaseStorage implements IStorage {
   async deleteComment(id: number): Promise<boolean> {
     const result = await db.delete(comments).where(eq(comments.id, id));
     return result.rowCount! > 0;
+  }
+
+  async updateComment(id: number, content: string): Promise<Comment | undefined> {
+    const [updated] = await db
+      .update(comments)
+      .set({ content })
+      .where(eq(comments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async createCommentLike(insertCommentLike: InsertCommentLike): Promise<CommentLike> {
+    const [commentLike] = await db
+      .insert(commentLikes)
+      .values(insertCommentLike)
+      .returning();
+
+    // Increment likes count
+    await db
+      .update(comments)
+      .set({ likesCount: sql`${comments.likesCount} + 1` })
+      .where(eq(comments.id, insertCommentLike.commentId));
+
+    return commentLike;
+  }
+
+  async deleteCommentLike(userId: number, commentId: number): Promise<boolean> {
+    const result = await db
+      .delete(commentLikes)
+      .where(and(eq(commentLikes.userId, userId), eq(commentLikes.commentId, commentId)));
+
+    if (result.rowCount! > 0) {
+      // Decrement likes count
+      await db
+        .update(comments)
+        .set({ likesCount: sql`${comments.likesCount} - 1` })
+        .where(eq(comments.id, commentId));
+      return true;
+    }
+    return false;
+  }
+
+  async getCommentLikes(commentId: number): Promise<CommentLike[]> {
+    return await db
+      .select()
+      .from(commentLikes)
+      .where(eq(commentLikes.commentId, commentId));
   }
 
   // Follow methods
