@@ -34,6 +34,18 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
+// Helper function to safely format dates
+const safeFormatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'recently';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'recently';
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch {
+    return 'recently';
+  }
+};
+
 export default function ProfilePage() {
   const { id } = useParams();
   const { user: currentUser } = useAuth();
@@ -51,6 +63,24 @@ export default function ProfilePage() {
   // Handle profile routing - if no ID provided, show current user's profile
   const profileUserId = id ? parseInt(id) : currentUser?.id;
   const isOwnProfile = !id || profileUserId === currentUser?.id;
+
+  // Add loading state for current user
+  if (!currentUser && !id) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="animate-pulse">
+          <div className="h-48 bg-muted rounded-lg mb-4"></div>
+          <div className="flex items-center space-x-4 mb-6">
+            <div className="w-32 h-32 bg-muted rounded-full"></div>
+            <div className="space-y-2">
+              <div className="h-6 bg-muted rounded w-48"></div>
+              <div className="h-4 bg-muted rounded w-32"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const { data: profileUser, isLoading: userLoading } = useQuery({
     queryKey: ['/api/users', profileUserId],
@@ -262,7 +292,7 @@ export default function ProfilePage() {
                   <strong>{following?.length || 0}</strong> following
                 </span>
                 <span>
-                  Joined {profileUser.createdAt ? formatDistanceToNow(new Date(profileUser.createdAt), { addSuffix: true }) : 'recently'}
+                  Joined {safeFormatDate(profileUser.createdAt)}
                 </span>
               </div>
               
@@ -356,7 +386,7 @@ export default function ProfilePage() {
               <div className="flex items-start space-x-3">
                 <Calendar className="w-4 h-4 text-muted-foreground mt-0.5" />
                 <span>
-                  Joined {profileUser.createdAt ? formatDistanceToNow(new Date(profileUser.createdAt), { addSuffix: true }) : 'recently'}
+                  Joined {safeFormatDate(profileUser.createdAt)}
                 </span>
               </div>
             </div>
