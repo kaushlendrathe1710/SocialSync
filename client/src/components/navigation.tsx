@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +21,37 @@ import {
   Plus
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import SearchDropdown from "./search-dropdown";
+import NotificationsDropdown from "./notifications-dropdown";
+import MessagesDropdown from "./messages-dropdown";
+import CreateDropdown from "./create-dropdown";
 
 export default function Navigation() {
   const { user, logout } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  // Get real-time counts for notifications and messages
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['/api/notifications'],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  const { data: conversations = [] } = useQuery({
+    queryKey: ['/api/conversations'],
+    refetchInterval: 30000,
+  });
+
+  const unreadNotifications = Array.isArray(notifications) 
+    ? notifications.filter((n: any) => !n.isRead).length 
+    : 0;
+    
+  const unreadMessages = Array.isArray(conversations) 
+    ? conversations.filter((c: any) => !c.readAt && c.receiverId === user?.id).length 
+    : 0;
 
   const handleLogout = async () => {
     try {
@@ -47,44 +77,111 @@ export default function Navigation() {
         </div>
 
         {/* Center: Search Bar */}
-        <div className="flex-1 max-w-md mx-4">
+        <div className="flex-1 max-w-md mx-4 relative">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
               placeholder="Search for people, posts, and more..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchOpen(true)}
               className="pl-10 pr-4 py-2 w-full bg-gray-100 border-0 rounded-full focus:bg-white focus:ring-2 focus:ring-blue-500"
+            />
+            <SearchDropdown
+              isOpen={isSearchOpen}
+              onClose={() => setIsSearchOpen(false)}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
             />
           </div>
         </div>
 
         {/* Right: Action Buttons and User Menu */}
         <div className="flex items-center space-x-3">
-          {/* Create Post Button */}
-          <Button size="sm" className="rounded-full">
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">Create</span>
-          </Button>
+          {/* Create Button */}
+          <div className="relative">
+            <Button 
+              size="sm" 
+              className="rounded-full"
+              onClick={() => {
+                setIsCreateOpen(!isCreateOpen);
+                setIsSearchOpen(false);
+                setIsNotificationsOpen(false);
+                setIsMessagesOpen(false);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Create</span>
+            </Button>
+            <CreateDropdown
+              isOpen={isCreateOpen}
+              onClose={() => setIsCreateOpen(false)}
+              onCreatePost={() => {
+                // This will be handled by the parent component
+                setIsCreateOpen(false);
+                const event = new CustomEvent('openCreatePost');
+                window.dispatchEvent(event);
+              }}
+              onCreateStory={() => {
+                setIsCreateOpen(false);
+                const event = new CustomEvent('openCreateStory');
+                window.dispatchEvent(event);
+              }}
+            />
+          </div>
 
           {/* Messages */}
-          <Link href="/messages">
-            <Button variant="ghost" size="sm" className="relative p-2 rounded-full">
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="relative p-2 rounded-full"
+              onClick={() => {
+                setIsMessagesOpen(!isMessagesOpen);
+                setIsSearchOpen(false);
+                setIsNotificationsOpen(false);
+                setIsCreateOpen(false);
+              }}
+            >
               <MessageCircle className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500">
-                3
-              </Badge>
+              {unreadMessages > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </Badge>
+              )}
             </Button>
-          </Link>
+            <MessagesDropdown
+              isOpen={isMessagesOpen}
+              onClose={() => setIsMessagesOpen(false)}
+            />
+          </div>
 
           {/* Notifications */}
-          <Link href="/notifications">
-            <Button variant="ghost" size="sm" className="relative p-2 rounded-full">
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="relative p-2 rounded-full"
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen);
+                setIsSearchOpen(false);
+                setIsMessagesOpen(false);
+                setIsCreateOpen(false);
+              }}
+            >
               <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500">
-                5
-              </Badge>
+              {unreadNotifications > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-red-500">
+                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                </Badge>
+              )}
             </Button>
-          </Link>
+            <NotificationsDropdown
+              isOpen={isNotificationsOpen}
+              onClose={() => setIsNotificationsOpen(false)}
+            />
+          </div>
 
           {/* User Menu */}
           <DropdownMenu>
