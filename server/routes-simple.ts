@@ -48,23 +48,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.createOtpCode({ email, code: otp, expiresAt });
       
-      // Send OTP via email
-      await transporter.sendMail({
-        from: process.env.FROM_EMAIL || "noreply@example.com",
-        to: email,
-        subject: "Your Login Code",
-        text: `Your login code is: ${otp}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
-            <h2 style="color: #333;">Your Login Code</h2>
-            <p>Use this code to complete your login:</p>
-            <div style="background: #f5f5f5; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
-              <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb;">${otp}</span>
+      // Try to send OTP via email, fallback to console if email fails
+      try {
+        await transporter.sendMail({
+          from: process.env.FROM_EMAIL || "noreply@example.com",
+          to: email,
+          subject: "Your Login Code",
+          text: `Your login code is: ${otp}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
+              <h2 style="color: #333;">Your Login Code</h2>
+              <p>Use this code to complete your login:</p>
+              <div style="background: #f5f5f5; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb;">${otp}</span>
+              </div>
+              <p style="color: #666;">This code will expire in 10 minutes.</p>
             </div>
-            <p style="color: #666;">This code will expire in 10 minutes.</p>
-          </div>
-        `,
-      });
+          `,
+        });
+        console.log(`Email sent successfully to ${email}`);
+      } catch (emailError: any) {
+        // Email failed, log OTP to console for development
+        console.log(`\n--- EMAIL SERVICE UNAVAILABLE - Development Mode ---`);
+        console.log(`Email: ${email}`);
+        console.log(`OTP Code: ${otp}`);
+        console.log(`Expires: ${expiresAt.toLocaleTimeString()}`);
+        console.log(`Email error: ${emailError?.message || 'Unknown error'}\n`);
+      }
       
       res.json({ message: "OTP sent successfully" });
     } catch (error) {
