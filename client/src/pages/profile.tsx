@@ -223,7 +223,7 @@ export default function ProfilePage() {
       <Card className="overflow-hidden mb-6">
         {/* Cover Photo */}
         <div 
-          className="h-64 bg-gradient-to-r from-blue-400 to-purple-500 relative"
+          className="h-64 bg-gradient-to-r from-blue-400 to-purple-500 relative group cursor-pointer overflow-hidden"
           style={{
             backgroundImage: profileUser.coverPhoto 
               ? `url(${profileUser.coverPhoto})` 
@@ -232,11 +232,52 @@ export default function ProfilePage() {
             backgroundPosition: 'center',
           }}
         >
+          {/* Hover overlay */}
+          {isOwnProfile && (
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                className="bg-white/95 hover:bg-white text-gray-800 shadow-lg border-0 font-medium px-4 py-2"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      // TODO: Implement actual cover photo upload
+                      console.log('Cover photo selected:', file.name);
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                Edit Cover Photo
+              </Button>
+            </div>
+          )}
+          
+          {/* Static Edit button for better visibility */}
           {isOwnProfile && (
             <Button 
               variant="secondary" 
               size="sm"
-              className="absolute bottom-4 right-4"
+              className="absolute bottom-4 right-4 bg-white/95 hover:bg-white text-gray-800 shadow-lg border-0 font-medium backdrop-blur-sm"
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) {
+                    console.log('Cover photo selected:', file.name);
+                    // TODO: Implement actual upload to server
+                  }
+                };
+                input.click();
+              }}
             >
               <Camera className="w-4 h-4 mr-2" />
               Edit Cover Photo
@@ -248,10 +289,10 @@ export default function ProfilePage() {
         <div className="relative px-6 pb-6">
           <div className="flex flex-col md:flex-row md:items-end md:space-x-4 -mt-16">
             {/* Profile Picture */}
-            <div className="relative mb-4 md:mb-0">
-              <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
+            <div className="relative mb-4 md:mb-0 group">
+              <Avatar className="w-32 h-32 border-4 border-white shadow-lg cursor-pointer transition-transform hover:scale-105">
                 <AvatarImage src={profileUser.avatar || undefined} />
-                <AvatarFallback className="text-2xl">
+                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-400 to-purple-500 text-white">
                   {profileUser.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -259,9 +300,21 @@ export default function ProfilePage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="absolute bottom-2 right-2 w-8 h-8 rounded-full p-0"
+                  className="absolute bottom-2 right-2 w-10 h-10 rounded-full p-0 bg-white shadow-lg hover:bg-gray-50 border-2 border-white opacity-90 hover:opacity-100 transition-all"
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        console.log('Profile picture selected:', file.name);
+                      }
+                    };
+                    input.click();
+                  }}
                 >
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-4 h-4 text-gray-600" />
                 </Button>
               )}
             </div>
@@ -281,19 +334,23 @@ export default function ProfilePage() {
                 <p className="text-muted-foreground mb-2">{profileUser.bio}</p>
               )}
               
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
-                <span className="hover:underline cursor-pointer">
-                  <strong>{posts?.length || 0}</strong> posts
-                </span>
-                <span className="hover:underline cursor-pointer">
-                  <strong>{followers?.length || 0}</strong> followers
-                </span>
-                <span className="hover:underline cursor-pointer">
-                  <strong>{following?.length || 0}</strong> following
-                </span>
-                <span>
+              <div className="flex items-center flex-wrap gap-6 mb-4">
+                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
+                  <span className="font-bold text-lg text-gray-900">{posts?.length || 0}</span>
+                  <span className="text-gray-600">{posts?.length === 1 ? 'post' : 'posts'}</span>
+                </div>
+                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
+                  <span className="font-bold text-lg text-gray-900">{followers?.length || 0}</span>
+                  <span className="text-gray-600">{followers?.length === 1 ? 'follower' : 'followers'}</span>
+                </div>
+                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
+                  <span className="font-bold text-lg text-gray-900">{following?.length || 0}</span>
+                  <span className="text-gray-600">following</span>
+                </div>
+                <div className="text-sm text-gray-500 flex items-center">
+                  <Calendar className="w-4 h-4 mr-1" />
                   Joined {safeFormatDate(profileUser.createdAt)}
-                </span>
+                </div>
               </div>
               
               {/* Action Buttons */}
