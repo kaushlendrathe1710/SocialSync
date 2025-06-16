@@ -167,7 +167,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPosts(userId?: number, limit = 20, offset = 0): Promise<PostWithUser[]> {
-    let query = db
+    const query = db
       .select({
         post: posts,
         user: users,
@@ -179,7 +179,7 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
 
     if (userId) {
-      query = query.where(eq(posts.userId, userId));
+      query.where(eq(posts.userId, userId));
     }
 
     const result = await query;
@@ -298,7 +298,7 @@ export class DatabaseStorage implements IStorage {
   async getActiveStories(userId?: number): Promise<(Story & { user: User })[]> {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
-    let query = db
+    const query = db
       .select({
         story: stories,
         user: users,
@@ -309,7 +309,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(stories.createdAt));
 
     if (userId) {
-      query = query.where(eq(stories.userId, userId));
+      query.where(eq(stories.userId, userId));
     }
 
     const result = await query;
@@ -396,7 +396,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markMessageRead(id: number): Promise<void> {
-    await db.update(messages).set({ readAt: new Date() }).where(eq(messages.id, id));
+    await db.update(messages).set({ isRead: true }).where(eq(messages.id, id));
   }
 
   // Notification methods
