@@ -18,6 +18,7 @@ import nodemailer from "nodemailer";
 // Extend session data interface
 declare module 'express-session' {
   interface SessionData {
+    userId?: number;
     verifiedEmail?: string;
     otpId?: number;
   }
@@ -80,9 +81,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try to send OTP via email, fallback to console if email fails
       try {
-        // Verify SMTP connection first
-        await transporter.verify();
-        
         await transporter.sendMail({
           from: process.env.FROM_EMAIL,
           to: email,
@@ -145,6 +143,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isVerified: false,
         });
         
+        // Set session for persistent login
+        req.session.userId = user.id;
+        
         // Clean up verification token
         global.verificationTokens.delete(verificationToken);
         
@@ -184,11 +185,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Returning user - mark OTP as used and login
         await storage.markOtpCodeUsed(validOtp.id);
+        req.session.userId = user.id;
         return res.json({ user, isNewUser: false });
       }
     } catch (error) {
       console.error("Verify OTP error:", error);
       res.status(500).json({ message: "Failed to verify OTP" });
+    }
+  });
+
+  // Authentication check endpoint
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.json({ user: null });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        req.session.userId = undefined;
+        return res.json({ user: null });
+      }
+
+      res.json({ user });
+    } catch (error) {
+      console.error("Auth check error:", error);
+      res.status(500).json({ message: "Failed to check authentication" });
+    }
+  });
+
+  // Logout endpoint
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
+    try {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+          return res.status(500).json({ message: "Failed to logout" });
+        }
+        res.json({ message: "Logged out successfully" });
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ message: "Failed to logout" });
     }
   });
 
