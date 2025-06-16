@@ -48,8 +48,9 @@ export default function ProfilePage() {
     website: '',
   });
 
+  // Handle profile routing - if no ID provided, show current user's profile
   const profileUserId = id ? parseInt(id) : currentUser?.id;
-  const isOwnProfile = profileUserId === currentUser?.id;
+  const isOwnProfile = !id || profileUserId === currentUser?.id;
 
   const { data: profileUser, isLoading: userLoading } = useQuery({
     queryKey: ['/api/users', profileUserId],
@@ -255,8 +256,15 @@ export default function ProfilePage() {
               )}
               
               <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
-                <span>{followers?.length || 0} followers</span>
-                <span>{following?.length || 0} following</span>
+                <span className="hover:underline cursor-pointer">
+                  <strong>{posts?.length || 0}</strong> posts
+                </span>
+                <span className="hover:underline cursor-pointer">
+                  <strong>{followers?.length || 0}</strong> followers
+                </span>
+                <span className="hover:underline cursor-pointer">
+                  <strong>{following?.length || 0}</strong> following
+                </span>
                 <span>
                   Joined {formatDistanceToNow(new Date(profileUser.createdAt!), { addSuffix: true })}
                 </span>
@@ -268,10 +276,10 @@ export default function ProfilePage() {
                   <>
                     <Button
                       onClick={() => setShowCreatePost(true)}
-                      className="facebook-blue"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add to Story
+                      Create Post
                     </Button>
                     <Button
                       variant="secondary"

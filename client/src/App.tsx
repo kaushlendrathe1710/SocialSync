@@ -42,6 +42,7 @@ function AppContent() {
           <Switch>
             <Route path="/" component={FeedPage} />
             <Route path="/profile/:id?" component={ProfilePage} />
+            <Route path="/profile" component={ProfilePage} />
             <Route path="/explore" component={ExplorePage} />
             <Route path="/messages" component={MessagesPage} />
             <Route path="/notifications" component={NotificationsPage} />

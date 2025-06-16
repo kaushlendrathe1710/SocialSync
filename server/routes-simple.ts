@@ -426,6 +426,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific user
+  app.get("/api/users/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ message: "Failed to get user" });
+    }
+  });
+
+  // Update user profile
+  app.put("/api/users/:id", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const userId = parseInt(req.params.id);
+      
+      // Users can only update their own profile
+      if (userId !== req.session.userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, req.body);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Update user error:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Follow/unfollow user
+  app.post("/api/users/:id/follow", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const followingId = parseInt(req.params.id);
+      const followerId = req.session.userId;
+
+      if (followingId === followerId) {
+        return res.status(400).json({ message: "Cannot follow yourself" });
+      }
+
+      // Check if already following
+      const isFollowing = await storage.isFollowing(followerId, followingId);
+
+      if (isFollowing) {
+        // Unfollow
+        await storage.deleteFollow(followerId, followingId);
+        res.json({ following: false, message: "Unfollowed successfully" });
+      } else {
+        // Follow
+        await storage.createFollow({ followerId, followingId });
+        
+        // Create notification
+        await storage.createNotification({
+          userId: followingId,
+          fromUserId: followerId,
+          type: 'follow',
+          content: 'started following you'
+        });
+        
+        res.json({ following: true, message: "Following successfully" });
+      }
+    } catch (error) {
+      console.error("Follow user error:", error);
+      res.status(500).json({ message: "Failed to follow user" });
+    }
+  });
+
+  // Get user followers
+  app.get("/api/users/:id/followers", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const followers = await storage.getFollowers(userId);
+      res.json(followers);
+    } catch (error) {
+      console.error("Get followers error:", error);
+      res.status(500).json({ message: "Failed to get followers" });
+    }
+  });
+
+  // Get user following
+  app.get("/api/users/:id/following", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const following = await storage.getFollowing(userId);
+      res.json(following);
+    } catch (error) {
+      console.error("Get following error:", error);
+      res.status(500).json({ message: "Failed to get following" });
+    }
+  });
+
   // Notifications endpoints
   app.get("/api/notifications", async (req: Request, res: Response) => {
     try {
