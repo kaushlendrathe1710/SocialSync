@@ -72,10 +72,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try to send OTP via email, fallback to console if email fails
       try {
+        // Verify SMTP connection first
+        await transporter.verify();
+        
         await transporter.sendMail({
-          from: process.env.FROM_EMAIL || "noreply@example.com",
+          from: process.env.FROM_EMAIL,
           to: email,
-          subject: "Your Login Code",
+          subject: "Your SocialConnect Login Code",
           text: `Your login code is: ${otp}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
@@ -88,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             </div>
           `,
         });
-        console.log(`Email sent successfully to ${email}`);
+        console.log(`✓ Email sent successfully to ${email} - OTP: ${otp}`);
       } catch (emailError: any) {
         // Email failed, log OTP to console for development
         console.log(`\n--- EMAIL SERVICE UNAVAILABLE - Development Mode ---`);
