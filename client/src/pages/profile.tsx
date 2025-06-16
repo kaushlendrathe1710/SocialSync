@@ -1,0 +1,664 @@
+import { useState } from 'react';
+import { useParams } from 'wouter';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
+import { User, PostWithUser } from '@shared/schema';
+import PostCard from '@/components/post-card';
+import CreatePostModal from '@/components/create-post-modal';
+import { 
+  Camera, 
+  MapPin, 
+  Link as LinkIcon, 
+  Calendar, 
+  Briefcase, 
+  GraduationCap,
+  Heart,
+  Users,
+  Edit,
+  Plus,
+  Settings,
+  UserPlus,
+  UserMinus
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+
+export default function ProfilePage() {
+  const { id } = useParams();
+  const { user: currentUser } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    bio: '',
+    location: '',
+    website: '',
+  });
+
+  const profileUserId = id ? parseInt(id) : currentUser?.id;
+  const isOwnProfile = profileUserId === currentUser?.id;
+
+  const { data: profileUser, isLoading: userLoading } = useQuery({
+    queryKey: ['/api/users', profileUserId],
+    queryFn: async () => {
+      if (!profileUserId) return null;
+      const response = await api.getUser(profileUserId);
+      return response.json() as Promise<User>;
+    },
+    enabled: !!profileUserId,
+  });
+
+  const { data: posts, isLoading: postsLoading } = useQuery({
+    queryKey: ['/api/posts', { userId: profileUserId }],
+    queryFn: async () => {
+      const response = await api.getPosts(profileUserId);
+      return response.json() as Promise<PostWithUser[]>;
+    },
+    enabled: !!profileUserId,
+  });
+
+  const { data: followers } = useQuery({
+    queryKey: ['/api/users', profileUserId, 'followers'],
+    queryFn: async () => {
+      if (!profileUserId) return [];
+      const response = await api.getFollowers(profileUserId);
+      return response.json() as Promise<User[]>;
+    },
+    enabled: !!profileUserId,
+  });
+
+  const { data: following } = useQuery({
+    queryKey: ['/api/users', profileUserId, 'following'],
+    queryFn: async () => {
+      if (!profileUserId) return [];
+      const response = await api.getFollowing(profileUserId);
+      return response.json() as Promise<User[]>;
+    },
+    enabled: !!profileUserId,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: () => api.followUser(profileUserId!),
+    onSuccess: async (response) => {
+      const result = await response.json();
+      queryClient.invalidateQueries({ queryKey: ['/api/users', profileUserId, 'followers'] });
+      toast({
+        title: result.following ? "Following!" : "Unfollowed",
+        description: result.following 
+          ? `You are now following ${profileUser?.name}` 
+          : `You unfollowed ${profileUser?.name}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update follow status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: Partial<User>) => api.updateUser(currentUser!.id, data),
+    onSuccess: async (response) => {
+      const updatedUser = await response.json();
+      queryClient.setQueryData(['/api/users', currentUser!.id], updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      setShowEditProfile(false);
+      toast({
+        title: "Profile updated!",
+        description: "Your profile has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditProfile = () => {
+    if (profileUser) {
+      setEditForm({
+        name: profileUser.name || '',
+        bio: profileUser.bio || '',
+        location: profileUser.location || '',
+        website: profileUser.website || '',
+      });
+      setShowEditProfile(true);
+    }
+  };
+
+  const handleUpdateProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateProfileMutation.mutate(editForm);
+  };
+
+  const handleFollow = () => {
+    followMutation.mutate();
+  };
+
+  const isFollowing = followers?.some(follower => follower.id === currentUser?.id);
+
+  if (userLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <Card className="overflow-hidden mb-6">
+          <div className="h-64 bg-gradient-to-r from-blue-400 to-purple-500">
+            <Skeleton className="w-full h-full" />
+          </div>
+          <div className="relative px-6 pb-6">
+            <div className="flex flex-col md:flex-row md:items-end md:space-x-4 -mt-16">
+              <Skeleton className="w-32 h-32 rounded-full mb-4 md:mb-0" />
+              <div className="flex-1">
+                <Skeleton className="h-8 w-48 mb-2" />
+                <Skeleton className="h-4 w-64 mb-2" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!profileUser) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <Card className="p-8 text-center">
+          <h2 className="text-2xl font-bold mb-2">User not found</h2>
+          <p className="text-muted-foreground">
+            This user doesn't exist or has been removed.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      {/* Cover Photo and Profile Info */}
+      <Card className="overflow-hidden mb-6">
+        {/* Cover Photo */}
+        <div 
+          className="h-64 bg-gradient-to-r from-blue-400 to-purple-500 relative"
+          style={{
+            backgroundImage: profileUser.coverPhoto 
+              ? `url(${profileUser.coverPhoto})` 
+              : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {isOwnProfile && (
+            <Button 
+              variant="secondary" 
+              size="sm"
+              className="absolute bottom-4 right-4"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Edit Cover Photo
+            </Button>
+          )}
+        </div>
+        
+        {/* Profile Info */}
+        <div className="relative px-6 pb-6">
+          <div className="flex flex-col md:flex-row md:items-end md:space-x-4 -mt-16">
+            {/* Profile Picture */}
+            <div className="relative mb-4 md:mb-0">
+              <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
+                <AvatarImage src={profileUser.avatar || undefined} />
+                <AvatarFallback className="text-2xl">
+                  {profileUser.name?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {isOwnProfile && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute bottom-2 right-2 w-8 h-8 rounded-full p-0"
+                >
+                  <Camera className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            
+            {/* Profile Details */}
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-1">
+                <h1 className="text-3xl font-bold">{profileUser.name}</h1>
+                {profileUser.isVerified && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    ✓ Verified
+                  </Badge>
+                )}
+              </div>
+              
+              {profileUser.bio && (
+                <p className="text-muted-foreground mb-2">{profileUser.bio}</p>
+              )}
+              
+              <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
+                <span>{followers?.length || 0} followers</span>
+                <span>{following?.length || 0} following</span>
+                <span>
+                  Joined {formatDistanceToNow(new Date(profileUser.createdAt!), { addSuffix: true })}
+                </span>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex space-x-3">
+                {isOwnProfile ? (
+                  <>
+                    <Button
+                      onClick={() => setShowCreatePost(true)}
+                      className="facebook-blue"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add to Story
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={handleEditProfile}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={handleFollow}
+                      disabled={followMutation.isPending}
+                      className={isFollowing ? "facebook-light" : "facebook-blue"}
+                    >
+                      {isFollowing ? (
+                        <>
+                          <UserMinus className="w-4 h-4 mr-2" />
+                          Unfollow
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Follow
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="secondary">
+                      <LinkIcon className="w-4 h-4 mr-2" />
+                      Message
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Profile Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column - About & Photos */}
+        <div className="space-y-6">
+          {/* About Section */}
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3">About</h3>
+            <div className="space-y-3 text-sm">
+              {profileUser.bio && (
+                <div className="flex items-start space-x-3">
+                  <Heart className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <span>{profileUser.bio}</span>
+                </div>
+              )}
+              
+              {profileUser.location && (
+                <div className="flex items-start space-x-3">
+                  <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <span>Lives in <strong>{profileUser.location}</strong></span>
+                </div>
+              )}
+              
+              {profileUser.website && (
+                <div className="flex items-start space-x-3">
+                  <LinkIcon className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <a 
+                    href={profileUser.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {profileUser.website}
+                  </a>
+                </div>
+              )}
+              
+              <div className="flex items-start space-x-3">
+                <Calendar className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <span>
+                  Joined {formatDistanceToNow(new Date(profileUser.createdAt!), { addSuffix: true })}
+                </span>
+              </div>
+            </div>
+          </Card>
+          
+          {/* Photos Section */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Photos</h3>
+              <Button variant="ghost" size="sm">
+                See all photos
+              </Button>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {posts?.filter(post => post.imageUrl).slice(0, 9).map((post) => (
+                <div key={post.id} className="aspect-square">
+                  <img 
+                    src={post.imageUrl!} 
+                    alt="Photo" 
+                    className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  />
+                </div>
+              ))}
+              
+              {(!posts || posts.filter(post => post.imageUrl).length === 0) && (
+                <div className="col-span-3 text-center py-8 text-muted-foreground">
+                  <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No photos yet</p>
+                </div>
+              )}
+            </div>
+          </Card>
+          
+          {/* Friends Section */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Friends</h3>
+              <Button variant="ghost" size="sm">
+                See all friends
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              {followers?.length || 0} followers
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {followers?.slice(0, 9).map((follower) => (
+                <div key={follower.id} className="text-center">
+                  <Avatar className="w-full aspect-square mb-1">
+                    <AvatarImage src={follower.avatar || undefined} />
+                    <AvatarFallback>
+                      {follower.name?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-xs font-medium truncate">{follower.name}</p>
+                </div>
+              ))}
+              
+              {(!followers || followers.length === 0) && (
+                <div className="col-span-3 text-center py-8 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No followers yet</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+        
+        {/* Right Column - Posts */}
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="posts" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="posts">Posts</TabsTrigger>
+              <TabsTrigger value="about">About</TabsTrigger>
+              <TabsTrigger value="friends">Friends</TabsTrigger>
+              <TabsTrigger value="photos">Photos</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="posts" className="space-y-6">
+              {/* Create Post for Profile */}
+              {isOwnProfile && (
+                <Card className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={currentUser?.avatar || undefined} />
+                      <AvatarFallback>
+                        {currentUser?.name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      variant="outline"
+                      className="flex-1 justify-start text-muted-foreground"
+                      onClick={() => setShowCreatePost(true)}
+                    >
+                      What's on your mind?
+                    </Button>
+                  </div>
+                </Card>
+              )}
+              
+              {/* Posts */}
+              {postsLoading ? (
+                <div className="space-y-6">
+                  {[...Array(3)].map((_, i) => (
+                    <Card key={i} className="p-4">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <Skeleton className="w-10 h-10 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-64 w-full" />
+                    </Card>
+                  ))}
+                </div>
+              ) : posts && posts.length > 0 ? (
+                <div className="space-y-6">
+                  {posts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-8 text-center">
+                  <div className="text-muted-foreground">
+                    <p className="text-lg mb-2">No posts yet</p>
+                    <p>
+                      {isOwnProfile 
+                        ? "Share your first post with the community!" 
+                        : `${profileUser.name} hasn't posted anything yet.`
+                      }
+                    </p>
+                  </div>
+                </Card>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="about">
+              <Card className="p-6">
+                <h3 className="font-semibold text-lg mb-4">About {profileUser.name}</h3>
+                <div className="space-y-4">
+                  {profileUser.bio ? (
+                    <div>
+                      <h4 className="font-medium mb-1">Bio</h4>
+                      <p className="text-muted-foreground">{profileUser.bio}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No bio added yet.</p>
+                  )}
+                  
+                  {profileUser.location && (
+                    <div>
+                      <h4 className="font-medium mb-1">Location</h4>
+                      <p className="text-muted-foreground">{profileUser.location}</p>
+                    </div>
+                  )}
+                  
+                  {profileUser.website && (
+                    <div>
+                      <h4 className="font-medium mb-1">Website</h4>
+                      <a 
+                        href={profileUser.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {profileUser.website}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="friends">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {followers?.map((follower) => (
+                  <Card key={follower.id} className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={follower.avatar || undefined} />
+                        <AvatarFallback>
+                          {follower.name?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h4 className="font-semibold">{follower.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {follower.bio || 'No bio'}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        View
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                
+                {(!followers || followers.length === 0) && (
+                  <div className="col-span-2 text-center py-12 text-muted-foreground">
+                    <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg">No followers yet</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="photos">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {posts?.filter(post => post.imageUrl).map((post) => (
+                  <div key={post.id} className="aspect-square">
+                    <img 
+                      src={post.imageUrl!} 
+                      alt="Photo" 
+                      className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                    />
+                  </div>
+                ))}
+                
+                {(!posts || posts.filter(post => post.imageUrl).length === 0) && (
+                  <div className="col-span-3 text-center py-12 text-muted-foreground">
+                    <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg">No photos yet</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Modals */}
+      <CreatePostModal 
+        isOpen={showCreatePost}
+        onClose={() => setShowCreatePost(false)}
+      />
+      
+      {/* Edit Profile Modal */}
+      <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                value={editForm.bio}
+                onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                placeholder="Tell us about yourself..."
+                rows={3}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={editForm.location}
+                onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+                placeholder="Where do you live?"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="website">Website</Label>
+              <Input
+                id="website"
+                type="url"
+                value={editForm.website}
+                onChange={(e) => setEditForm(prev => ({ ...prev, website: e.target.value }))}
+                placeholder="https://your-website.com"
+              />
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button 
+                type="submit" 
+                className="flex-1 facebook-blue"
+                disabled={updateProfileMutation.isPending}
+              >
+                {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowEditProfile(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
