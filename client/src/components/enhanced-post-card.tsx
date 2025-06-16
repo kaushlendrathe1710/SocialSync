@@ -37,16 +37,17 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
   });
 
   const likeMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/comments/${comment.id}/like`, { method: 'POST' }),
+    mutationFn: () => fetch(`/api/comments/${comment.id}/like`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts', postId, 'comments'] });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (content: string) => apiRequest(`/api/comments/${comment.id}`, {
+    mutationFn: (content: string) => fetch(`/api/comments/${comment.id}`, {
       method: 'PUT',
-      body: { content },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts', postId, 'comments'] });
@@ -55,7 +56,7 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/comments/${comment.id}`, { method: 'DELETE' }),
+    mutationFn: () => fetch(`/api/comments/${comment.id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts', postId, 'comments'] });
     },
@@ -158,19 +159,19 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
               </Button>
             )}
             
-            {comment.repliesCount > 0 && level < 2 && (
+            {(comment.repliesCount || 0) > 0 && level < 2 && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-6 text-xs"
                 onClick={() => setShowReplies(!showReplies)}
               >
-                {showReplies ? 'Hide' : 'Show'} {comment.repliesCount} replies
+                {showReplies ? 'Hide' : 'Show'} {comment.repliesCount || 0} replies
               </Button>
             )}
           </div>
           
-          {showReplies && replies && (
+          {showReplies && replies && Array.isArray(replies) && (
             <div className="mt-2">
               {replies.map((reply: CommentWithUser) => (
                 <CommentItem
@@ -204,7 +205,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   });
 
   const likeMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/posts/${post.id}/like`, { method: 'POST' }),
+    mutationFn: () => fetch(`/api/posts/${post.id}/like`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
@@ -212,9 +213,10 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
 
   const commentMutation = useMutation({
     mutationFn: (data: { content: string; parentCommentId?: number }) =>
-      apiRequest(`/api/posts/${post.id}/comments`, {
+      fetch(`/api/posts/${post.id}/comments`, {
         method: 'POST',
-        body: data,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts', post.id, 'comments'] });
@@ -224,9 +226,10 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   });
 
   const updatePostMutation = useMutation({
-    mutationFn: (content: string) => apiRequest(`/api/posts/${post.id}`, {
+    mutationFn: (content: string) => fetch(`/api/posts/${post.id}`, {
       method: 'PUT',
-      body: { content },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
@@ -235,7 +238,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   });
 
   const deletePostMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/posts/${post.id}`, { method: 'DELETE' }),
+    mutationFn: () => fetch(`/api/posts/${post.id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
@@ -267,7 +270,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Avatar>
-              <AvatarImage src={post.user.profilePicture || undefined} />
+              <AvatarImage src={post.user.avatar || undefined} />
               <AvatarFallback>
                 {post.user.username?.charAt(0).toUpperCase() || post.user.email.charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -395,7 +398,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
             
             <div className="flex space-x-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.profilePicture || undefined} />
+                <AvatarImage src={user?.avatar || undefined} />
                 <AvatarFallback>
                   {user?.username?.charAt(0).toUpperCase() || user?.email.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -430,7 +433,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
               </div>
             </div>
 
-            {comments && comments.length > 0 && (
+            {comments && Array.isArray(comments) && comments.length > 0 && (
               <div className="space-y-2">
                 {comments.map((comment: CommentWithUser) => (
                   <CommentItem
