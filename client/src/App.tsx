@@ -12,6 +12,7 @@ import ExplorePage from "@/pages/explore";
 import MessagesPage from "@/pages/messages";
 import NotificationsPage from "@/pages/notifications";
 import Navigation from "@/components/navigation";
+import Sidebar from "@/components/sidebar";
 import NotFound from "@/pages/not-found";
 
 function AppContent() {

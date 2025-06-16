@@ -1,18 +1,22 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
-import { PostWithUser, Story } from '@shared/schema';
-import PostCard from '@/components/post-card';
-import CreatePostModal from '@/components/create-post-modal';
-import StoryViewer from '@/components/story-viewer';
-import { Plus, Image, Smile, Video } from 'lucide-react';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
+import { getUserInitials } from "@/lib/auth";
+import PostCard from "@/components/post-card";
+import StoryViewer from "@/components/story-viewer";
+import CreatePostModal from "@/components/create-post-modal";
+import { 
+  Plus, 
+  ImageIcon, 
+  Video, 
+  Smile,
+  Users
+} from "lucide-react";
+import type { PostWithUser, Story, User } from "@shared/schema";
 
 export default function FeedPage() {
   const { user } = useAuth();
