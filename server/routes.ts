@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
@@ -17,6 +17,17 @@ import nodemailer from "nodemailer";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+
+// Type declarations for session
+interface SessionData {
+  userId?: number;
+  destroy: (callback: () => void) => void;
+}
+
+interface AuthenticatedRequest extends Request {
+  session: SessionData;
+  user?: any;
+}
 
 // Configure multer for file uploads
 const upload = multer({
@@ -38,7 +49,7 @@ const upload = multer({
 });
 
 // Email configuration
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: parseInt(process.env.SMTP_PORT || "587"),
   secure: false,
