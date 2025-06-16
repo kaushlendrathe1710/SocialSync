@@ -8,15 +8,23 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 app.use(express.json());
 
-// Configure session middleware
+// Configure PostgreSQL session store
+const PgSession = connectPgSimple(session);
+
+// Configure session middleware with PostgreSQL store
 app.use(session({
+  store: new PgSession({
+    pool: pool,
+    tableName: 'session',
+    createTableIfMissing: true,
+  }),
   secret: process.env.SESSION_SECRET || 'fallback-secret-key-for-development',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: false, // Set to true in production with HTTPS
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for persistent login
   },
 }));
 app.use(express.urlencoded({ extended: false }));

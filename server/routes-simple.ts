@@ -93,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <div style="background: #f5f5f5; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
                 <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb;">${otp}</span>
               </div>
-              <p style="color: #666;">This code will expire in 10 minutes.</p>
+              <p style="color: #666;">This code will expire in 5 minutes.</p>
             </div>
           `,
         });
