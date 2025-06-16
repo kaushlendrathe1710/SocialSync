@@ -243,21 +243,48 @@ export default function ProfilePage() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Edit Cover Photo button clicked!');
                 
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
                 input.style.display = 'none';
                 
-                input.onchange = (event) => {
+                input.onchange = async (event) => {
                   const target = event.target as HTMLInputElement;
                   const file = target.files?.[0];
-                  if (file) {
-                    console.log('Cover photo selected:', file.name);
-                    console.log('File size:', file.size, 'bytes');
-                    console.log('File type:', file.type);
-                    // TODO: Implement actual upload to server
+                  if (file && profileUser) {
+                    try {
+                      const formData = new FormData();
+                      formData.append('coverPhoto', file);
+                      
+                      const response = await fetch(`/api/users/${profileUser.id}/cover-photo`, {
+                        method: 'POST',
+                        body: formData,
+                      });
+                      
+                      if (response.ok) {
+                        const result = await response.json();
+                        toast({
+                          title: "Success",
+                          description: "Cover photo updated successfully",
+                        });
+                        // Refresh the profile data
+                        queryClient.invalidateQueries({ queryKey: ['/api/users', profileUser.id.toString()] });
+                      } else {
+                        const error = await response.json();
+                        toast({
+                          title: "Error",
+                          description: error.message || "Failed to update cover photo",
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to upload cover photo",
+                        variant: "destructive",
+                      });
+                    }
                   }
                 };
                 
@@ -288,17 +315,54 @@ export default function ProfilePage() {
                   variant="secondary"
                   size="sm"
                   className="absolute bottom-2 right-2 w-10 h-10 rounded-full p-0 bg-white shadow-lg hover:bg-gray-50 border-2 border-white opacity-90 hover:opacity-100 transition-all"
-                  onClick={() => {
+                  onClick={async () => {
                     const input = document.createElement('input');
                     input.type = 'file';
                     input.accept = 'image/*';
-                    input.onchange = (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (file) {
-                        console.log('Profile picture selected:', file.name);
+                    input.style.display = 'none';
+                    
+                    input.onchange = async (event) => {
+                      const target = event.target as HTMLInputElement;
+                      const file = target.files?.[0];
+                      if (file && profileUser) {
+                        try {
+                          const formData = new FormData();
+                          formData.append('profilePicture', file);
+                          
+                          const response = await fetch(`/api/users/${profileUser.id}/profile-picture`, {
+                            method: 'POST',
+                            body: formData,
+                          });
+                          
+                          if (response.ok) {
+                            const result = await response.json();
+                            toast({
+                              title: "Success",
+                              description: "Profile picture updated successfully",
+                            });
+                            // Refresh the profile data
+                            queryClient.invalidateQueries({ queryKey: ['/api/users', profileUser.id.toString()] });
+                          } else {
+                            const error = await response.json();
+                            toast({
+                              title: "Error",
+                              description: error.message || "Failed to update profile picture",
+                              variant: "destructive",
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to upload profile picture",
+                            variant: "destructive",
+                          });
+                        }
                       }
                     };
+                    
+                    document.body.appendChild(input);
                     input.click();
+                    document.body.removeChild(input);
                   }}
                 >
                   <Camera className="w-4 h-4 text-gray-600" />

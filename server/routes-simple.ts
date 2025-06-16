@@ -14,6 +14,10 @@ import {
   insertNotificationSchema 
 } from "@shared/schema";
 import nodemailer from "nodemailer";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import express from "express";
 
 // Extend session data interface
 declare module 'express-session' {
@@ -46,8 +50,43 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage_multer = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage_multer,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG and WebP images are allowed'));
+    }
+  }
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(uploadsDir));
 
   // Basic health check
   app.get("/api/health", (req: Request, res: Response) => {
@@ -649,6 +688,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Mark all notifications read error:", error);
       res.status(500).json({ message: "Failed to mark notifications as read" });
+    }
+  });
+
+  // Cover photo upload endpoint
+  app.post("/api/users/:id/cover-photo", upload.single('coverPhoto'), async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const userId = parseInt(req.params.id);
+      if (userId !== req.session.userId) {
+        return res.status(403).json({ message: "Can only update own cover photo" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const coverPhotoUrl = `/uploads/${req.file.filename}`;
+      
+      // Update user's cover photo in database
+      const updatedUser = await storage.updateUser(userId, { coverPhoto: coverPhotoUrl });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ 
+        message: "Cover photo updated successfully",
+        coverPhoto: coverPhotoUrl,
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Cover photo upload error:", error);
+      res.status(500).json({ message: "Failed to upload cover photo" });
+    }
+  });
+
+  // Profile picture upload endpoint
+  app.post("/api/users/:id/profile-picture", upload.single('profilePicture'), async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const userId = parseInt(req.params.id);
+      if (userId !== req.session.userId) {
+        return res.status(403).json({ message: "Can only update own profile picture" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const avatarUrl = `/uploads/${req.file.filename}`;
+      
+      // Update user's avatar in database
+      const updatedUser = await storage.updateUser(userId, { avatar: avatarUrl });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ 
+        message: "Profile picture updated successfully",
+        avatar: avatarUrl,
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Profile picture upload error:", error);
+      res.status(500).json({ message: "Failed to upload profile picture" });
     }
   });
 
