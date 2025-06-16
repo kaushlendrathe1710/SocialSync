@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserInitials } from "@/lib/auth";
 import PostCard from "@/components/post-card";
@@ -20,278 +19,215 @@ import type { PostWithUser, Story, User } from "@shared/schema";
 
 export default function FeedPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [showCreatePost, setShowCreatePost] = useState(false);
-  const [showStoryViewer, setShowStoryViewer] = useState(false);
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [selectedStory, setSelectedStory] = useState<(Story & { user: User }) | null>(null);
+  const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
 
-  const { data: posts, isLoading: postsLoading } = useQuery({
+  const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: ['/api/posts'],
-    queryFn: async () => {
-      const response = await api.getPosts();
-      return response.json() as Promise<PostWithUser[]>;
-    },
   });
 
-  const { data: stories, isLoading: storiesLoading } = useQuery({
+  const { data: stories = [] } = useQuery({
     queryKey: ['/api/stories'],
-    queryFn: async () => {
-      const response = await api.getStories();
-      return response.json() as Promise<(Story & { user: any })[]>;
-    },
   });
 
-  const createStoryMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const response = await api.createStory(data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/stories'] });
-      toast({
-        title: "Story created!",
-        description: "Your story has been posted successfully.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create story",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleCreateStory = () => {
-    // In a real app, this would open a story creation modal
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*,video/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const formData = new FormData();
-        formData.append('media', file);
-        createStoryMutation.mutate(formData);
-      }
-    };
-    input.click();
-  };
-
-  const handleViewStory = (story: Story & { user: any }) => {
+  const handleStoryClick = (story: Story & { user: User }, index: number) => {
     setSelectedStory(story);
-    setShowStoryViewer(true);
+    setSelectedStoryIndex(index);
   };
 
-  if (postsLoading || storiesLoading) {
+  const closeStoryViewer = () => {
+    setSelectedStory(null);
+  };
+
+  if (postsLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex space-x-4 overflow-x-auto pb-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex-shrink-0 text-center">
-                  <Skeleton className="w-16 h-16 rounded-full mb-2" />
-                  <Skeleton className="h-3 w-12" />
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="space-y-6">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                  <div className="space-y-1">
+                    <div className="w-24 h-4 bg-gray-200 rounded"></div>
+                    <div className="w-16 h-3 bg-gray-200 rounded"></div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        {[...Array(3)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <Skeleton className="w-10 h-10 rounded-full" />
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-24" />
+                  <div className="w-full h-4 bg-gray-200 rounded"></div>
+                  <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-4 w-full mb-2" />
-              <Skeleton className="h-4 w-3/4 mb-4" />
-              <Skeleton className="h-64 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
-        {/* Left Sidebar */}
-        <div className="hidden lg:block">
-          <Card className="p-4 mb-4">
+    <div className="min-h-screen p-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Stories Section */}
+        {stories.length > 0 && (
+          <Card className="shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex space-x-4 overflow-x-auto pb-2">
+                {/* Add Story Button */}
+                <div className="flex-shrink-0 text-center">
+                  <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors bg-gray-50">
+                    <Plus className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-xs mt-2 text-muted-foreground font-medium">Create Story</p>
+                </div>
+
+                {/* Stories */}
+                {stories.map((story: any, index: number) => (
+                  <div 
+                    key={story.id} 
+                    className="flex-shrink-0 text-center cursor-pointer"
+                    onClick={() => handleStoryClick(story, index)}
+                  >
+                    <div className="w-20 h-20 rounded-2xl p-1 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500">
+                      <div className="w-full h-full rounded-xl bg-white p-1">
+                        <Avatar className="w-full h-full">
+                          <AvatarImage src={story.user?.avatar || ""} className="rounded-xl" />
+                          <AvatarFallback className="bg-blue-100 text-blue-600 text-sm rounded-xl">
+                            {getUserInitials(story.user)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                    <p className="text-xs mt-2 text-muted-foreground font-medium truncate max-w-[80px]">
+                      {story.user?.name || story.user?.username}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Create Post */}
+        <Card className="shadow-sm">
+          <CardContent className="p-4">
             <div className="flex items-center space-x-3 mb-4">
-              <Avatar className="w-12 h-12">
-                <AvatarImage src={user?.avatar || undefined} />
-                <AvatarFallback>
-                  {user?.name?.charAt(0).toUpperCase()}
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={user?.avatar || ""} />
+                <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
+                  {getUserInitials(user)}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h3 className="font-semibold">{user?.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {user?.bio || 'Tell us about yourself'}
-                </p>
+              <div 
+                className="flex-1 bg-gray-100 rounded-full px-4 py-3 cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => setIsCreatePostModalOpen(true)}
+              >
+                <span className="text-gray-500">What's on your mind, {user?.name || user?.username}?</span>
               </div>
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Profile views</span>
-                <span className="font-semibold text-[hsl(221,44%,41%)]">127</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Post impressions</span>
-                <span className="font-semibold text-[hsl(221,44%,41%)]">1,432</span>
-              </div>
+            
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <Button 
+                variant="ghost" 
+                className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
+                onClick={() => setIsCreatePostModalOpen(true)}
+              >
+                <Video className="h-5 w-5 mr-2 text-red-500" />
+                Live Video
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
+                onClick={() => setIsCreatePostModalOpen(true)}
+              >
+                <ImageIcon className="h-5 w-5 mr-2 text-green-500" />
+                Photo/Video
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
+                onClick={() => setIsCreatePostModalOpen(true)}
+              >
+                <Smile className="h-5 w-5 mr-2 text-yellow-500" />
+                Feeling/Activity
+              </Button>
             </div>
-          </Card>
-        </div>
-        
-        {/* Main Feed */}
-        <div className="lg:col-span-2">
-          
-          {/* Stories Section */}
-          <Card className="p-4 mb-6">
-            <div className="flex space-x-4 overflow-x-auto pb-2">
-              {/* Create Story */}
-              <div className="flex-shrink-0 text-center cursor-pointer" onClick={handleCreateStory}>
-                <div className="w-16 h-16 bg-gradient-to-r from-[hsl(347,75%,60%)] via-[hsl(36,95%,60%)] to-[hsl(262,60%,55%)] rounded-full p-0.5">
-                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                    <Plus className="w-6 h-6 text-[hsl(221,44%,41%)]" />
-                  </div>
+          </CardContent>
+        </Card>
+
+        {/* Posts Feed */}
+        <div className="space-y-4">
+          {posts.length === 0 ? (
+            <Card className="shadow-sm">
+              <CardContent className="p-12 text-center">
+                <div className="text-muted-foreground">
+                  <Users className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <h3 className="text-lg font-medium mb-2 text-gray-900">Welcome to your feed!</h3>
+                  <p className="text-sm text-gray-500 mb-6">Start following people and sharing posts to see content here.</p>
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700" 
+                    onClick={() => setIsCreatePostModalOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Post
+                  </Button>
                 </div>
-                <p className="text-xs mt-1 font-medium">Your Story</p>
-              </div>
-              
-              {/* Stories */}
-              {stories?.map((story) => (
-                <div 
-                  key={story.id} 
-                  className="flex-shrink-0 text-center cursor-pointer"
-                  onClick={() => handleViewStory(story)}
-                >
-                  <div className="w-16 h-16 bg-gradient-to-r from-[hsl(347,75%,60%)] via-[hsl(36,95%,60%)] to-[hsl(262,60%,55%)] rounded-full p-0.5">
-                    <Avatar className="w-full h-full">
-                      <AvatarImage src={story.user.avatar || undefined} />
-                      <AvatarFallback>
-                        {story.user.name?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <p className="text-xs mt-1 truncate w-16">{story.user.name}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            posts.map((post: PostWithUser) => (
+              <PostCard key={post.id} post={post} />
+            ))
+          )}
+        </div>
+
+        {/* Suggested Content Section */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-gray-900">People You May Know</h4>
+              <Button variant="ghost" size="sm" className="text-blue-600">
+                See All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="grid grid-cols-2 gap-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="text-center p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                  <Avatar className="h-16 w-16 mx-auto mb-3">
+                    <AvatarFallback className="bg-gray-200 text-gray-600">
+                      U{i}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h5 className="font-medium text-sm mb-1">User {i}</h5>
+                  <p className="text-xs text-muted-foreground mb-3">2 mutual friends</p>
+                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+                    Add Friend
+                  </Button>
                 </div>
               ))}
             </div>
-          </Card>
-          
-          {/* Create Post */}
-          <Card className="p-4 mb-6">
-            <div className="flex items-center space-x-3 mb-3">
-              <Avatar className="w-10 h-10">
-                <AvatarImage src={user?.avatar || undefined} />
-                <AvatarFallback>
-                  {user?.name?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <Button
-                variant="outline"
-                className="flex-1 justify-start text-muted-foreground"
-                onClick={() => setShowCreatePost(true)}
-              >
-                What's on your mind, {user?.name?.split(' ')[0]}?
-              </Button>
-            </div>
-            <Separator className="mb-3" />
-            <div className="flex justify-around">
-              <Button 
-                variant="ghost" 
-                className="flex items-center space-x-2"
-                onClick={() => setShowCreatePost(true)}
-              >
-                <Image className="w-5 h-5 text-green-500" />
-                <span>Photo/Video</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="flex items-center space-x-2"
-                onClick={() => setShowCreatePost(true)}
-              >
-                <Smile className="w-5 h-5 text-yellow-500" />
-                <span>Feeling/Activity</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="flex items-center space-x-2 hidden md:flex"
-                onClick={() => setShowCreatePost(true)}
-              >
-                <Video className="w-5 h-5 text-red-500" />
-                <span>Live Video</span>
-              </Button>
-            </div>
-          </Card>
-          
-          {/* Posts */}
-          <div className="space-y-6">
-            {posts?.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-            
-            {posts?.length === 0 && (
-              <Card className="p-8 text-center">
-                <div className="text-muted-foreground">
-                  <p className="text-lg mb-2">No posts yet!</p>
-                  <p>Be the first to share something with the community.</p>
-                </div>
-              </Card>
-            )}
-          </div>
-        </div>
-        
-        {/* Right Sidebar */}
-        <div className="hidden lg:block">
-          <Card className="p-4 mb-4">
-            <h3 className="font-semibold mb-3">Trending Topics</h3>
-            <div className="space-y-2 text-sm">
-              <div className="hover:bg-muted p-2 rounded cursor-pointer">
-                <p className="font-medium">#TechInnovation</p>
-                <p className="text-muted-foreground">12.5K posts</p>
-              </div>
-              <div className="hover:bg-muted p-2 rounded cursor-pointer">
-                <p className="font-medium">#SustainableLiving</p>
-                <p className="text-muted-foreground">8.2K posts</p>
-              </div>
-              <div className="hover:bg-muted p-2 rounded cursor-pointer">
-                <p className="font-medium">#WorkFromHome</p>
-                <p className="text-muted-foreground">15.7K posts</p>
-              </div>
-            </div>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Modals */}
       <CreatePostModal 
-        isOpen={showCreatePost}
-        onClose={() => setShowCreatePost(false)}
+        isOpen={isCreatePostModalOpen}
+        onClose={() => setIsCreatePostModalOpen(false)}
       />
       
       {selectedStory && (
-        <StoryViewer
+        <StoryViewer 
           story={selectedStory}
-          isOpen={showStoryViewer}
-          onClose={() => {
-            setShowStoryViewer(false);
-            setSelectedStory(null);
-          }}
+          isOpen={!!selectedStory}
+          onClose={closeStoryViewer}
+          stories={stories}
+          currentIndex={selectedStoryIndex}
         />
       )}
     </div>
