@@ -212,20 +212,23 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const file = new File([blob], `video-${Date.now()}.webm`, { type: 'video/webm' });
-        const preview = URL.createObjectURL(blob);
-        
-        setMediaFiles(prev => [...prev, file]);
-        setMediaPreviews(prev => [...prev, preview]);
-        setIsPlaying(prev => [...prev, false]);
-        setIsMuted(prev => [...prev, true]);
-        setIsRecording(false);
+        if (recordedChunks.length > 0) {
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          const file = new File([blob], `video-${Date.now()}.webm`, { type: 'video/webm' });
+          const preview = URL.createObjectURL(blob);
+          
+          setMediaFiles(prev => [...prev, file]);
+          setMediaPreviews(prev => [...prev, preview]);
+          setIsPlaying(prev => [...prev, false]);
+          setIsMuted(prev => [...prev, true]);
 
-        toast({
-          title: "Video recorded!",
-          description: "Video has been added to your post",
-        });
+          toast({
+            title: "Video recorded!",
+            description: "Video has been added to your post",
+          });
+        }
+        setIsRecording(false);
+        setRecordedChunks([]);
       };
 
       mediaRecorder.start(1000);
