@@ -1219,5 +1219,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Live streams endpoints
+  app.post("/api/live-streams", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { title, description, privacy } = req.body;
+      
+      if (!title || title.trim().length === 0) {
+        return res.status(400).json({ message: "Title is required" });
+      }
+
+      const liveStream = await storage.createLiveStream({
+        userId: req.session.userId,
+        title: title.trim(),
+        description: description?.trim() || null,
+        privacy: privacy || "public"
+      });
+
+      res.json(liveStream);
+    } catch (error) {
+      console.error("Create live stream error:", error);
+      res.status(500).json({ message: "Failed to create live stream" });
+    }
+  });
+
+  app.get("/api/live-streams", async (req: Request, res: Response) => {
+    try {
+      const activeStreams = await storage.getActiveLiveStreams();
+      res.json(activeStreams);
+    } catch (error) {
+      console.error("Get live streams error:", error);
+      res.status(500).json({ message: "Failed to get live streams" });
+    }
+  });
+
+  app.put("/api/live-streams/:id/end", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const streamId = parseInt(req.params.id);
+      const success = await storage.endLiveStream(streamId, req.session.userId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Live stream not found or not authorized" });
+      }
+
+      res.json({ message: "Live stream ended successfully" });
+    } catch (error) {
+      console.error("End live stream error:", error);
+      res.status(500).json({ message: "Failed to end live stream" });
+    }
+  });
+
   return httpServer;
 }

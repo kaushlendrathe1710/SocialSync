@@ -109,6 +109,11 @@ export interface IStorage {
   getAllUsersAdmin(page: number, limit: number, search?: string): Promise<User[]>;
   getAllPostsAdmin(page: number, limit: number): Promise<PostWithUser[]>;
   deleteUserAdmin(userId: number): Promise<boolean>;
+
+  // Live stream methods
+  createLiveStream(liveStream: InsertLiveStream): Promise<LiveStream>;
+  getActiveLiveStreams(): Promise<(LiveStream & { user: User })[]>;
+  endLiveStream(streamId: number, userId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
