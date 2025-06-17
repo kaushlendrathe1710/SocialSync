@@ -8,6 +8,9 @@ import { getUserInitials } from "@/lib/auth";
 import EnhancedPostCard from "@/components/enhanced-post-card";
 import StoryViewer from "@/components/story-viewer";
 import CreatePostModal from "@/components/create-post-modal";
+import LiveVideoModal from "@/components/live-video-modal";
+import PhotoVideoModal from "@/components/photo-video-modal";
+import FeelingActivityModal from "@/components/feeling-activity-modal";
 import { 
   Plus, 
   ImageIcon, 
@@ -20,6 +23,9 @@ import type { PostWithUser, Story, User } from "@shared/schema";
 export default function FeedPage() {
   const { user } = useAuth();
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+  const [isLiveVideoModalOpen, setIsLiveVideoModalOpen] = useState(false);
+  const [isPhotoVideoModalOpen, setIsPhotoVideoModalOpen] = useState(false);
+  const [isFeelingActivityModalOpen, setIsFeelingActivityModalOpen] = useState(false);
   const [selectedStory, setSelectedStory] = useState<(Story & { user: User }) | null>(null);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
 
@@ -150,7 +156,7 @@ export default function FeedPage() {
               <Button 
                 variant="ghost" 
                 className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
-                onClick={() => setIsCreatePostModalOpen(true)}
+                onClick={() => setIsLiveVideoModalOpen(true)}
               >
                 <Video className="h-5 w-5 mr-2 text-red-500" />
                 Live Video
@@ -158,7 +164,7 @@ export default function FeedPage() {
               <Button 
                 variant="ghost" 
                 className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
-                onClick={() => setIsCreatePostModalOpen(true)}
+                onClick={() => setIsPhotoVideoModalOpen(true)}
               >
                 <ImageIcon className="h-5 w-5 mr-2 text-green-500" />
                 Photo/Video
@@ -166,7 +172,7 @@ export default function FeedPage() {
               <Button 
                 variant="ghost" 
                 className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
-                onClick={() => setIsCreatePostModalOpen(true)}
+                onClick={() => setIsFeelingActivityModalOpen(true)}
               >
                 <Smile className="h-5 w-5 mr-2 text-yellow-500" />
                 Feeling/Activity
@@ -236,6 +242,21 @@ export default function FeedPage() {
       <CreatePostModal 
         isOpen={isCreatePostModalOpen}
         onClose={() => setIsCreatePostModalOpen(false)}
+      />
+      
+      <LiveVideoModal 
+        isOpen={isLiveVideoModalOpen}
+        onClose={() => setIsLiveVideoModalOpen(false)}
+      />
+      
+      <PhotoVideoModal 
+        isOpen={isPhotoVideoModalOpen}
+        onClose={() => setIsPhotoVideoModalOpen(false)}
+      />
+      
+      <FeelingActivityModal 
+        isOpen={isFeelingActivityModalOpen}
+        onClose={() => setIsFeelingActivityModalOpen(false)}
       />
       
       {selectedStory && (
