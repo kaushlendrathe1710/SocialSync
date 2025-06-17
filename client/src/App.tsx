@@ -37,6 +37,21 @@ function AppContent() {
     return <AuthPage />;
   }
 
+  // Check if user is admin and on admin route
+  const isAdminUser = user.role === 'admin' || user.role === 'super_admin';
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
+
+  if (isAdminUser && isAdminRoute) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Switch>
+          <Route path="/admin" component={AdminDashboard} />
+          <Route component={NotFound} />
+        </Switch>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Navigation />
@@ -53,7 +68,6 @@ function AppContent() {
             <Route path="/friends" component={FriendsPage} />
             <Route path="/saved" component={SavedPage} />
             <Route path="/settings" component={SettingsPage} />
-            <Route path="/admin" component={AdminDashboard} />
             <Route component={NotFound} />
           </Switch>
         </main>
