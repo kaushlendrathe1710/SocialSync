@@ -677,6 +677,46 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(users).where(eq(users.id, userId));
     return result.rowCount! > 0;
   }
+
+  // Live stream methods
+  async createLiveStream(insertLiveStream: InsertLiveStream): Promise<LiveStream> {
+    const [liveStream] = await db.insert(liveStreams).values(insertLiveStream).returning();
+    return liveStream;
+  }
+
+  async getActiveLiveStreams(): Promise<(LiveStream & { user: User })[]> {
+    const streams = await db
+      .select()
+      .from(liveStreams)
+      .innerJoin(users, eq(liveStreams.userId, users.id))
+      .where(eq(liveStreams.isActive, true))
+      .orderBy(desc(liveStreams.startedAt));
+
+    return streams.map(({ live_streams, users }) => ({
+      ...live_streams,
+      user: users,
+    }));
+  }
+
+  async endLiveStream(streamId: number, userId: number): Promise<boolean> {
+    try {
+      const result = await db
+        .update(liveStreams)
+        .set({ 
+          isActive: false, 
+          endedAt: new Date() 
+        })
+        .where(and(
+          eq(liveStreams.id, streamId),
+          eq(liveStreams.userId, userId)
+        ));
+      
+      return result.rowCount! > 0;
+    } catch (error) {
+      console.error("End live stream error:", error);
+      return false;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
