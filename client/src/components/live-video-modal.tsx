@@ -61,7 +61,11 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
       setPermissionError('');
       
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
+        video: { 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 },
+          facingMode: 'user'
+        },
         audio: true
       });
       
@@ -70,6 +74,9 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+        };
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -255,7 +262,8 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
                   autoPlay
                   muted
                   playsInline
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transform scale-x-[-1]"
+                  style={{ filter: 'brightness(1.1) contrast(1.1)' }}
                 />
                 {isLive && (
                   <div className="absolute top-4 left-4 flex items-center space-x-2">
