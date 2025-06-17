@@ -90,23 +90,46 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
   // Camera functionality
   const startCamera = async () => {
     try {
+      console.log('Requesting camera access...');
+      
       const constraints = {
         video: {
           facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 }
         },
         audio: true
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Camera stream obtained:', mediaStream);
+      
       setStream(mediaStream);
       setIsCameraActive(true);
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play();
-      }
+      // Delay to ensure video element is ready
+      setTimeout(() => {
+        if (videoRef.current) {
+          console.log('Setting video source...');
+          videoRef.current.srcObject = mediaStream;
+          
+          videoRef.current.onloadedmetadata = () => {
+            console.log('Video metadata loaded, starting playback');
+            if (videoRef.current) {
+              videoRef.current.play().then(() => {
+                console.log('Video playback started successfully');
+              }).catch((playError) => {
+                console.error('Video play error:', playError);
+              });
+            }
+          };
+          
+          // Force immediate play attempt
+          videoRef.current.play().catch(() => {
+            console.log('Waiting for metadata to load...');
+          });
+        }
+      }, 100);
 
       toast({
         title: "Camera activated",
@@ -229,10 +252,31 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
 
   // Auto-start camera when switching to camera tab
   useEffect(() => {
-    if (activeTab === 'camera' && !isCameraActive) {
+    if (activeTab === 'camera' && !isCameraActive && isOpen) {
+      console.log('Auto-starting camera for tab switch');
       startCamera();
     }
-  }, [activeTab]);
+  }, [activeTab, isOpen]);
+
+  // Force video refresh when stream changes
+  useEffect(() => {
+    if (stream && videoRef.current && isCameraActive) {
+      console.log('Updating video element with new stream');
+      videoRef.current.srcObject = stream;
+      videoRef.current.load(); // Force reload
+      
+      const playVideo = async () => {
+        try {
+          await videoRef.current?.play();
+          console.log('Video playback successful after stream update');
+        } catch (error) {
+          console.error('Failed to play video after stream update:', error);
+        }
+      };
+      
+      playVideo();
+    }
+  }, [stream, isCameraActive]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -486,6 +530,10 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
                       playsInline
                       muted
                       className="w-full h-full object-cover"
+                      style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+                      onCanPlay={() => console.log('Video can play')}
+                      onLoadStart={() => console.log('Video load started')}
+                      onPlaying={() => console.log('Video is playing')}
                     />
                     <canvas ref={canvasRef} className="hidden" />
                     
@@ -523,7 +571,7 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
                     <div className="text-center">
                       <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
                       <p className="text-lg mb-2">Camera Preview</p>
-                      <p className="text-sm opacity-75 mb-4">Camera access would be implemented here</p>
+                      <p className="text-sm opacity-75 mb-4">Click Start Camera to begin</p>
                       <Button onClick={startCamera} variant="secondary">
                         <Camera className="w-4 h-4 mr-2" />
                         Start Camera
