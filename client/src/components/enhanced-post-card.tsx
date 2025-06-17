@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -292,9 +292,17 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold">
-                {post.user.username || post.user.email}
-              </h3>
+              <div className="flex items-center space-x-2">
+                <h3 className="font-semibold">
+                  {post.user.username || post.user.email}
+                </h3>
+                {post.liveStreamId && (
+                  <Badge variant="secondary" className="flex items-center space-x-1 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                    <Radio className="w-3 h-3" />
+                    <span className="text-xs">Live Stream</span>
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-gray-500">
                 {formatDistanceToNow(new Date(post.createdAt!), { addSuffix: true })}
               </p>

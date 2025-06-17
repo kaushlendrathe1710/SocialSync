@@ -389,6 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: req.body.content || null,
         imageUrl: null as string | null,
         videoUrl: null as string | null,
+        liveStreamId: req.body.liveStreamId ? parseInt(req.body.liveStreamId) : null,
         privacy: req.body.privacy || "public",
       };
       
