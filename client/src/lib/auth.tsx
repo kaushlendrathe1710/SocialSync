@@ -146,10 +146,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await apiRequest('POST', '/api/auth/logout');
     setUser(null);
+    setImpersonation(null);
+  };
+
+  const startImpersonation = async (userId: number) => {
+    const response = await apiRequest('POST', `/api/admin/impersonate/${userId}`);
+    const data = await response.json();
+    setUser(data.user);
+    setImpersonation({
+      isImpersonating: true,
+      originalAdmin: data.originalAdmin
+    });
+  };
+
+  const stopImpersonation = async () => {
+    const response = await apiRequest('POST', '/api/admin/stop-impersonation');
+    const data = await response.json();
+    setUser(data.user);
+    setImpersonation(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, sendOTP }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      impersonation, 
+      login, 
+      logout, 
+      sendOTP, 
+      startImpersonation, 
+      stopImpersonation 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -25,6 +25,7 @@ import {
   Home
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useAuthContext } from "@/lib/auth";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,6 +63,7 @@ interface AdminPost {
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
+  const { impersonation, startImpersonation, stopImpersonation } = useAuthContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
@@ -181,6 +183,40 @@ export default function AdminDashboard() {
     updateRoleMutation.mutate({ userId, role: newRole, canDelete });
   };
 
+  const handleImpersonate = async (userId: number) => {
+    try {
+      await startImpersonation(userId);
+      toast({
+        title: "Impersonation started",
+        description: "You are now viewing the platform as this user",
+      });
+      // Redirect to main site as the impersonated user
+      window.location.href = '/';
+    } catch (error: any) {
+      toast({
+        title: "Impersonation failed",
+        description: error.message || "Failed to start impersonation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStopImpersonation = async () => {
+    try {
+      await stopImpersonation();
+      toast({
+        title: "Impersonation stopped",
+        description: "You have returned to your admin account",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to stop impersonation",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     window.location.href = '/';
@@ -217,6 +253,31 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Impersonation Banner */}
+      {impersonation?.isImpersonating && (
+        <div className="bg-orange-500 text-white px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <UserCheck className="h-5 w-5" />
+              <span className="font-medium">
+                Impersonating: {user?.name || user?.username}
+              </span>
+              <span className="text-orange-100">
+                (Original Admin: {impersonation.originalAdmin.name || impersonation.originalAdmin.username})
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleStopImpersonation}
+              className="bg-white text-orange-600 hover:bg-orange-50"
+            >
+              Stop Impersonation
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Admin Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="px-6 py-4">
@@ -412,6 +473,19 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
+                          {/* Impersonation Button */}
+                          {!adminUser.isSuperAdmin && adminUser.id !== user?.id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleImpersonate(adminUser.id)}
+                              className="flex items-center space-x-1"
+                            >
+                              <UserCheck className="h-4 w-4" />
+                              <span>Impersonate</span>
+                            </Button>
+                          )}
+                          
                           {user?.role === 'super_admin' && !adminUser.isSuperAdmin && (
                             <div className="flex space-x-2">
                               <Button

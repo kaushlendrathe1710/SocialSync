@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useAuthContext } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,8 @@ import {
   Plus,
   Monitor,
   HelpCircle,
-  Shield
+  Shield,
+  UserCheck
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import SearchDropdown from "./search-dropdown";
@@ -32,6 +34,7 @@ import SettingsModal from "./settings-modal";
 
 export default function Navigation() {
   const { user, logout } = useAuth();
+  const { impersonation, stopImpersonation } = useAuthContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
