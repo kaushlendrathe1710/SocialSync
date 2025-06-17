@@ -81,27 +81,21 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Impersonation Banner */}
+      {/* Impersonation Indicator */}
       {impersonation?.isImpersonating && (
-        <div className="bg-orange-500 text-white px-4 py-2 text-center fixed top-0 left-0 right-0 z-50">
-          <div className="flex items-center justify-center space-x-2">
+        <div className="fixed top-4 right-4 z-50">
+          <Button
+            onClick={handleStopImpersonation}
+            className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg flex items-center space-x-2"
+            size="sm"
+          >
             <UserCheck className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              Admin impersonating: {user?.name || user?.username}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleStopImpersonation}
-              className="bg-white text-orange-600 hover:bg-orange-50 ml-4"
-            >
-              Return to Admin
-            </Button>
-          </div>
+            <span>Exit Impersonation</span>
+          </Button>
         </div>
       )}
 
-      <nav className={`fixed left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-40 ${impersonation?.isImpersonating ? 'top-10' : 'top-0'}`}>
+      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-40">
           <div className="flex items-center justify-between h-14 px-4">
             {/* Left: Logo */}
         <div className="flex items-center space-x-4">
