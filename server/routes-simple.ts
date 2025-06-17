@@ -353,6 +353,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      console.log('Post creation - req.body:', req.body);
+      console.log('Post creation - req.file:', req.file);
+      
       let postData = {
         userId: req.session.userId,
         content: req.body.content || null,
@@ -360,6 +363,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         videoUrl: null as string | null,
         privacy: req.body.privacy || "public",
       };
+      
+      console.log('Post data before creation:', postData);
 
       // Handle file upload
       if (req.file) {
