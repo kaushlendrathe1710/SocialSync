@@ -50,7 +50,7 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
       body: JSON.stringify({ content }),
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts', postId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       setIsEditing(false);
     },
   });
@@ -58,7 +58,7 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
   const deleteMutation = useMutation({
     mutationFn: () => fetch(`/api/comments/${comment.id}`, { method: 'DELETE' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts', postId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
     },
   });
 
