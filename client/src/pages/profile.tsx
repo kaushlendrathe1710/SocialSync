@@ -301,7 +301,7 @@ export default function ProfilePage() {
         
         {/* Profile Info */}
         <div className="relative px-6 pb-6">
-          <div className="flex flex-col md:flex-row md:items-end md:space-x-4 -mt-16">
+          <div className="flex flex-col md:flex-row md:items-start md:space-x-6 -mt-16">
             {/* Profile Picture */}
             <div className="relative mb-4 md:mb-0 group">
               <Avatar className="w-32 h-32 border-4 border-white shadow-lg cursor-pointer transition-transform hover:scale-105">
@@ -371,9 +371,9 @@ export default function ProfilePage() {
             </div>
             
             {/* Profile Details */}
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <h1 className="text-3xl font-bold">{profileUser.name}</h1>
+            <div className="flex-1 mt-4 md:mt-0">
+              <div className="flex items-center space-x-2 mb-2">
+                <h1 className="text-2xl md:text-3xl font-bold">{profileUser.name}</h1>
                 {profileUser.isVerified && (
                   <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                     ✓ Verified
@@ -382,30 +382,31 @@ export default function ProfilePage() {
               </div>
               
               {profileUser.bio && (
-                <p className="text-muted-foreground mb-2">{profileUser.bio}</p>
+                <p className="text-muted-foreground mb-3">{profileUser.bio}</p>
               )}
               
-              <div className="flex items-center flex-wrap gap-6 mb-4">
+              <div className="flex items-center flex-wrap gap-4 mb-4">
                 <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
-                  <span className="font-bold text-lg text-gray-900">{posts?.length || 0}</span>
+                  <span className="font-bold text-base text-gray-900">{posts?.length || 0}</span>
                   <span className="text-gray-600">{posts?.length === 1 ? 'post' : 'posts'}</span>
                 </div>
                 <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
-                  <span className="font-bold text-lg text-gray-900">{followers?.length || 0}</span>
+                  <span className="font-bold text-base text-gray-900">{followers?.length || 0}</span>
                   <span className="text-gray-600">{followers?.length === 1 ? 'follower' : 'followers'}</span>
                 </div>
                 <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
-                  <span className="font-bold text-lg text-gray-900">{following?.length || 0}</span>
+                  <span className="font-bold text-base text-gray-900">{following?.length || 0}</span>
                   <span className="text-gray-600">following</span>
-                </div>
-                <div className="text-sm text-gray-500 flex items-center">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Joined {safeFormatDate(profileUser.createdAt)}
                 </div>
               </div>
               
+              <div className="text-sm text-gray-500 flex items-center mb-4">
+                <Calendar className="w-4 h-4 mr-1" />
+                Joined {safeFormatDate(profileUser.createdAt)}
+              </div>
+              
               {/* Action Buttons */}
-              <div className="flex space-x-3">
+              <div className="flex flex-wrap gap-3">
                 {isOwnProfile ? (
                   <>
                     <Button
