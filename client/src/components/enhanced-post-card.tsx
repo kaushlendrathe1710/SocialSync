@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, Share, MoreHorizontal, Edit3, Trash2, Reply } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDistanceToNow } from "date-fns";
 import type { PostWithUser, CommentWithUser } from "@shared/schema";
+import ShareDropdown from "@/components/share-dropdown";
 
 interface EnhancedPostCardProps {
   post: PostWithUser;
@@ -400,10 +401,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
               <span>{post.commentsCount || 0}</span>
             </Button>
 
-            <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-              <Share className="h-5 w-5" />
-              <span>Share</span>
-            </Button>
+            <ShareDropdown post={post} />
           </div>
         </div>
 
