@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { z } from "zod";
 import { 
@@ -49,6 +50,9 @@ const transporter = nodemailer.createTransport({
 });
 
 // Generate 6-digit OTP
+// Live stream viewer tracking
+const liveStreamViewers = new Map<number, Set<string>>(); // streamId -> Set of viewer socket IDs
+
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -1269,12 +1273,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Live stream not found or not authorized" });
       }
 
+      // Clean up viewers when stream ends
+      liveStreamViewers.delete(streamId);
+
       res.json({ message: "Live stream ended successfully" });
     } catch (error) {
       console.error("End live stream error:", error);
       res.status(500).json({ message: "Failed to end live stream" });
     }
   });
+
+  // Get viewer count for a live stream
+  app.get("/api/live-streams/:id/viewers", async (req: Request, res: Response) => {
+    try {
+      const streamId = parseInt(req.params.id);
+      const viewers = liveStreamViewers.get(streamId);
+      const viewerCount = viewers ? viewers.size : 0;
+      
+      res.json({ viewerCount });
+    } catch (error) {
+      console.error("Get viewer count error:", error);
+      res.status(500).json({ message: "Failed to get viewer count" });
+    }
+  });
+
+  // Set up WebSocket server for real-time viewer tracking
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  wss.on('connection', (ws: WebSocket, req) => {
+    let currentStreamId: number | null = null;
+    let socketId: string = Math.random().toString(36).substring(7);
+
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        
+        if (data.type === 'join_stream') {
+          const streamId = parseInt(data.streamId);
+          
+          // Leave previous stream if any
+          if (currentStreamId && liveStreamViewers.has(currentStreamId)) {
+            const viewers = liveStreamViewers.get(currentStreamId)!;
+            viewers.delete(socketId);
+            
+            // Broadcast updated viewer count to all viewers of previous stream
+            broadcastViewerCount(currentStreamId);
+          }
+          
+          // Join new stream
+          currentStreamId = streamId;
+          if (!liveStreamViewers.has(streamId)) {
+            liveStreamViewers.set(streamId, new Set());
+          }
+          liveStreamViewers.get(streamId)!.add(socketId);
+          
+          // Broadcast updated viewer count
+          broadcastViewerCount(streamId);
+        }
+        
+        if (data.type === 'leave_stream') {
+          if (currentStreamId && liveStreamViewers.has(currentStreamId)) {
+            const viewers = liveStreamViewers.get(currentStreamId)!;
+            viewers.delete(socketId);
+            broadcastViewerCount(currentStreamId);
+            currentStreamId = null;
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      // Remove viewer when connection closes
+      if (currentStreamId && liveStreamViewers.has(currentStreamId)) {
+        const viewers = liveStreamViewers.get(currentStreamId)!;
+        viewers.delete(socketId);
+        broadcastViewerCount(currentStreamId);
+      }
+    });
+  });
+
+  function broadcastViewerCount(streamId: number) {
+    const viewers = liveStreamViewers.get(streamId);
+    const viewerCount = viewers ? viewers.size : 0;
+    
+    // Broadcast to all connected clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'viewer_count_update',
+          streamId,
+          viewerCount
+        }));
+      }
+    });
+  }
 
   return httpServer;
 }

@@ -45,6 +45,8 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
   const [permissionError, setPermissionError] = useState('');
   const [recordingTime, setRecordingTime] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [currentStreamId, setCurrentStreamId] = useState<number | null>(null);
+  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
 
   // Initialize camera and microphone
   useEffect(() => {
@@ -65,6 +67,61 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
       videoRef.current.play().catch(console.error);
     }
   }, [stream, hasPermissions]);
+
+  // Set up WebSocket connection for real-time viewer tracking
+  useEffect(() => {
+    if (isOpen && !websocket) {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('WebSocket connected for viewer tracking');
+        setWebsocket(ws);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'viewer_count_update' && data.streamId === currentStreamId) {
+            setViewerCount(data.viewerCount);
+          }
+        } catch (error) {
+          console.error('WebSocket message error:', error);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        setWebsocket(null);
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    }
+
+    return () => {
+      if (websocket) {
+        websocket.close();
+        setWebsocket(null);
+      }
+    };
+  }, [isOpen]);
+
+  // Clean up WebSocket when component unmounts or modal closes
+  useEffect(() => {
+    if (!isOpen && websocket) {
+      if (currentStreamId && websocket.readyState === WebSocket.OPEN) {
+        websocket.send(JSON.stringify({
+          type: 'leave_stream',
+          streamId: currentStreamId
+        }));
+      }
+      websocket.close();
+      setWebsocket(null);
+    }
+  }, [isOpen]);
 
   const initializeMedia = async () => {
     try {
@@ -165,16 +222,30 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
   });
 
   const handleClose = () => {
+    // Stop all media tracks to properly release camera/microphone
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log(`Stopped ${track.kind} track:`, track.label);
+      });
       setStream(null);
     }
+    
+    // Clear video element source
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
+    // Reset all state
     setTitle('');
     setDescription('');
     setPrivacy('public');
     setIsVideoEnabled(true);
     setIsAudioEnabled(true);
     setIsLive(false);
+    setViewerCount(0);
+    setRecordingTime(0);
+    setStartTime(null);
     setHasPermissions(false);
     setPermissionError('');
     onClose();
