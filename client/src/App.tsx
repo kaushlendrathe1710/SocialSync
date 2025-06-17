@@ -37,9 +37,15 @@ function AppContent() {
     return <AuthPage />;
   }
 
-  // Check if user is admin and on admin route
+  // Check if user is admin and automatically redirect or show admin interface
   const isAdminUser = user.role === 'admin' || user.role === 'super_admin';
   const isAdminRoute = window.location.pathname.startsWith('/admin');
+
+  // Auto-redirect admin users to admin dashboard if they're on the main site
+  if (isAdminUser && !isAdminRoute && window.location.pathname === '/') {
+    window.location.href = '/admin';
+    return null;
+  }
 
   if (isAdminUser && isAdminRoute) {
     return (

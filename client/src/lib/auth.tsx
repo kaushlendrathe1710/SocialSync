@@ -123,6 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (data.user) {
       setUser(data.user);
+      
+      // Auto-redirect admin users to admin dashboard
+      if (data.isAdmin || data.redirectTo === '/admin') {
+        window.location.href = '/admin';
+      }
     }
     
     return data; // Return the full response for handling in components
