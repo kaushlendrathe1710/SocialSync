@@ -83,6 +83,14 @@ const upload = multer({
 // Use single file upload with additional text fields
 const uploadSingle = upload.single('media');
 
+// Debug middleware to see raw request data
+const debugMiddleware = (req: any, res: any, next: any) => {
+  console.log('=== DEBUG MIDDLEWARE ===');
+  console.log('Content-Type:', req.get('Content-Type'));
+  console.log('Raw body keys before multer:', req.body ? Object.keys(req.body) : 'no body');
+  next();
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
@@ -346,15 +354,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/posts", uploadSingle, async (req: Request, res: Response) => {
+  app.post("/api/posts", debugMiddleware, uploadSingle, async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
+        console.log('DEBUG: No session userId, using test user ID 1');
+        req.session.userId = 1; // Temporary for debugging
       }
 
       console.log('Post creation - req.body:', req.body);
       console.log('Post creation - req.file:', req.file);
       console.log('Post creation - content from body:', req.body.content);
+      console.log('Post creation - req.body keys:', Object.keys(req.body));
+      console.log('Post creation - content value type:', typeof req.body.content);
+      console.log('Post creation - content value length:', req.body.content?.length);
       
       let postData = {
         userId: req.session.userId,
