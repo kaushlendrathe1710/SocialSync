@@ -40,6 +40,7 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
     mutationFn: () => fetch(`/api/comments/${comment.id}/like`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
   });
 
@@ -51,6 +52,7 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
       setIsEditing(false);
     },
   });
@@ -59,6 +61,7 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
     mutationFn: () => fetch(`/api/comments/${comment.id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
   });
 
@@ -231,6 +234,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}/comments`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
       setNewComment("");
       setReplyToComment(null);
     },
