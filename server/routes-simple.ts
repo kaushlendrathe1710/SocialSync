@@ -1161,6 +1161,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/posts/bulk-delete", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const adminUser = await storage.getUser(req.session.userId);
+      if (!adminUser || !adminUser.canDelete) {
+        return res.status(403).json({ message: "Delete permission required" });
+      }
+
+      const { postIds } = req.body;
+      if (!Array.isArray(postIds) || postIds.length === 0) {
+        return res.status(400).json({ message: "Post IDs array is required" });
+      }
+
+      let deletedCount = 0;
+      for (const postId of postIds) {
+        const success = await storage.deletePost(parseInt(postId));
+        if (success) {
+          deletedCount++;
+        }
+      }
+
+      res.json({ 
+        message: `${deletedCount} posts deleted successfully`,
+        deletedCount,
+        totalRequested: postIds.length
+      });
+    } catch (error) {
+      console.error("Admin bulk delete posts error:", error);
+      res.status(500).json({ message: "Failed to delete posts" });
+    }
+  });
+
   // Impersonation endpoints
   app.post("/api/admin/impersonate/:userId", async (req: Request, res: Response) => {
     if (!req.session.userId) {

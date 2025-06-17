@@ -22,7 +22,9 @@ import {
   UserCheck,
   UserX,
   AlertTriangle,
-  Home
+  Home,
+  CheckSquare,
+  Square
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthContext } from "@/lib/auth";
@@ -69,6 +71,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [userSearch, setUserSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedPosts, setSelectedPosts] = useState<number[]>([]);
 
   const { data: stats } = useQuery({
     queryKey: ['/api/admin/stats'],
@@ -167,6 +170,36 @@ export default function AdminDashboard() {
     },
   });
 
+  const bulkDeletePostsMutation = useMutation({
+    mutationFn: async (postIds: number[]) => {
+      const response = await fetch('/api/admin/posts/bulk-delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postIds }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/posts'] });
+      setSelectedPosts([]);
+      toast({
+        title: "Posts deleted",
+        description: "Selected posts have been removed successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Bulk delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteUser = (userId: number) => {
     if (confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       deleteUserMutation.mutate(userId);
@@ -181,6 +214,38 @@ export default function AdminDashboard() {
 
   const handleUpdateUserRole = (userId: number, newRole: string, canDelete: boolean) => {
     updateRoleMutation.mutate({ userId, role: newRole, canDelete });
+  };
+
+  const handleBulkDeletePosts = () => {
+    if (selectedPosts.length === 0) {
+      toast({
+        title: "No posts selected",
+        description: "Please select posts to delete",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (confirm(`Are you sure you want to delete ${selectedPosts.length} posts? This action cannot be undone.`)) {
+      bulkDeletePostsMutation.mutate(selectedPosts);
+    }
+  };
+
+  const handleSelectPost = (postId: number) => {
+    setSelectedPosts(prev => 
+      prev.includes(postId) 
+        ? prev.filter(id => id !== postId)
+        : [...prev, postId]
+    );
+  };
+
+  const handleSelectAllPosts = () => {
+    if (!posts || !Array.isArray(posts)) return;
+    
+    const allPostIds = posts.map((post: AdminPost) => post.id);
+    setSelectedPosts(prev => 
+      prev.length === allPostIds.length ? [] : allPostIds
+    );
   };
 
   const handleImpersonate = async (userId: number) => {
@@ -523,12 +588,63 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Post Management</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Post Management</CardTitle>
+                    <div className="flex items-center space-x-3">
+                      {selectedPosts.length > 0 && (
+                        <Badge variant="secondary" className="px-3 py-1">
+                          {selectedPosts.length} selected
+                        </Badge>
+                      )}
+                      {selectedPosts.length > 0 && user?.canDelete && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={handleBulkDeletePosts}
+                          disabled={bulkDeletePostsMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Selected
+                        </Button>
+                      )}
+                      {posts && Array.isArray(posts) && posts.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleSelectAllPosts}
+                        >
+                          {selectedPosts.length === posts.length ? (
+                            <>
+                              <Square className="h-4 w-4 mr-2" />
+                              Deselect All
+                            </>
+                          ) : (
+                            <>
+                              <CheckSquare className="h-4 w-4 mr-2" />
+                              Select All
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {posts && Array.isArray(posts) && posts.map((post: AdminPost) => (
-                      <div key={post.id} className="flex items-start justify-between p-4 border rounded-lg">
+                      <div key={post.id} className="flex items-start space-x-3 p-4 border rounded-lg">
+                        <div className="flex items-center pt-1">
+                          <button
+                            onClick={() => handleSelectPost(post.id)}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            {selectedPosts.includes(post.id) ? (
+                              <CheckSquare className="h-5 w-5 text-blue-600" />
+                            ) : (
+                              <Square className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <Avatar className="h-6 w-6">
