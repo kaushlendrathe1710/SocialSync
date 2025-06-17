@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,10 @@ import {
   Pause,
   Volume2,
   VolumeX,
-  Maximize
+  Maximize,
+  Square,
+  RotateCcw,
+  FlipHorizontal
 } from 'lucide-react';
 
 interface PhotoVideoModalProps {
@@ -32,6 +35,9 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState('public');
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
@@ -39,6 +45,13 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
   const [activeTab, setActiveTab] = useState('upload');
   const [isPlaying, setIsPlaying] = useState<boolean[]>([]);
   const [isMuted, setIsMuted] = useState<boolean[]>([]);
+  
+  // Camera states
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const createPostMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -70,8 +83,163 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
     setActiveTab('upload');
     setIsPlaying([]);
     setIsMuted([]);
+    stopCamera();
     onClose();
   };
+
+  // Camera functionality
+  const startCamera = async () => {
+    try {
+      const constraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: true
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(mediaStream);
+      setIsCameraActive(true);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play();
+      }
+
+      toast({
+        title: "Camera activated",
+        description: "Camera is ready for photo and video capture",
+      });
+    } catch (error) {
+      console.error('Camera access error:', error);
+      toast({
+        title: "Camera access denied",
+        description: "Please allow camera permissions to use this feature",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+      setIsCameraActive(false);
+      setIsRecording(false);
+    }
+  };
+
+  const flipCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    if (isCameraActive) {
+      stopCamera();
+      setTimeout(startCamera, 100);
+    }
+  };
+
+  const takePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (!context) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        const preview = URL.createObjectURL(blob);
+        
+        setMediaFiles(prev => [...prev, file]);
+        setMediaPreviews(prev => [...prev, preview]);
+        setIsPlaying(prev => [...prev, false]);
+        setIsMuted(prev => [...prev, false]);
+
+        toast({
+          title: "Photo captured!",
+          description: "Photo has been added to your post",
+        });
+      }
+    }, 'image/jpeg', 0.8);
+  };
+
+  const startVideoRecording = () => {
+    if (!stream) return;
+
+    try {
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9'
+      });
+
+      mediaRecorderRef.current = mediaRecorder;
+      setRecordedChunks([]);
+      setIsRecording(true);
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setRecordedChunks(prev => [...prev, event.data]);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const file = new File([blob], `video-${Date.now()}.webm`, { type: 'video/webm' });
+        const preview = URL.createObjectURL(blob);
+        
+        setMediaFiles(prev => [...prev, file]);
+        setMediaPreviews(prev => [...prev, preview]);
+        setIsPlaying(prev => [...prev, false]);
+        setIsMuted(prev => [...prev, true]);
+        setIsRecording(false);
+
+        toast({
+          title: "Video recorded!",
+          description: "Video has been added to your post",
+        });
+      };
+
+      mediaRecorder.start(1000);
+
+      toast({
+        title: "Recording started",
+        description: "Tap the stop button when finished",
+      });
+    } catch (error) {
+      console.error('Recording error:', error);
+      toast({
+        title: "Recording failed",
+        description: "Unable to start video recording",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  // Auto-start camera when switching to camera tab
+  useEffect(() => {
+    if (activeTab === 'camera' && !isCameraActive) {
+      startCamera();
+    }
+  }, [activeTab]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -148,12 +316,7 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
     createPostMutation.mutate(formData);
   };
 
-  const handleCameraCapture = () => {
-    toast({
-      title: "Camera feature",
-      description: "Camera capture would be implemented with getUserMedia API",
-    });
-  };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -314,21 +477,87 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
             </TabsContent>
 
             <TabsContent value="camera" className="space-y-4">
-              <div className="bg-black rounded-lg aspect-video flex items-center justify-center">
-                <div className="text-white text-center">
-                  <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">Camera Preview</p>
-                  <p className="text-sm opacity-75">Camera access would be implemented here</p>
-                </div>
+              <div className="relative bg-black rounded-lg aspect-video overflow-hidden">
+                {isCameraActive ? (
+                  <>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                    <canvas ref={canvasRef} className="hidden" />
+                    
+                    {/* Camera controls overlay */}
+                    <div className="absolute top-4 right-4 flex space-x-2">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={flipCamera}
+                        className="bg-black/50 hover:bg-black/70 text-white"
+                      >
+                        <FlipHorizontal className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={stopCamera}
+                        className="bg-black/50 hover:bg-black/70 text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    
+                    {isRecording && (
+                      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                          <span>Recording</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white">
+                    <div className="text-center">
+                      <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg mb-2">Camera Preview</p>
+                      <p className="text-sm opacity-75 mb-4">Camera access would be implemented here</p>
+                      <Button onClick={startCamera} variant="secondary">
+                        <Camera className="w-4 h-4 mr-2" />
+                        Start Camera
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
+              
               <div className="flex justify-center space-x-4">
-                <Button onClick={handleCameraCapture} className="bg-blue-500 hover:bg-blue-600">
+                <Button 
+                  onClick={takePhoto} 
+                  disabled={!isCameraActive}
+                  className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50"
+                >
                   <Camera className="w-4 h-4 mr-2" />
                   Take Photo
                 </Button>
-                <Button onClick={handleCameraCapture} className="bg-red-500 hover:bg-red-600">
-                  <Video className="w-4 h-4 mr-2" />
-                  Record Video
+                <Button 
+                  onClick={isRecording ? stopVideoRecording : startVideoRecording}
+                  disabled={!isCameraActive}
+                  className={`${isRecording ? 'bg-gray-500 hover:bg-gray-600' : 'bg-red-500 hover:bg-red-600'} disabled:opacity-50`}
+                >
+                  {isRecording ? (
+                    <>
+                      <Square className="w-4 h-4 mr-2" />
+                      Stop Recording
+                    </>
+                  ) : (
+                    <>
+                      <Video className="w-4 h-4 mr-2" />
+                      Record Video
+                    </>
+                  )}
                 </Button>
               </div>
             </TabsContent>
