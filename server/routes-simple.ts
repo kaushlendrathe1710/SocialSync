@@ -358,6 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Post creation - req.body:', req.body);
       console.log('Post creation - req.files:', req.files);
+      console.log('Post creation - content from body:', req.body.content);
       
       let postData = {
         userId: req.session.userId,
