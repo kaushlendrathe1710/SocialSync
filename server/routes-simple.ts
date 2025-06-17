@@ -18,6 +18,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import express from "express";
+import { uploadToS3, deleteFromS3, validateS3Config } from "./aws-s3";
 
 // Extend session data interface
 declare module 'express-session' {
@@ -52,31 +53,29 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists (fallback for local storage)
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure multer for file uploads
-const storage_multer = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Configure multer for memory storage (for S3 uploads)
 const upload = multer({ 
-  storage: storage_multer,
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 10 * 1024 * 1024 // 10MB limit for cloud storage
   },
   fileFilter: (req, file, cb) => {
-    // Allow all files for now, we'll check content properly
-    cb(null, true);
+    // Accept images and videos
+    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|mov|avi|mkv/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image and video files are allowed'));
+    }
   }
 });
 
