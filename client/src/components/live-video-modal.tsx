@@ -229,42 +229,88 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
           </div>
 
           {/* Live Video Preview */}
-          <div className="relative bg-black rounded-lg aspect-video flex items-center justify-center">
-            {isPreviewMode ? (
-              <div className="text-white text-center">
-                <Video className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">Camera preview will appear here</p>
-                <p className="text-sm opacity-75">Click "Start Live Video" to begin</p>
+          <div className="relative bg-black rounded-lg aspect-video overflow-hidden">
+            {isSettingUp ? (
+              <div className="flex items-center justify-center h-full text-white">
+                <div className="text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p>Setting up camera...</p>
+                </div>
               </div>
+            ) : permissionError ? (
+              <div className="flex items-center justify-center h-full text-white">
+                <div className="text-center">
+                  <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
+                  <p className="text-lg mb-2">Camera Access Required</p>
+                  <p className="text-sm opacity-75 mb-4">{permissionError}</p>
+                  <Button onClick={initializeMedia} variant="secondary" size="sm">
+                    Retry Camera Access
+                  </Button>
+                </div>
+              </div>
+            ) : hasPermissions ? (
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                {isLive && (
+                  <div className="absolute top-4 left-4 flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 bg-red-500 px-3 py-1 rounded-full">
+                      <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                      <span className="text-white text-sm font-medium">LIVE</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-black/50 text-white">
+                      <Eye className="w-3 h-3 mr-1" />
+                      {viewerCount}
+                    </Badge>
+                  </div>
+                )}
+              </>
             ) : (
-              <div className="text-white text-center">
-                <div className="animate-pulse">
-                  <div className="w-4 h-4 bg-red-500 rounded-full mx-auto mb-2"></div>
-                  <p>LIVE</p>
+              <div className="flex items-center justify-center h-full text-white">
+                <div className="text-center">
+                  <Video className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg">Camera preview will appear here</p>
+                  <p className="text-sm opacity-75">Allow camera access to continue</p>
                 </div>
               </div>
             )}
             
             {/* Control buttons overlay */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-4">
-              <Button
-                variant={isVideoEnabled ? "secondary" : "destructive"}
-                size="icon"
-                onClick={() => setIsVideoEnabled(!isVideoEnabled)}
-              >
-                {isVideoEnabled ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-              </Button>
-              <Button
-                variant={isAudioEnabled ? "secondary" : "destructive"}
-                size="icon"
-                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
-              >
-                {isAudioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-              </Button>
-              <Button variant="secondary" size="icon">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </div>
+            {hasPermissions && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-3">
+                <Button
+                  variant={isVideoEnabled ? "secondary" : "destructive"}
+                  size="icon"
+                  onClick={toggleVideo}
+                  className="bg-black/50 hover:bg-black/70"
+                >
+                  {isVideoEnabled ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                </Button>
+                <Button
+                  variant={isAudioEnabled ? "secondary" : "destructive"}
+                  size="icon"
+                  onClick={toggleAudio}
+                  className="bg-black/50 hover:bg-black/70"
+                >
+                  {isAudioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                </Button>
+                {isLive && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={handleStopLive}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <StopCircle className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Live Video Details */}
@@ -308,13 +354,29 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
             <Button onClick={handleClose} variant="outline" className="flex-1">
               Cancel
             </Button>
-            <Button 
-              onClick={handleStartLive}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-            >
-              <Video className="w-4 h-4 mr-2" />
-              Start Live Video
-            </Button>
+            {isLive ? (
+              <Button 
+                onClick={handleStopLive}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                disabled={createLiveStreamMutation.isPending}
+              >
+                <StopCircle className="w-4 h-4 mr-2" />
+                End Live Stream
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleStartLive}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                disabled={!hasPermissions || createLiveStreamMutation.isPending}
+              >
+                {createLiveStreamMutation.isPending ? (
+                  <div className="w-4 h-4 mr-2 animate-spin border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                  <Radio className="w-4 h-4 mr-2" />
+                )}
+                Go Live
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
