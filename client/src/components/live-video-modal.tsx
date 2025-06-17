@@ -55,30 +55,60 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
     };
   }, [isOpen]);
 
+  // Ensure video stream is properly connected when stream changes
+  useEffect(() => {
+    if (stream && videoRef.current && hasPermissions) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(console.error);
+    }
+  }, [stream, hasPermissions]);
+
   const initializeMedia = async () => {
     try {
       setIsSettingUp(true);
       setPermissionError('');
       
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          width: { ideal: 1280 }, 
-          height: { ideal: 720 },
-          facingMode: 'user'
+      const constraints = {
+        video: {
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 },
+          facingMode: 'user',
+          frameRate: { ideal: 30 }
         },
-        audio: true
-      });
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      };
+
+      console.log('Requesting media with constraints:', constraints);
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Media stream obtained:', mediaStream);
+      console.log('Video tracks:', mediaStream.getVideoTracks());
+      console.log('Audio tracks:', mediaStream.getAudioTracks());
       
       setStream(mediaStream);
       setHasPermissions(true);
       
+      // Ensure video element is ready and stream is connected
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
+        videoRef.current.onloadedmetadata = async () => {
+          console.log('Video metadata loaded');
+          try {
+            await videoRef.current?.play();
+            console.log('Video playing');
+          } catch (playError) {
+            console.error('Error playing video:', playError);
+          }
+        };
+        videoRef.current.onerror = (error) => {
+          console.error('Video element error:', error);
         };
       }
     } catch (error) {
+      console.error('Media initialization error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setPermissionError(`Camera/microphone access denied: ${errorMessage}`);
       toast({
@@ -263,7 +293,15 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
                   muted
                   playsInline
                   className="w-full h-full object-cover transform scale-x-[-1]"
-                  style={{ filter: 'brightness(1.1) contrast(1.1)' }}
+                  style={{ 
+                    filter: 'brightness(1.1) contrast(1.1)',
+                    backgroundColor: '#000',
+                    minHeight: '100%',
+                    minWidth: '100%'
+                  }}
+                  onCanPlay={() => console.log('Video can play')}
+                  onPlay={() => console.log('Video started playing')}
+                  onLoadStart={() => console.log('Video load started')}
                 />
                 {isLive && (
                   <div className="absolute top-4 left-4 flex items-center space-x-2">
