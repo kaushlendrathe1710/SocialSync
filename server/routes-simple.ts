@@ -347,23 +347,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/posts", async (req: Request, res: Response) => {
+  app.post("/api/posts", upload.single('media'), async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const { content, imageUrl, videoUrl, privacy } = req.body;
-      
-      const post = await storage.createPost({
+      let postData = {
         userId: req.session.userId,
-        content: content || null,
-        imageUrl: imageUrl || null,
-        videoUrl: videoUrl || null,
-        privacy: privacy || "public",
-      });
-      
+        content: req.body.content || null,
+        imageUrl: null as string | null,
+        videoUrl: null as string | null,
+        privacy: req.body.privacy || "public",
+      };
+
+      // Handle file upload
+      if (req.file) {
+        const fileExtension = path.extname(req.file.originalname);
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`;
+        const filePath = path.join("uploads", fileName);
+        
+        // Move file to permanent location
+        fs.renameSync(req.file.path, filePath);
+        
+        // Determine if it's an image or video
+        const isVideo = /\.(mp4|mov|avi)$/i.test(fileExtension);
+        if (isVideo) {
+          postData.videoUrl = `/uploads/${fileName}`;
+        } else {
+          postData.imageUrl = `/uploads/${fileName}`;
+        }
+      }
+
+      const post = await storage.createPost(postData);
       const postWithUser = await storage.getPost(post.id);
+      
       res.json(postWithUser);
     } catch (error) {
       console.error("Create post error:", error);
