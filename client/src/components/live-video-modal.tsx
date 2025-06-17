@@ -16,6 +16,7 @@ import {
   Settings,
   Users,
   Eye,
+  Clock,
   StopCircle,
   Radio,
   AlertCircle
@@ -42,6 +43,8 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
   const [viewerCount, setViewerCount] = useState(0);
   const [hasPermissions, setHasPermissions] = useState(false);
   const [permissionError, setPermissionError] = useState('');
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [startTime, setStartTime] = useState<Date | null>(null);
 
   // Initialize camera and microphone
   useEffect(() => {
@@ -197,6 +200,7 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
     }
 
     setIsLive(true);
+    setStartTime(new Date());
     setViewerCount(Math.floor(Math.random() * 50) + 1); // Simulated viewer count
     
     // Create the live stream record
@@ -207,9 +211,32 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
     });
   };
 
+  // Track recording time
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLive && startTime) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+        setRecordingTime(elapsed);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isLive, startTime]);
+
+  const formatRecordingTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   const handleStopLive = () => {
     setIsLive(false);
     setViewerCount(0);
+    setRecordingTime(0);
+    setStartTime(null);
     toast({
       title: "Live stream ended",
       description: "Your live video has been saved to your profile",
@@ -312,6 +339,10 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
                     <Badge variant="secondary" className="bg-black/50 text-white">
                       <Eye className="w-3 h-3 mr-1" />
                       {viewerCount}
+                    </Badge>
+                    <Badge variant="secondary" className="bg-black/50 text-white">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {formatRecordingTime(recordingTime)}
                     </Badge>
                   </div>
                 )}
