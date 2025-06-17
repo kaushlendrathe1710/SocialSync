@@ -25,6 +25,8 @@ declare module 'express-session' {
     userId?: number;
     verifiedEmail?: string;
     otpId?: number;
+    originalUserId?: number;
+    isImpersonating?: boolean;
   }
 }
 
@@ -280,7 +282,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ user: null });
       }
 
-      res.json({ user });
+      // Include impersonation information
+      const response: any = { user };
+      
+      if (req.session.isImpersonating && req.session.originalUserId) {
+        const originalAdmin = await storage.getUser(req.session.originalUserId);
+        response.impersonation = {
+          isImpersonating: true,
+          originalAdmin: originalAdmin
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       console.error("Auth check error:", error);
       res.status(500).json({ message: "Failed to check authentication" });
@@ -1055,6 +1068,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin delete post error:", error);
       res.status(500).json({ message: "Failed to delete post" });
+    }
+  });
+
+  // Impersonation endpoints
+  app.post("/api/admin/impersonate/:userId", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const adminUser = await storage.getUser(req.session.userId);
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'super_admin')) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    try {
+      const targetUserId = parseInt(req.params.userId);
+      const targetUser = await storage.getUser(targetUserId);
+      
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Store the original admin user ID for later restoration
+      req.session.originalUserId = req.session.userId;
+      req.session.userId = targetUserId;
+      req.session.isImpersonating = true;
+
+      res.json({ 
+        message: "Impersonation started", 
+        user: targetUser,
+        originalAdmin: adminUser 
+      });
+    } catch (error: any) {
+      console.error("Impersonation error:", error);
+      res.status(500).json({ error: "Failed to start impersonation" });
+    }
+  });
+
+  app.post("/api/admin/stop-impersonation", async (req: Request, res: Response) => {
+    if (!req.session.originalUserId || !req.session.isImpersonating) {
+      return res.status(400).json({ error: "Not currently impersonating" });
+    }
+
+    try {
+      const originalUserId = req.session.originalUserId;
+      const originalUser = await storage.getUser(originalUserId);
+      
+      if (!originalUser) {
+        return res.status(404).json({ error: "Original admin user not found" });
+      }
+
+      // Restore the original admin session
+      req.session.userId = originalUserId;
+      delete req.session.originalUserId;
+      delete req.session.isImpersonating;
+
+      res.json({ 
+        message: "Impersonation stopped", 
+        user: originalUser 
+      });
+    } catch (error: any) {
+      console.error("Stop impersonation error:", error);
+      res.status(500).json({ error: "Failed to stop impersonation" });
     }
   });
 

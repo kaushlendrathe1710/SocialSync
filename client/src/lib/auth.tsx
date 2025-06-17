@@ -76,12 +76,20 @@ export function getUserFullName(user: User | null): string {
   return user.name || user.username || 'Unknown User';
 }
 
+interface ImpersonationInfo {
+  isImpersonating: boolean;
+  originalAdmin: User;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  impersonation: ImpersonationInfo | null;
   login: (email: string, code: string, name?: string, username?: string, verificationToken?: string | null) => Promise<any>;
   logout: () => Promise<void>;
   sendOTP: (email: string) => Promise<void>;
+  startImpersonation: (userId: number) => Promise<void>;
+  stopImpersonation: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,6 +97,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [impersonation, setImpersonation] = useState<ImpersonationInfo | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -99,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiRequest('GET', '/api/auth/me');
       const data = await response.json();
       setUser(data.user);
+      setImpersonation(data.impersonation || null);
     } catch (error) {
       // Not authenticated
       console.log('Not authenticated');
