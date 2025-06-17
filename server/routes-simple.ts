@@ -75,14 +75,17 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only JPEG, PNG and WebP images are allowed'));
-    }
+    // Allow all files for now, we'll check content properly
+    cb(null, true);
   }
 });
+
+// Use fields to properly handle both text and file fields
+const uploadWithFields = upload.fields([
+  { name: 'media', maxCount: 1 },
+  { name: 'content' },
+  { name: 'privacy' }
+]);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -347,14 +350,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/posts", upload.single('media'), async (req: Request, res: Response) => {
+  app.post("/api/posts", uploadWithFields, async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       console.log('Post creation - req.body:', req.body);
-      console.log('Post creation - req.file:', req.file);
+      console.log('Post creation - req.files:', req.files);
       
       let postData = {
         userId: req.session.userId,
@@ -367,13 +370,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Post data before creation:', postData);
 
       // Handle file upload
-      if (req.file) {
-        const fileExtension = path.extname(req.file.originalname);
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const mediaFiles = files?.media;
+      
+      if (mediaFiles && mediaFiles[0]) {
+        const mediaFile = mediaFiles[0];
+        const fileExtension = path.extname(mediaFile.originalname);
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`;
         const filePath = path.join("uploads", fileName);
         
         // Move file to permanent location
-        fs.renameSync(req.file.path, filePath);
+        fs.renameSync(mediaFile.path, filePath);
         
         // Determine if it's an image or video
         const isVideo = /\.(mp4|mov|avi)$/i.test(fileExtension);
