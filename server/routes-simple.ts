@@ -200,32 +200,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getUserByEmail(email);
       
       if (!user) {
-        // New user flow - initial verification
-        // Generate a temporary verification token for completing registration
-        const verificationToken = Math.random().toString(36).substring(2, 15);
+        // Check if this is the super admin email
+        const isAdminEmail = email === 'kaushlendra.k12@fms.edu';
         
-        // Store verification token temporarily
-        if (!global.verificationTokens) {
-          global.verificationTokens = new Map();
+        if (isAdminEmail) {
+          // Create admin user directly without needing details
+          const adminUser = await storage.createUser({
+            email,
+            name: 'Super Admin',
+            username: 'superadmin',
+            role: 'super_admin',
+            isSuperAdmin: true,
+            canDelete: true,
+            isVerified: true,
+          });
+          
+          await storage.markOtpCodeUsed(validOtp.id);
+          req.session.userId = adminUser.id;
+          
+          return res.json({ 
+            user: adminUser, 
+            isNewUser: false,
+            isAdmin: true,
+            redirectTo: '/admin'
+          });
+        } else {
+          // New user flow - initial verification
+          // Generate a temporary verification token for completing registration
+          const verificationToken = Math.random().toString(36).substring(2, 15);
+          
+          // Store verification token temporarily
+          if (!global.verificationTokens) {
+            global.verificationTokens = new Map();
+          }
+          global.verificationTokens.set(verificationToken, { 
+            email, 
+            verified: true,
+            expires: Date.now() + 5 * 60 * 1000 // 5 minutes
+          });
+          
+          await storage.markOtpCodeUsed(validOtp.id);
+          
+          return res.json({ 
+            isNewUser: true, 
+            needsDetails: true,
+            verificationToken
+          });
         }
-        global.verificationTokens.set(verificationToken, { 
-          email, 
-          verified: true,
-          expires: Date.now() + 5 * 60 * 1000 // 5 minutes
-        });
-        
-        await storage.markOtpCodeUsed(validOtp.id);
-        
-        return res.json({ 
-          isNewUser: true, 
-          needsDetails: true,
-          verificationToken
-        });
       } else {
         // Returning user - mark OTP as used and login
         await storage.markOtpCodeUsed(validOtp.id);
         req.session.userId = user.id;
-        return res.json({ user, isNewUser: false });
+        
+        const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+        
+        return res.json({ 
+          user, 
+          isNewUser: false,
+          isAdmin,
+          redirectTo: isAdmin ? '/admin' : '/feed'
+        });
       }
     } catch (error) {
       console.error("Verify OTP error:", error);

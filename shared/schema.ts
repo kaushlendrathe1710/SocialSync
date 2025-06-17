@@ -14,6 +14,9 @@ export const users = pgTable("users", {
   location: text("location"),
   website: text("website"),
   isVerified: boolean("is_verified").default(false),
+  role: text("role").default("user"), // user, admin, super_admin
+  isSuperAdmin: boolean("is_super_admin").default(false),
+  canDelete: boolean("can_delete").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
