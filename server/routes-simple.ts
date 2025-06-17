@@ -80,12 +80,8 @@ const upload = multer({
   }
 });
 
-// Use fields to properly handle both text and file fields
-const uploadWithFields = upload.fields([
-  { name: 'media', maxCount: 1 },
-  { name: 'content' },
-  { name: 'privacy' }
-]);
+// Use single file upload with additional text fields
+const uploadSingle = upload.single('media');
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -350,14 +346,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/posts", uploadWithFields, async (req: Request, res: Response) => {
+  app.post("/api/posts", uploadSingle, async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       console.log('Post creation - req.body:', req.body);
-      console.log('Post creation - req.files:', req.files);
+      console.log('Post creation - req.file:', req.file);
       console.log('Post creation - content from body:', req.body.content);
       
       let postData = {
@@ -371,17 +367,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Post data before creation:', postData);
 
       // Handle file upload
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      const mediaFiles = files?.media;
-      
-      if (mediaFiles && mediaFiles[0]) {
-        const mediaFile = mediaFiles[0];
-        const fileExtension = path.extname(mediaFile.originalname);
+      if (req.file) {
+        const fileExtension = path.extname(req.file.originalname);
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`;
         const filePath = path.join("uploads", fileName);
         
         // Move file to permanent location
-        fs.renameSync(mediaFile.path, filePath);
+        fs.renameSync(req.file.path, filePath);
         
         // Determine if it's an image or video
         const isVideo = /\.(mp4|mov|avi)$/i.test(fileExtension);
