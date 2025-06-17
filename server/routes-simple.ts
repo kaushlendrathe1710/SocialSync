@@ -887,5 +887,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoints
+  app.get("/api/admin/stats", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Get platform statistics
+      const totalUsers = await storage.getTotalUsers();
+      const totalPosts = await storage.getTotalPosts();
+      const totalComments = await storage.getTotalComments();
+      const activeUsersToday = await storage.getActiveUsersToday();
+
+      res.json({
+        totalUsers,
+        totalPosts,
+        totalComments,
+        activeUsersToday
+      });
+    } catch (error) {
+      console.error("Admin stats error:", error);
+      res.status(500).json({ message: "Failed to get admin stats" });
+    }
+  });
+
+  app.get("/api/admin/users", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string;
+
+      const users = await storage.getAllUsersAdmin(page, limit, search);
+      res.json(users);
+    } catch (error) {
+      console.error("Admin users error:", error);
+      res.status(500).json({ message: "Failed to get users" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const adminUser = await storage.getUser(req.session.userId);
+      if (!adminUser || !adminUser.canDelete) {
+        return res.status(403).json({ message: "Delete permission required" });
+      }
+
+      const targetUserId = parseInt(req.params.id);
+      const targetUser = await storage.getUser(targetUserId);
+
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Super admins cannot be deleted
+      if (targetUser.isSuperAdmin) {
+        return res.status(403).json({ message: "Super admin cannot be deleted" });
+      }
+
+      const success = await storage.deleteUserAdmin(targetUserId);
+      if (success) {
+        res.json({ message: "User deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete user" });
+      }
+    } catch (error) {
+      console.error("Admin delete user error:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  app.put("/api/admin/users/:id/role", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const adminUser = await storage.getUser(req.session.userId);
+      if (!adminUser || adminUser.role !== 'super_admin') {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+
+      const targetUserId = parseInt(req.params.id);
+      const { role, canDelete } = req.body;
+
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Cannot modify super admin role
+      if (targetUser.isSuperAdmin) {
+        return res.status(403).json({ message: "Cannot modify super admin" });
+      }
+
+      const updatedUser = await storage.updateUser(targetUserId, {
+        role,
+        canDelete: canDelete || false
+      });
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Admin update role error:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  app.get("/api/admin/posts", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      const posts = await storage.getAllPostsAdmin(page, limit);
+      res.json(posts);
+    } catch (error) {
+      console.error("Admin posts error:", error);
+      res.status(500).json({ message: "Failed to get posts" });
+    }
+  });
+
+  app.delete("/api/admin/posts/:id", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const adminUser = await storage.getUser(req.session.userId);
+      if (!adminUser || !adminUser.canDelete) {
+        return res.status(403).json({ message: "Delete permission required" });
+      }
+
+      const postId = parseInt(req.params.id);
+      const success = await storage.deletePost(postId);
+
+      if (success) {
+        res.json({ message: "Post deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Post not found" });
+      }
+    } catch (error) {
+      console.error("Admin delete post error:", error);
+      res.status(500).json({ message: "Failed to delete post" });
+    }
+  });
+
   return httpServer;
 }

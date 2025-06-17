@@ -14,6 +14,7 @@ import NotificationsPage from "@/pages/notifications";
 import FriendsPage from "@/pages/friends";
 import SavedPage from "@/pages/saved";
 import SettingsPage from "@/pages/settings";
+import AdminDashboard from "@/pages/admin";
 import Navigation from "@/components/navigation";
 import Sidebar from "@/components/sidebar";
 import NotFound from "@/pages/not-found";
@@ -52,6 +53,7 @@ function AppContent() {
             <Route path="/friends" component={FriendsPage} />
             <Route path="/saved" component={SavedPage} />
             <Route path="/settings" component={SettingsPage} />
+            <Route path="/admin" component={AdminDashboard} />
             <Route component={NotFound} />
           </Switch>
         </main>

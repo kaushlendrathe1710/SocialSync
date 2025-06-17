@@ -100,6 +100,15 @@ export interface IStorage {
   // Search methods
   searchUsers(query: string): Promise<User[]>;
   searchPosts(query: string): Promise<PostWithUser[]>;
+
+  // Admin methods
+  getTotalUsers(): Promise<number>;
+  getTotalPosts(): Promise<number>;
+  getTotalComments(): Promise<number>;
+  getActiveUsersToday(): Promise<number>;
+  getAllUsersAdmin(page: number, limit: number, search?: string): Promise<User[]>;
+  getAllPostsAdmin(page: number, limit: number): Promise<PostWithUser[]>;
+  deleteUserAdmin(userId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -547,6 +556,96 @@ export class DatabaseStorage implements IStorage {
       .limit(20);
 
     return result.map(({ post, user }) => ({ ...post, user }));
+  }
+
+  // Admin methods
+  async getTotalUsers(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(users);
+    return result[0].count;
+  }
+
+  async getTotalPosts(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(posts);
+    return result[0].count;
+  }
+
+  async getTotalComments(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(comments);
+    return result[0].count;
+  }
+
+  async getActiveUsersToday(): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const result = await db
+      .select({ count: sql<number>`count(distinct ${users.id})` })
+      .from(users)
+      .leftJoin(posts, eq(posts.userId, users.id))
+      .leftJoin(comments, eq(comments.userId, users.id))
+      .where(
+        or(
+          gt(posts.createdAt, today),
+          gt(comments.createdAt, today)
+        )
+      );
+    
+    return result[0].count || 0;
+  }
+
+  async getAllUsersAdmin(page: number, limit: number, search?: string): Promise<User[]> {
+    const offset = (page - 1) * limit;
+    let query = db.select().from(users);
+
+    if (search) {
+      query = query.where(
+        or(
+          like(users.email, `%${search}%`),
+          like(users.username, `%${search}%`),
+          like(users.name, `%${search}%`)
+        )
+      );
+    }
+
+    return await query
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getAllPostsAdmin(page: number, limit: number): Promise<PostWithUser[]> {
+    const offset = (page - 1) * limit;
+    
+    const result = await db
+      .select({
+        post: posts,
+        user: users,
+      })
+      .from(posts)
+      .innerJoin(users, eq(posts.userId, users.id))
+      .orderBy(desc(posts.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return result.map(({ post, user }) => ({ ...post, user }));
+  }
+
+  async deleteUserAdmin(userId: number): Promise<boolean> {
+    // Delete user and all related data
+    await db.delete(notifications).where(eq(notifications.userId, userId));
+    await db.delete(notifications).where(eq(notifications.fromUserId, userId));
+    await db.delete(messages).where(eq(messages.senderId, userId));
+    await db.delete(messages).where(eq(messages.receiverId, userId));
+    await db.delete(follows).where(eq(follows.followerId, userId));
+    await db.delete(follows).where(eq(follows.followingId, userId));
+    await db.delete(stories).where(eq(stories.userId, userId));
+    await db.delete(commentLikes).where(eq(commentLikes.userId, userId));
+    await db.delete(comments).where(eq(comments.userId, userId));
+    await db.delete(likes).where(eq(likes.userId, userId));
+    await db.delete(posts).where(eq(posts.userId, userId));
+    
+    const result = await db.delete(users).where(eq(users.id, userId));
+    return result.rowCount! > 0;
   }
 }
 
