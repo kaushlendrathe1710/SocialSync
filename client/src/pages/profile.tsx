@@ -385,7 +385,7 @@ export default function ProfilePage() {
                 <p className="text-muted-foreground mb-3">{profileUser.bio}</p>
               )}
               
-              <div className="flex items-center flex-wrap gap-4 mb-4 mt-6">
+              <div className="flex items-center flex-wrap gap-4 mb-4 mt-7">
                 <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
                   <span className="font-bold text-base text-gray-900">{posts?.length || 0}</span>
                   <span className="text-gray-600">{posts?.length === 1 ? 'post' : 'posts'}</span>
