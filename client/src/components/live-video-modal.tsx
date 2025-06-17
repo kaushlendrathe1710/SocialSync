@@ -328,22 +328,73 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
     setViewerCount(0);
     setRecordingTime(0);
     setStartTime(null);
-    toast({
-      title: "Live stream ended",
-      description: "Your live video has been saved to your profile",
-    });
+    
+    // Show options to post to newsfeed
+    if (currentStreamId) {
+      toast({
+        title: "Live stream ended",
+        description: "Would you like to share this stream to your newsfeed?",
+      });
+      
+      // Show post option dialog instead of immediately closing
+      setShowPostDialog(true);
+    } else {
+      handleClose();
+    }
+  };
+
+  const [showPostDialog, setShowPostDialog] = useState(false);
+  const [postContent, setPostContent] = useState('');
+
+  const handlePostToFeed = async () => {
+    if (!currentStreamId) return;
+    
+    try {
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          content: postContent || `Just finished an amazing live stream: "${title}"`,
+          liveStreamId: currentStreamId,
+          privacy: privacy
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to post live stream');
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      toast({
+        title: "Posted to newsfeed!",
+        description: "Your live stream is now visible to your followers",
+      });
+      
+      setShowPostDialog(false);
+      handleClose();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to post to newsfeed",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSkipPost = () => {
+    setShowPostDialog(false);
     handleClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Video className="w-5 h-5 text-red-500" />
-            <span>Go Live</span>
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Video className="w-5 h-5 text-red-500" />
+              <span>Go Live</span>
+            </DialogTitle>
+          </DialogHeader>
         
         <div className="space-y-4">
           <div className="flex items-center space-x-3">
@@ -549,5 +600,37 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Post to Newsfeed Dialog */}
+    <Dialog open={showPostDialog} onOpenChange={() => setShowPostDialog(false)}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Share Live Stream</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Your live stream "{title}" has ended. Would you like to share it with your followers?
+          </p>
+          
+          <Textarea
+            placeholder="Add a caption for your live stream post..."
+            value={postContent}
+            onChange={(e) => setPostContent(e.target.value)}
+            className="min-h-[80px]"
+          />
+          
+          <div className="flex space-x-3">
+            <Button variant="outline" onClick={handleSkipPost} className="flex-1">
+              Skip
+            </Button>
+            <Button onClick={handlePostToFeed} className="flex-1 bg-blue-500 hover:bg-blue-600">
+              Share to Feed
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

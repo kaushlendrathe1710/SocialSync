@@ -35,6 +35,7 @@ export const posts = pgTable("posts", {
   content: text("content"),
   imageUrl: text("image_url"),
   videoUrl: text("video_url"),
+  liveStreamId: integer("live_stream_id"), // Reference to live stream
   privacy: text("privacy").default("public"), // public, friends, private
   likesCount: integer("likes_count").default(0),
   commentsCount: integer("comments_count").default(0),
