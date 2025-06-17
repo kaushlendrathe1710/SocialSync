@@ -212,7 +212,18 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
       if (!response.ok) throw new Error('Failed to create live stream');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const streamId = data.id;
+      setCurrentStreamId(streamId);
+      
+      // Join the stream as a viewer via WebSocket for real-time tracking
+      if (websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.send(JSON.stringify({
+          type: 'join_stream',
+          streamId: streamId
+        }));
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
       toast({
         title: "Live stream started!",
@@ -222,6 +233,14 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
   });
 
   const handleClose = () => {
+    // Leave WebSocket stream if currently connected
+    if (currentStreamId && websocket && websocket.readyState === WebSocket.OPEN) {
+      websocket.send(JSON.stringify({
+        type: 'leave_stream',
+        streamId: currentStreamId
+      }));
+    }
+    
     // Stop all media tracks to properly release camera/microphone
     if (stream) {
       stream.getTracks().forEach(track => {
@@ -246,6 +265,7 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
     setViewerCount(0);
     setRecordingTime(0);
     setStartTime(null);
+    setCurrentStreamId(null);
     setHasPermissions(false);
     setPermissionError('');
     onClose();
@@ -272,7 +292,7 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
 
     setIsLive(true);
     setStartTime(new Date());
-    setViewerCount(Math.floor(Math.random() * 50) + 1); // Simulated viewer count
+    setViewerCount(0); // Will be updated via WebSocket
     
     // Create the live stream record
     createLiveStreamMutation.mutate({
