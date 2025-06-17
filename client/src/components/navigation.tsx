@@ -70,10 +70,40 @@ export default function Navigation() {
     }
   };
 
+  const handleStopImpersonation = async () => {
+    try {
+      await stopImpersonation();
+      window.location.href = '/admin';
+    } catch (error: any) {
+      console.error("Failed to stop impersonation:", error);
+    }
+  };
+
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-50">
-      <div className="flex items-center justify-between h-14 px-4">
-        {/* Left: Logo */}
+    <>
+      {/* Impersonation Banner */}
+      {impersonation?.isImpersonating && (
+        <div className="bg-orange-500 text-white px-4 py-2 text-center fixed top-0 left-0 right-0 z-50">
+          <div className="flex items-center justify-center space-x-2">
+            <UserCheck className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              Admin impersonating: {user?.name || user?.username}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleStopImpersonation}
+              className="bg-white text-orange-600 hover:bg-orange-50 ml-4"
+            >
+              Return to Admin
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <nav className={`fixed left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-40 ${impersonation?.isImpersonating ? 'top-10' : 'top-0'}`}>
+          <div className="flex items-center justify-between h-14 px-4">
+            {/* Left: Logo */}
         <div className="flex items-center space-x-4">
           <Link href="/">
             <div className="flex items-center space-x-2">
@@ -259,5 +289,6 @@ export default function Navigation() {
         type={settingsModalType}
       />
     </nav>
+    </>
   );
 }
