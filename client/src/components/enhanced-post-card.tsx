@@ -205,19 +205,30 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   });
 
   const likeMutation = useMutation({
-    mutationFn: () => fetch(`/api/posts/${post.id}/like`, { method: 'POST' }),
+    mutationFn: async () => {
+      const response = await fetch(`/api/posts/${post.id}/like`, { 
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to like post');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
     },
   });
 
   const commentMutation = useMutation({
-    mutationFn: (data: { content: string; parentCommentId?: number }) =>
-      fetch(`/api/posts/${post.id}/comments`, {
+    mutationFn: async (data: { content: string; parentCommentId?: number }) => {
+      const response = await fetch(`/api/posts/${post.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }),
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to create comment');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts', post.id, 'comments'] });
       setNewComment("");
@@ -330,9 +341,9 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
           </div>
         ) : (
           <>
-            {post.content && (
+            {(post.content || (!post.content && !post.imageUrl && !post.videoUrl)) && (
               <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
-                {post.content}
+                {post.content || "This post has no content yet."}
               </p>
             )}
 

@@ -182,7 +182,16 @@ export class DatabaseStorage implements IStorage {
     if (result.length === 0) return undefined;
 
     const { post, user } = result[0];
-    return { ...post, user };
+    
+    // Get like count
+    const likesResult = await db.select({ count: sql<number>`count(*)` }).from(likes).where(eq(likes.postId, id));
+    const likesCount = likesResult[0]?.count || 0;
+    
+    // Get comment count
+    const commentsResult = await db.select({ count: sql<number>`count(*)` }).from(comments).where(eq(comments.postId, id));
+    const commentsCount = commentsResult[0]?.count || 0;
+    
+    return { ...post, user, likesCount, commentsCount };
   }
 
   async getPosts(userId?: number, limit = 20, offset = 0): Promise<PostWithUser[]> {
@@ -202,7 +211,23 @@ export class DatabaseStorage implements IStorage {
     }
 
     const result = await query;
-    return result.map(({ post, user }) => ({ ...post, user }));
+    
+    // Get interaction counts for each post
+    const enrichedPosts = await Promise.all(
+      result.map(async ({ post, user }) => {
+        const likesResult = await db.select({ count: sql<number>`count(*)` }).from(likes).where(eq(likes.postId, post.id));
+        const commentsResult = await db.select({ count: sql<number>`count(*)` }).from(comments).where(eq(comments.postId, post.id));
+        
+        return {
+          ...post,
+          user,
+          likesCount: likesResult[0]?.count || 0,
+          commentsCount: commentsResult[0]?.count || 0
+        };
+      })
+    );
+    
+    return enrichedPosts;
   }
 
   async updatePost(id: number, updates: Partial<InsertPost>): Promise<Post | undefined> {
