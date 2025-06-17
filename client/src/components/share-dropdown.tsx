@@ -9,14 +9,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Share,
+  Share2 as Share,
   Copy,
-  Facebook,
-  Twitter,
   MessageCircle,
   Mail,
   Bookmark,
-  Link,
   Send
 } from 'lucide-react';
 import type { PostWithUser } from '@shared/schema';
@@ -147,8 +144,10 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
         </DropdownMenuItem>
         
         <DropdownMenuItem onClick={handleTwitterShare}>
-          <Twitter className="h-4 w-4 mr-3 text-blue-400" />
-          Share to Twitter
+          <div className="h-4 w-4 mr-3 bg-black rounded flex items-center justify-center">
+            <span className="text-white text-xs font-bold">X</span>
+          </div>
+          Share to X
         </DropdownMenuItem>
         
         <DropdownMenuItem onClick={handleWhatsAppShare}>
