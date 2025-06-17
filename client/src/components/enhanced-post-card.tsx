@@ -32,14 +32,14 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
   const [showReplies, setShowReplies] = useState(false);
 
   const { data: replies } = useQuery({
-    queryKey: ['/api/comments', comment.id, 'replies'],
+    queryKey: [`/api/comments/${comment.id}/replies`],
     enabled: showReplies && level < 2, // Limit nesting to 2 levels
   });
 
   const likeMutation = useMutation({
     mutationFn: () => fetch(`/api/comments/${comment.id}/like`, { method: 'POST' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts', postId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
     },
   });
 
@@ -200,7 +200,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   const [editContent, setEditContent] = useState(post.content || "");
 
   const { data: comments } = useQuery({
-    queryKey: ['/api/posts', post.id, 'comments'],
+    queryKey: [`/api/posts/${post.id}/comments`],
     enabled: showComments,
   });
 
@@ -230,7 +230,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts', post.id, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}/comments`] });
       setNewComment("");
       setReplyToComment(null);
     },
