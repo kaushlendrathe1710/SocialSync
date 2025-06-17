@@ -111,6 +111,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test S3 configuration
+  app.get("/api/test-s3", async (req: Request, res: Response) => {
+    try {
+      const isConfigured = validateS3Config();
+      if (!isConfigured) {
+        return res.status(500).json({ 
+          status: "S3 configuration incomplete",
+          message: "Missing required AWS environment variables",
+          required: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION", "AWS_S3_BUCKET_NAME"]
+        });
+      }
+
+      res.json({ 
+        status: "S3 configuration valid",
+        region: process.env.AWS_REGION,
+        bucket: process.env.AWS_S3_BUCKET_NAME
+      });
+    } catch (error: any) {
+      console.error("S3 configuration test failed:", error);
+      res.status(500).json({ 
+        status: "S3 configuration test failed", 
+        error: error.message
+      });
+    }
+  });
+
   // Auth endpoints (simplified for now)
   app.post("/api/auth/send-otp", async (req: Request, res: Response) => {
     try {
@@ -364,21 +390,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Post data before creation:', postData);
 
-      // Handle file upload
+      // Handle file upload to S3
       if (req.file) {
-        const fileExtension = path.extname(req.file.originalname);
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`;
-        const filePath = path.join("uploads", fileName);
-        
-        // Move file to permanent location
-        fs.renameSync(req.file.path, filePath);
-        
-        // Determine if it's an image or video
-        const isVideo = /\.(mp4|mov|avi)$/i.test(fileExtension);
-        if (isVideo) {
-          postData.videoUrl = `/uploads/${fileName}`;
-        } else {
-          postData.imageUrl = `/uploads/${fileName}`;
+        try {
+          // Check if S3 is configured
+          if (!validateS3Config()) {
+            return res.status(500).json({ error: "AWS S3 not configured properly" });
+          }
+
+          const fileExtension = path.extname(req.file.originalname);
+          const isVideo = /\.(mp4|mov|avi|mkv)$/i.test(fileExtension);
+          const folder = isVideo ? 'videos' : 'images';
+          
+          // Upload to S3
+          const uploadResult = await uploadToS3(
+            req.file.buffer,
+            req.file.originalname,
+            req.file.mimetype,
+            folder
+          );
+          
+          // Set the appropriate URL based on file type
+          if (isVideo) {
+            postData.videoUrl = uploadResult.url;
+          } else {
+            postData.imageUrl = uploadResult.url;
+          }
+          
+          console.log('File uploaded to S3:', uploadResult.url);
+        } catch (uploadError) {
+          console.error("S3 upload error:", uploadError);
+          return res.status(500).json({ error: "Failed to upload file to cloud storage" });
         }
       }
 
@@ -865,10 +907,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const coverPhotoUrl = `/uploads/${req.file.filename}`;
+      // Check if S3 is configured
+      if (!validateS3Config()) {
+        return res.status(500).json({ error: "AWS S3 not configured properly" });
+      }
+
+      // Upload to S3
+      const uploadResult = await uploadToS3(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype,
+        'cover-photos'
+      );
       
       // Update user's cover photo in database
-      const updatedUser = await storage.updateUser(userId, { coverPhoto: coverPhotoUrl });
+      const updatedUser = await storage.updateUser(userId, { coverPhoto: uploadResult.url });
       
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
@@ -876,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         message: "Cover photo updated successfully",
-        coverPhoto: coverPhotoUrl,
+        coverPhoto: uploadResult.url,
         user: updatedUser
       });
     } catch (error) {
@@ -901,10 +954,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const avatarUrl = `/uploads/${req.file.filename}`;
+      // Check if S3 is configured
+      if (!validateS3Config()) {
+        return res.status(500).json({ error: "AWS S3 not configured properly" });
+      }
+
+      // Upload to S3
+      const uploadResult = await uploadToS3(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype,
+        'profile-pictures'
+      );
       
       // Update user's avatar in database
-      const updatedUser = await storage.updateUser(userId, { avatar: avatarUrl });
+      const updatedUser = await storage.updateUser(userId, { avatar: uploadResult.url });
       
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
@@ -912,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         message: "Profile picture updated successfully",
-        avatar: avatarUrl,
+        avatar: uploadResult.url,
         user: updatedUser
       });
     } catch (error) {
