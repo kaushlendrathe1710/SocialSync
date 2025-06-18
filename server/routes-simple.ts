@@ -12,7 +12,8 @@ import {
   insertFollowSchema,
   insertStorySchema,
   insertMessageSchema,
-  insertNotificationSchema 
+  insertNotificationSchema,
+  insertPostViewSchema 
 } from "@shared/schema";
 import nodemailer from "nodemailer";
 import multer from "multer";

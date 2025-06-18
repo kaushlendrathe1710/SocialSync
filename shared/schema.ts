@@ -351,3 +351,14 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
     references: [posts.id],
   }),
 }));
+
+export const postViewsRelations = relations(postViews, ({ one }) => ({
+  post: one(posts, {
+    fields: [postViews.postId],
+    references: [posts.id],
+  }),
+  viewer: one(users, {
+    fields: [postViews.viewerId],
+    references: [users.id],
+  }),
+}));

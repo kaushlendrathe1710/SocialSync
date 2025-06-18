@@ -10,6 +10,7 @@ import {
   messages,
   notifications,
   liveStreams,
+  postViews,
   type User,
   type InsertUser,
   type OtpCode,
@@ -32,6 +33,8 @@ import {
   type InsertNotification,
   type LiveStream,
   type InsertLiveStream,
+  type PostView,
+  type InsertPostView,
   type PostWithUser,
   type MessageWithUser,
   type NotificationWithUser,
@@ -117,6 +120,11 @@ export interface IStorage {
   createLiveStream(liveStream: InsertLiveStream): Promise<LiveStream>;
   getActiveLiveStreams(): Promise<(LiveStream & { user: User })[]>;
   endLiveStream(streamId: number, userId: number): Promise<boolean>;
+
+  // Post view methods
+  recordPostView(postView: InsertPostView): Promise<PostView>;
+  getPostViews(postId: number): Promise<number>;
+  incrementPostViewCount(postId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
