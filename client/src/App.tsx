@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./lib/auth.tsx";
 import { useAuth } from "./hooks/use-auth";
+import { useAuthContext } from "./lib/auth";
 import AuthPage from "@/pages/auth";
 import FeedPage from "@/pages/feed";
 import ProfilePage from "@/pages/profile";
@@ -21,6 +22,7 @@ import NotFound from "@/pages/not-found";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
+  const { impersonation } = useAuthContext();
 
   if (isLoading) {
     return (
@@ -35,6 +37,32 @@ function AppContent() {
 
   if (!user) {
     return <AuthPage />;
+  }
+
+  // If impersonating, always show the regular user interface
+  if (impersonation?.isImpersonating) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <Navigation />
+        <div className="flex pt-14">
+          <Sidebar />
+          <main className="flex-1 ml-64 min-h-screen">
+            <Switch>
+              <Route path="/" component={FeedPage} />
+              <Route path="/profile/:id?" component={ProfilePage} />
+              <Route path="/profile" component={ProfilePage} />
+              <Route path="/explore" component={ExplorePage} />
+              <Route path="/messages" component={MessagesPage} />
+              <Route path="/notifications" component={NotificationsPage} />
+              <Route path="/friends" component={FriendsPage} />
+              <Route path="/saved" component={SavedPage} />
+              <Route path="/settings" component={SettingsPage} />
+              <Route component={NotFound} />
+            </Switch>
+          </main>
+        </div>
+      </div>
+    );
   }
 
   // Check if user is admin and automatically redirect or show admin interface
