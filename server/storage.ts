@@ -728,6 +728,30 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+
+  // Post view methods
+  async recordPostView(postView: InsertPostView): Promise<PostView> {
+    const [view] = await db.insert(postViews).values(postView).returning();
+    return view;
+  }
+
+  async getPostViews(postId: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(postViews)
+      .where(eq(postViews.postId, postId));
+    
+    return result[0]?.count || 0;
+  }
+
+  async incrementPostViewCount(postId: number): Promise<void> {
+    await db
+      .update(posts)
+      .set({ 
+        viewsCount: sql`${posts.viewsCount} + 1` 
+      })
+      .where(eq(posts.id, postId));
+  }
 }
 
 export const storage = new DatabaseStorage();

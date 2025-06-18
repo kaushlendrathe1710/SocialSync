@@ -627,6 +627,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Post view tracking endpoint
+  app.post("/api/posts/:id/view", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const viewerId = req.session.userId || null;
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('User-Agent');
+
+      // Record the view
+      await storage.recordPostView({
+        postId,
+        viewerId,
+        ipAddress,
+        userAgent,
+      });
+
+      // Increment the view count
+      await storage.incrementPostViewCount(postId);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Record post view error:", error);
+      res.status(500).json({ message: "Failed to record view" });
+    }
+  });
+
+  // Get post views count
+  app.get("/api/posts/:id/views", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const viewCount = await storage.getPostViews(postId);
+      res.json({ views: viewCount });
+    } catch (error) {
+      console.error("Get post views error:", error);
+      res.status(500).json({ message: "Failed to get views" });
+    }
+  });
+
   // Search endpoint
   app.get("/api/search", async (req: Request, res: Response) => {
     try {

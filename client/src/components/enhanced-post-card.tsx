@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { usePostViewTracking } from "@/hooks/use-post-view-tracking";
 import { formatDistanceToNow } from "date-fns";
 import type { PostWithUser, CommentWithUser } from "@shared/schema";
 import ShareDropdown from "@/components/share-dropdown";
@@ -203,6 +204,13 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || "");
 
+  // Track post views automatically
+  const viewTrackingRef = usePostViewTracking({ 
+    postId: post.id,
+    threshold: 0.5,
+    delay: 1000
+  });
+
   const { data: comments } = useQuery({
     queryKey: [`/api/posts/${post.id}/comments`],
     enabled: showComments,
@@ -281,7 +289,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card ref={viewTrackingRef} className="w-full max-w-2xl mx-auto">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
