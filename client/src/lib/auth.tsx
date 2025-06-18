@@ -157,8 +157,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isImpersonating: true,
       originalAdmin: data.originalAdmin
     });
-    // Immediately redirect to home page to avoid 404 flash
-    window.location.href = '/';
   };
 
   const stopImpersonation = async () => {
@@ -166,8 +164,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await response.json();
     setUser(data.user);
     setImpersonation(null);
-    // Redirect back to admin dashboard
-    window.location.href = '/admin';
   };
 
   return (

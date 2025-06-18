@@ -39,7 +39,7 @@ function AppContent() {
     return <AuthPage />;
   }
 
-  // If impersonating, always show the regular user interface
+  // If impersonating, always show the regular user interface regardless of URL
   if (impersonation?.isImpersonating) {
     return (
       <div className="min-h-screen bg-gray-100">
@@ -57,7 +57,9 @@ function AppContent() {
               <Route path="/friends" component={FriendsPage} />
               <Route path="/saved" component={SavedPage} />
               <Route path="/settings" component={SettingsPage} />
-              <Route component={NotFound} />
+              {/* During impersonation, redirect any admin routes to feed */}
+              <Route path="/admin" component={FeedPage} />
+              <Route component={FeedPage} />
             </Switch>
           </main>
         </div>
