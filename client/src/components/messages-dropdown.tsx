@@ -14,8 +14,14 @@ import {
   Edit,
   Phone,
   Video,
-  MoreHorizontal
+  MoreHorizontal,
+  X,
+  Send
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import type { MessageWithUser } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
@@ -31,6 +37,8 @@ export default function MessagesDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showComposeModal, setShowComposeModal] = useState(false);
 
   const { data: conversations = [], isLoading } = useQuery({
     queryKey: ['/api/conversations'],
@@ -80,6 +88,14 @@ export default function MessagesDropdown({
     !conv.readAt && conv.receiverId === user?.id
   ).length;
 
+  const handleEditClick = () => {
+    setShowComposeModal(true);
+  };
+
+  const handleSettingsClick = () => {
+    setShowSettingsModal(true);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -98,10 +114,10 @@ export default function MessagesDropdown({
           )}
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" className="p-1">
+          <Button variant="ghost" size="sm" className="p-1" onClick={handleEditClick}>
             <Edit className="h-4 w-4 text-gray-500" />
           </Button>
-          <Button variant="ghost" size="sm" className="p-1">
+          <Button variant="ghost" size="sm" className="p-1" onClick={handleSettingsClick}>
             <Settings className="h-4 w-4 text-gray-500" />
           </Button>
         </div>
@@ -239,6 +255,85 @@ export default function MessagesDropdown({
           </Button>
         </Link>
       </div>
+
+      {/* Compose Message Modal */}
+      <Dialog open={showComposeModal} onOpenChange={setShowComposeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New Message</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="recipient">To</Label>
+              <Input
+                id="recipient"
+                placeholder="Search for people..."
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                placeholder="Write your message..."
+                className="mt-1 min-h-[100px]"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowComposeModal(false)}>
+                Cancel
+              </Button>
+              <Button>
+                <Send className="w-4 h-4 mr-2" />
+                Send
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Modal */}
+      <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Message Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Read receipts</Label>
+                <p className="text-sm text-muted-foreground">
+                  Let others know when you've read their messages
+                </p>
+              </div>
+              <Switch />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Online status</Label>
+                <p className="text-sm text-muted-foreground">
+                  Show when you're active
+                </p>
+              </div>
+              <Switch defaultChecked />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Message notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  Get notified about new messages
+                </p>
+              </div>
+              <Switch defaultChecked />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowSettingsModal(false)}>
+                Done
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
