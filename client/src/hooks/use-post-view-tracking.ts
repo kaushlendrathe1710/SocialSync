@@ -12,7 +12,7 @@ export function usePostViewTracking({
   threshold = 0.5, 
   delay = 1000 
 }: UsePostViewTrackingOptions) {
-  const elementRef = useRef<HTMLElement>(null);
+  const elementRef = useRef<HTMLDivElement>(null);
   const hasTracked = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
 

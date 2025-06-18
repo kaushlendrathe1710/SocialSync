@@ -418,6 +418,11 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
             </Button>
 
             <ShareDropdown post={post} />
+            
+            <div className="flex items-center space-x-1 text-gray-500">
+              <Eye className="h-4 w-4" />
+              <span className="text-sm">{post.viewsCount || 0}</span>
+            </div>
           </div>
         </div>
 
