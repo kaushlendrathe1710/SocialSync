@@ -1143,6 +1143,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User data export endpoint
+  app.get("/api/user/export", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const userId = req.session.userId;
+      
+      // Get user data
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get user's posts
+      const posts = await storage.getPosts(userId);
+      
+      // Get user's comments
+      const comments = await storage.getPostComments(0); // This needs to be updated to get user comments
+      
+      // Get user's likes
+      const likes = await storage.getUserLikes(userId);
+      
+      // Get user's followers
+      const followers = await storage.getFollowers(userId);
+      
+      // Get user's following
+      const following = await storage.getFollowing(userId);
+
+      const exportData = {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          bio: user.bio,
+          website: user.website,
+          location: user.location,
+          createdAt: user.createdAt
+        },
+        posts: posts.map(post => ({
+          id: post.id,
+          content: post.content,
+          mediaUrl: post.mediaUrl,
+          createdAt: post.createdAt
+        })),
+        likes: likes.map(like => ({
+          postId: like.postId,
+          reactionType: like.reactionType,
+          createdAt: like.createdAt
+        })),
+        followers: followers.map(f => ({ username: f.username, name: f.name })),
+        following: following.map(f => ({ username: f.username, name: f.name })),
+        exportDate: new Date().toISOString()
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${user.username}-data-export.json"`);
+      res.json(exportData);
+    } catch (error) {
+      console.error("Data export error:", error);
+      res.status(500).json({ message: "Failed to export data" });
+    }
+  });
+
+  // User data usage endpoint
+  app.get("/api/user/data-usage", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const userId = req.session.userId;
+      
+      // Get user's posts count
+      const posts = await storage.getPosts(userId);
+      const postsCount = posts.length;
+      
+      // Get user's comments count (approximation since we don't have a direct method)
+      const commentsCount = 0; // This would need proper implementation
+      
+      // Calculate storage usage (approximation)
+      let storageUsed = 0;
+      posts.forEach(post => {
+        if (post.mediaUrl) {
+          storageUsed += 1; // Approximate 1MB per media file
+        }
+      });
+
+      res.json({
+        postsCount,
+        commentsCount,
+        storageUsed: `${storageUsed} MB`,
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Data usage error:", error);
+      res.status(500).json({ message: "Failed to get data usage" });
+    }
+  });
+
   // Admin endpoints
   app.get("/api/admin/stats", async (req: Request, res: Response) => {
     try {

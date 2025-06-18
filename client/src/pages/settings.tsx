@@ -112,6 +112,71 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDownloadData = async () => {
+    try {
+      toast({
+        title: "Preparing Download",
+        description: "Your data is being prepared for download...",
+      });
+
+      const response = await fetch('/api/user/export', {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${user?.username || 'user'}-data-export.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        toast({
+          title: "Download Complete",
+          description: "Your data has been downloaded successfully",
+        });
+      } else {
+        throw new Error('Failed to download data');
+      }
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download your data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewDataUsage = async () => {
+    try {
+      const response = await fetch('/api/user/data-usage', {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        toast({
+          title: "Data Usage",
+          description: `Posts: ${data.postsCount || 0}, Comments: ${data.commentsCount || 0}, Storage: ${data.storageUsed || '0 MB'}`,
+        });
+      } else {
+        throw new Error('Failed to get data usage');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load data usage information",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="mb-6">
@@ -554,7 +619,7 @@ export default function SettingsPage() {
                     <h4 className="font-medium">Download Your Data</h4>
                     <p className="text-sm text-gray-500">Get a copy of your information</p>
                   </div>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleDownloadData}>
                     <Download className="w-4 h-4 mr-2" />
                     Download
                   </Button>
@@ -567,7 +632,7 @@ export default function SettingsPage() {
                     <h4 className="font-medium">Data Usage</h4>
                     <p className="text-sm text-gray-500">See how much storage you're using</p>
                   </div>
-                  <Button variant="outline">View Details</Button>
+                  <Button variant="outline" onClick={handleViewDataUsage}>View Details</Button>
                 </div>
 
                 <Separator />
