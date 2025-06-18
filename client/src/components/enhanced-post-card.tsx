@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye } from "lucide-react";
+import ReactionPicker, { reactions } from "@/components/reaction-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -219,12 +220,14 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   });
 
   const likeMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`/api/posts/${post.id}/like`, { 
+    mutationFn: async (reactionType: string) => {
+      const response = await fetch(`/api/posts/${post.id}/react`, { 
         method: 'POST',
-        credentials: 'include'
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reactionType })
       });
-      if (!response.ok) throw new Error('Failed to like post');
+      if (!response.ok) throw new Error('Failed to react to post');
       return response.json();
     },
     onSuccess: () => {

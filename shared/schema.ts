@@ -48,6 +48,7 @@ export const likes = pgTable("likes", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   postId: integer("post_id").notNull(),
+  reactionType: text("reaction_type").default("like"), // like, love, laugh, wow, sad, angry
   createdAt: timestamp("created_at").defaultNow(),
 });
 
