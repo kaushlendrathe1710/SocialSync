@@ -543,6 +543,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete post endpoint
+  app.delete("/api/posts/:id", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const postId = parseInt(req.params.id);
+      
+      // Get the post to check ownership
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      if (post.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Not authorized to delete this post" });
+      }
+
+      const success = await storage.deletePost(postId);
+      if (success) {
+        res.json({ message: "Post deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete post" });
+      }
+    } catch (error) {
+      console.error("Delete post error:", error);
+      res.status(500).json({ message: "Failed to delete post" });
+    }
+  });
+
   // Comments endpoints
   app.get("/api/posts/:id/comments", async (req: Request, res: Response) => {
     try {

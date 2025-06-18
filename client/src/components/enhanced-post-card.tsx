@@ -275,9 +275,20 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   });
 
   const deletePostMutation = useMutation({
-    mutationFn: () => fetch(`/api/posts/${post.id}`, { method: 'DELETE' }),
+    mutationFn: async () => {
+      const response = await fetch(`/api/posts/${post.id}`, { 
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to delete post');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      setShowDeleteDialog(false);
+    },
+    onError: (error: any) => {
+      console.error('Failed to delete post:', error);
     },
   });
 
