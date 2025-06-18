@@ -252,14 +252,22 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   });
 
   const updatePostMutation = useMutation({
-    mutationFn: (content: string) => fetch(`/api/posts/${post.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    }),
+    mutationFn: async (content: string) => {
+      const response = await fetch(`/api/posts/${post.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content }),
+      });
+      if (!response.ok) throw new Error('Failed to update post');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
       setIsEditing(false);
+    },
+    onError: (error: any) => {
+      console.error('Failed to update post:', error);
     },
   });
 

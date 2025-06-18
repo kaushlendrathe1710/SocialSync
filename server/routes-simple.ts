@@ -467,6 +467,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update post endpoint
+  app.put("/api/posts/:id", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const postId = parseInt(req.params.id);
+      const { content } = req.body;
+
+      // Get the post to check ownership
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      if (post.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Not authorized to edit this post" });
+      }
+
+      const updatedPost = await storage.updatePost(postId, { content });
+      if (!updatedPost) {
+        return res.status(500).json({ message: "Failed to update post" });
+      }
+
+      const postWithUser = await storage.getPost(postId);
+      res.json(postWithUser);
+    } catch (error) {
+      console.error("Update post error:", error);
+      res.status(500).json({ message: "Failed to update post" });
+    }
+  });
+
   // Comments endpoints
   app.get("/api/posts/:id/comments", async (req: Request, res: Response) => {
     try {
