@@ -36,14 +36,22 @@ export default function ReactionPicker({ onReaction, currentReaction, disabled, 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild disabled={disabled}>
-        <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800 p-0"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
+        >
           {children}
-        </div>
+        </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-2" align="start">
-        <div className="flex space-x-1">
+      <PopoverContent className="w-auto p-3" align="start" side="top">
+        <div className="flex space-x-2">
           {reactions.map((reaction) => {
-            const IconComponent = reaction.icon;
             const isSelected = currentReaction === reaction.type;
             
             return (
@@ -51,28 +59,29 @@ export default function ReactionPicker({ onReaction, currentReaction, disabled, 
                 key={reaction.type}
                 variant="ghost"
                 size="sm"
-                className={`h-12 w-12 p-0 rounded-full hover:scale-110 transition-all duration-200 ${
-                  isSelected ? 'bg-gray-100 dark:bg-gray-800' : ''
+                className={`h-10 w-10 p-0 rounded-full hover:scale-125 transition-all duration-200 ${
+                  isSelected ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
-                onClick={() => handleReaction(reaction.type)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleReaction(reaction.type);
+                }}
+                title={reaction.label}
               >
-                <div className="flex flex-col items-center space-y-1">
-                  <span className="text-lg" title={reaction.label}>
-                    {reaction.emoji}
-                  </span>
-                </div>
+                <span className="text-xl">
+                  {reaction.emoji}
+                </span>
               </Button>
             );
           })}
         </div>
-        <div className="flex justify-center mt-2">
-          <div className="flex space-x-1 text-xs text-gray-500">
-            {reactions.map((reaction) => (
-              <span key={reaction.type} className="px-1">
-                {reaction.label}
-              </span>
-            ))}
-          </div>
+        <div className="flex justify-center mt-2 space-x-2">
+          {reactions.map((reaction) => (
+            <span key={reaction.type} className="text-xs text-gray-500 dark:text-gray-400">
+              {reaction.label}
+            </span>
+          ))}
         </div>
       </PopoverContent>
     </Popover>

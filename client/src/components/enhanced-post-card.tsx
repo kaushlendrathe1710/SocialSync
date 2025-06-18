@@ -419,11 +419,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
               currentReaction={post.userReaction || null}
               disabled={likeMutation.isPending}
             >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
+              <div className="flex items-center space-x-2 px-3 py-2">
                 {post.userReaction ? (
                   <>
                     <span className="text-lg">
@@ -439,7 +435,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                     <span>{post.likesCount || 0}</span>
                   </>
                 )}
-              </Button>
+              </div>
             </ReactionPicker>
 
             <Button
