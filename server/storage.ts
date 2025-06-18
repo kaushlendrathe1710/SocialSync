@@ -58,7 +58,7 @@ export interface IStorage {
   // Post methods
   createPost(post: InsertPost): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
-  getPosts(userId?: number, limit?: number, offset?: number): Promise<PostWithUser[]>;
+  getPosts(userId?: number, limit?: number, offset?: number, currentUserId?: number): Promise<PostWithUser[]>;
   updatePost(id: number, updates: Partial<InsertPost>): Promise<Post | undefined>;
   deletePost(id: number): Promise<boolean>;
 

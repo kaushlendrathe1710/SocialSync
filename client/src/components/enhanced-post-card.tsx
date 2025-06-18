@@ -180,7 +180,7 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
           
           {showReplies && replies && Array.isArray(replies) && (
             <div className="mt-2">
-              {replies.map((reply: CommentWithUser) => (
+              {(replies as CommentWithUser[]).map((reply: CommentWithUser) => (
                 <CommentItem
                   key={reply.id}
                   comment={reply}
@@ -504,7 +504,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
 
             {comments && Array.isArray(comments) && comments.length > 0 && (
               <div className="space-y-2">
-                {comments.map((comment: CommentWithUser) => (
+                {(comments as CommentWithUser[]).map((comment: CommentWithUser) => (
                   <CommentItem
                     key={comment.id}
                     comment={comment}

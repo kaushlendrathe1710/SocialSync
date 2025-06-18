@@ -350,11 +350,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Posts endpoints
   app.get("/api/posts", async (req: Request, res: Response) => {
     try {
-      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const filterUserId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      const currentUserId = req.session.userId; // Pass current user for reactions
       
-      const posts = await storage.getPosts(userId, limit, offset);
+      const posts = await storage.getPosts(filterUserId, limit, offset, currentUserId);
       res.json(posts);
     } catch (error) {
       console.error("Get posts error:", error);
@@ -857,8 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createNotification({
           userId: followingId,
           fromUserId: followerId,
-          type: 'follow',
-          content: 'started following you'
+          type: 'follow'
         });
         
         res.json({ following: true, message: "Following successfully" });
