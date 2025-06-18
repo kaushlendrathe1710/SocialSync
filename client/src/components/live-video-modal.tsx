@@ -397,17 +397,17 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
           </DialogHeader>
         
         <div className="space-y-4">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-start space-x-3">
             <Avatar className="w-10 h-10">
               <AvatarImage src={user?.avatar || undefined} />
               <AvatarFallback>
                 {user?.name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
+            <div className="flex-1 space-y-2">
               <h4 className="font-semibold">{user?.name}</h4>
               <Select value={privacy} onValueChange={setPrivacy}>
-                <SelectTrigger className="w-fit bg-muted">
+                <SelectTrigger className="w-32 bg-muted">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
