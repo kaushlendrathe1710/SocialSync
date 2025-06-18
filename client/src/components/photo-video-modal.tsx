@@ -292,9 +292,11 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Limit to 10 files
-    const selectedFiles = files.slice(0, 10);
-    setMediaFiles(prev => [...prev, ...selectedFiles].slice(0, 10));
+    // Limit to 10 files total
+    const remainingSlots = 10 - mediaFiles.length;
+    const selectedFiles = files.slice(0, remainingSlots);
+    
+    setMediaFiles(prev => [...prev, ...selectedFiles]);
     
     // Generate previews
     selectedFiles.forEach(file => {
@@ -308,6 +310,11 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
     // Initialize video controls
     setIsPlaying(prev => [...prev, ...selectedFiles.map(() => false)]);
     setIsMuted(prev => [...prev, ...selectedFiles.map(() => false)]);
+    
+    // Clear the input value to allow selecting the same files again
+    if (e.target) {
+      e.target.value = '';
+    }
   };
 
   const handleRemoveMedia = (index: number) => {
