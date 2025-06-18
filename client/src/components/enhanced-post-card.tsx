@@ -280,8 +280,12 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
         method: 'DELETE',
         credentials: 'include'
       });
-      if (!response.ok) throw new Error('Failed to delete post');
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete post: ${errorText}`);
+      }
+      const responseText = await response.text();
+      return responseText ? JSON.parse(responseText) : { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
