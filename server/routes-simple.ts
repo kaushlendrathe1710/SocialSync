@@ -546,25 +546,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete post endpoint
   app.delete("/api/posts/:id", async (req: Request, res: Response) => {
     try {
+      console.log(`DELETE request for post ${req.params.id} from user ${req.session.userId}`);
+      
       if (!req.session.userId) {
+        console.log("Delete post: Not authenticated");
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const postId = parseInt(req.params.id);
+      console.log(`Deleting post ${postId} for user ${req.session.userId}`);
       
       // Get the post to check ownership
       const post = await storage.getPost(postId);
       if (!post) {
+        console.log(`Post ${postId} not found`);
         return res.status(404).json({ message: "Post not found" });
       }
 
       if (post.userId !== req.session.userId) {
+        console.log(`User ${req.session.userId} not authorized to delete post ${postId} owned by ${post.userId}`);
         return res.status(403).json({ message: "Not authorized to delete this post" });
       }
 
       const success = await storage.deletePost(postId);
+      console.log(`Delete post ${postId} result:`, success);
+      
       if (success) {
-        res.json({ message: "Post deleted successfully" });
+        res.status(200).json({ message: "Post deleted successfully", success: true });
       } else {
         res.status(500).json({ message: "Failed to delete post" });
       }
