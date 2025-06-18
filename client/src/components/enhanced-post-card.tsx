@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -203,6 +204,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   const [replyToComment, setReplyToComment] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || "");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Track post views automatically
   const viewTrackingRef = usePostViewTracking({ 
@@ -288,6 +290,11 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
     }
   };
 
+  const handleDeletePost = () => {
+    deletePostMutation.mutate();
+    setShowDeleteDialog(false);
+  };
+
   return (
     <Card ref={viewTrackingRef} className="w-full max-w-2xl mx-auto">
       <CardHeader className="pb-3">
@@ -330,7 +337,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                   Edit Post
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => deletePostMutation.mutate()}
+                  onClick={() => setShowDeleteDialog(true)}
                   className="text-red-600"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -482,6 +489,28 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePost}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deletePostMutation.isPending}
+            >
+              {deletePostMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
