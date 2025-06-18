@@ -414,16 +414,33 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => likeMutation.mutate()}
+            <ReactionPicker 
+              onReaction={(reactionType) => likeMutation.mutate(reactionType)}
+              currentReaction={post.userReaction || null}
               disabled={likeMutation.isPending}
-              className="flex items-center space-x-2"
             >
-              <Heart className={`h-5 w-5 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-              <span>{post.likesCount || 0}</span>
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                {post.userReaction ? (
+                  <>
+                    <span className="text-lg">
+                      {reactions.find(r => r.type === post.userReaction)?.emoji || '👍'}
+                    </span>
+                    <span className={reactions.find(r => r.type === post.userReaction)?.color || 'text-gray-600'}>
+                      {post.likesCount || 0}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Heart className="h-5 w-5" />
+                    <span>{post.likesCount || 0}</span>
+                  </>
+                )}
+              </Button>
+            </ReactionPicker>
 
             <Button
               variant="ghost"

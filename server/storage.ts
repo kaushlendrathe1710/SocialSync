@@ -65,6 +65,7 @@ export interface IStorage {
   // Like methods
   createLike(like: InsertLike): Promise<Like>;
   deleteLike(userId: number, postId: number): Promise<boolean>;
+  updateLike(userId: number, postId: number, reactionType: string): Promise<Like | undefined>;
   getUserLikes(userId: number): Promise<Like[]>;
 
   // Comment methods
@@ -210,8 +211,8 @@ export class DatabaseStorage implements IStorage {
     return { ...post, user, likesCount, commentsCount };
   }
 
-  async getPosts(userId?: number, limit = 20, offset = 0): Promise<PostWithUser[]> {
-    let query = db
+  async getPosts(filterUserId?: number, limit = 20, offset = 0, currentUserId?: number): Promise<PostWithUser[]> {
+    const query = db
       .select({
         post: posts,
         user: users,
@@ -222,23 +223,30 @@ export class DatabaseStorage implements IStorage {
       .limit(limit)
       .offset(offset);
 
-    if (userId) {
-      query = query.where(eq(posts.userId, userId));
-    }
-
-    const result = await query;
+    const result = filterUserId 
+      ? await query.where(eq(posts.userId, filterUserId))
+      : await query;
     
-    // Get interaction counts for each post
+    // Get interaction counts and user reactions for each post
     const enrichedPosts = await Promise.all(
       result.map(async ({ post, user }) => {
         const likesResult = await db.select({ count: sql<number>`count(*)` }).from(likes).where(eq(likes.postId, post.id));
         const commentsResult = await db.select({ count: sql<number>`count(*)` }).from(comments).where(eq(comments.postId, post.id));
         
+        // Get current user's reaction if provided
+        let userReaction = null;
+        if (currentUserId) {
+          const userLike = await db.select().from(likes).where(and(eq(likes.postId, post.id), eq(likes.userId, currentUserId))).limit(1);
+          userReaction = userLike[0]?.reactionType || null;
+        }
+        
         return {
           ...post,
           user,
           likesCount: likesResult[0]?.count || 0,
-          commentsCount: commentsResult[0]?.count || 0
+          commentsCount: commentsResult[0]?.count || 0,
+          userReaction,
+          isLiked: userReaction === 'like'
         };
       })
     );
@@ -271,6 +279,15 @@ export class DatabaseStorage implements IStorage {
 
   async getUserLikes(userId: number): Promise<Like[]> {
     return await db.select().from(likes).where(eq(likes.userId, userId));
+  }
+
+  async updateLike(userId: number, postId: number, reactionType: string): Promise<Like | undefined> {
+    const [updated] = await db
+      .update(likes)
+      .set({ reactionType })
+      .where(and(eq(likes.userId, userId), eq(likes.postId, postId)))
+      .returning();
+    return updated;
   }
 
   // Comment methods

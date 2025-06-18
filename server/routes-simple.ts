@@ -440,7 +440,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Like/unlike post endpoint
+  // React to post endpoint (supports multiple emoji reactions)
+  app.post("/api/posts/:id/react", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const postId = parseInt(req.params.id);
+      const userId = req.session.userId;
+      const { reactionType } = req.body;
+
+      // Validate reaction type
+      const validReactions = ['like', 'love', 'laugh', 'wow', 'sad', 'angry'];
+      if (!validReactions.includes(reactionType)) {
+        return res.status(400).json({ message: "Invalid reaction type" });
+      }
+
+      // Check if user already reacted to this post
+      const userLikes = await storage.getUserLikes(userId);
+      const existingReaction = userLikes.find(like => like.postId === postId);
+
+      if (existingReaction) {
+        if (existingReaction.reactionType === reactionType) {
+          // Same reaction - remove it (toggle off)
+          await storage.deleteLike(userId, postId);
+          res.json({ reacted: false, reactionType: null });
+        } else {
+          // Different reaction - update it
+          await storage.updateLike(userId, postId, reactionType);
+          res.json({ reacted: true, reactionType });
+        }
+      } else {
+        // New reaction
+        await storage.createLike({ userId, postId, reactionType });
+        res.json({ reacted: true, reactionType });
+      }
+    } catch (error) {
+      console.error("React to post error:", error);
+      res.status(500).json({ message: "Failed to react to post" });
+    }
+  });
+
+  // Legacy like endpoint (for backward compatibility)
   app.post("/api/posts/:id/like", async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
@@ -458,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.deleteLike(userId, postId);
         res.json({ liked: false });
       } else {
-        await storage.createLike({ userId, postId });
+        await storage.createLike({ userId, postId, reactionType: 'like' });
         res.json({ liked: true });
       }
     } catch (error) {

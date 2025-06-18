@@ -247,6 +247,7 @@ export type CommentWithUser = Comment & {
 export type PostWithUser = Post & {
   user: User;
   isLiked?: boolean;
+  userReaction?: string | null;
   comments?: CommentWithUser[];
 };
 
