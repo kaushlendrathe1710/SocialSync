@@ -40,6 +40,7 @@ export const posts = pgTable("posts", {
   likesCount: integer("likes_count").default(0),
   commentsCount: integer("comments_count").default(0),
   sharesCount: integer("shares_count").default(0),
+  viewsCount: integer("views_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -119,6 +120,15 @@ export const liveStreams = pgTable("live_streams", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const postViews = pgTable("post_views", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  viewerId: integer("viewer_id"), // nullable for anonymous views
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  viewedAt: timestamp("viewed_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -136,6 +146,7 @@ export const insertPostSchema = createInsertSchema(posts).omit({
   likesCount: true,
   commentsCount: true,
   sharesCount: true,
+  viewsCount: true,
 });
 
 export const insertLikeSchema = createInsertSchema(likes).omit({
@@ -183,6 +194,11 @@ export const insertLiveStreamSchema = createInsertSchema(liveStreams).omit({
   viewerCount: true,
 });
 
+export const insertPostViewSchema = createInsertSchema(postViews).omit({
+  id: true,
+  viewedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -216,6 +232,9 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type LiveStream = typeof liveStreams.$inferSelect;
 export type InsertLiveStream = z.infer<typeof insertLiveStreamSchema>;
+
+export type PostView = typeof postViews.$inferSelect;
+export type InsertPostView = z.infer<typeof insertPostViewSchema>;
 
 // Extended types for API responses
 export type CommentWithUser = Comment & {
@@ -260,6 +279,7 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
   }),
   likes: many(likes),
   comments: many(comments),
+  views: many(postViews),
 }));
 
 export const likesRelations = relations(likes, ({ one }) => ({
