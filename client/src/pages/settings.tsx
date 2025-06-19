@@ -177,6 +177,52 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePhotoUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    
+    input.onchange = async (event) => {
+      const target = event.target as HTMLInputElement;
+      const file = target.files?.[0];
+      if (file && user) {
+        try {
+          const formData = new FormData();
+          formData.append('profilePicture', file);
+          
+          const response = await fetch(`/api/users/${user.id}/profile-picture`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            toast({
+              title: "Success",
+              description: "Profile picture updated successfully",
+            });
+            // Refresh the page to show updated avatar
+            window.location.reload();
+          } else {
+            throw new Error('Failed to upload photo');
+          }
+        } catch (error) {
+          toast({
+            title: "Upload Failed",
+            description: "Failed to upload profile picture. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    
+    document.body.appendChild(input);
+    input.click();
+    document.body.removeChild(input);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="mb-6">
@@ -217,6 +263,7 @@ export default function SettingsPage() {
                     variant="secondary"
                     size="sm"
                     className="absolute bottom-0 right-0 w-8 h-8 rounded-full p-0"
+                    onClick={handlePhotoUpload}
                   >
                     <Camera className="w-4 h-4" />
                   </Button>
@@ -224,7 +271,7 @@ export default function SettingsPage() {
                 <div className="flex-1">
                   <h3 className="font-medium text-gray-900">{user?.name}</h3>
                   <p className="text-sm text-gray-500">@{user?.username}</p>
-                  <Button variant="outline" size="sm" className="mt-2">
+                  <Button variant="outline" size="sm" className="mt-2" onClick={handlePhotoUpload}>
                     Change Photo
                   </Button>
                 </div>
