@@ -56,6 +56,8 @@ export default function RealTimeMessaging() {
   const [searchQuery, setSearchQuery] = useState('');
   const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
@@ -129,7 +131,7 @@ export default function RealTimeMessaging() {
       const response = await api.getConversations();
       return response.json() as Promise<MessageWithUser[]>;
     },
-    refetchInterval: 1000, // Refresh every second as fallback
+    refetchInterval: 2000, // Refresh every 2 seconds as fallback
   });
 
   const { data: messages, isLoading: messagesLoading } = useQuery({
@@ -140,7 +142,7 @@ export default function RealTimeMessaging() {
       return response.json() as Promise<MessageWithUser[]>;
     },
     enabled: !!selectedConversation,
-    refetchInterval: 1000, // Refresh every second as fallback
+    refetchInterval: 1000, // Refresh every second for active conversation
   });
 
   // Auto-scroll to bottom when new messages arrive
@@ -195,6 +197,30 @@ export default function RealTimeMessaging() {
     setMessageText(prev => prev + emoji);
     setShowEmojiPicker(false);
     messageInputRef.current?.focus();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFilePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('chat-file-input') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -472,12 +498,47 @@ export default function RealTimeMessaging() {
 
                 {/* Message Input */}
                 <div className="p-4 border-t border-border bg-white dark:bg-gray-900">
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="chat-file-input"
+                  />
+                  
+                  {/* File preview */}
+                  {filePreview && (
+                    <div className="mb-4 relative">
+                      <img 
+                        src={filePreview} 
+                        alt="Preview" 
+                        className="max-w-xs max-h-32 rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-1 right-1 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white"
+                        onClick={removeSelectedFile}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  )}
+                  
                   <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
                     <div className="flex items-center space-x-1">
                       <Button type="button" variant="ghost" size="sm">
                         <Paperclip className="w-4 h-4" />
                       </Button>
-                      <Button type="button" variant="ghost" size="sm">
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={triggerFileInput}
+                        title="Select image or video"
+                      >
                         <ImageIcon className="w-4 h-4" />
                       </Button>
                       <Button type="button" variant="ghost" size="sm">
