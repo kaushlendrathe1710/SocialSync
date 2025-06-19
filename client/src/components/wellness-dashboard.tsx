@@ -99,6 +99,10 @@ export function WellnessDashboard() {
     queryKey: ["/api/habits"],
   });
 
+  const { data: habitLogs = [] } = useQuery({
+    queryKey: ["/api/habit-logs", selectedDate],
+  });
+
   // Get today's wellness record
   const todayRecord = wellnessData.find((record: WellnessRecord) => 
     record.date.split('T')[0] === selectedDate
@@ -186,6 +190,32 @@ export function WellnessDashboard() {
     },
   });
 
+  const markHabitMutation = useMutation({
+    mutationFn: async (data: { habitId: number; completed: boolean; date: string }) => {
+      return apiRequest("POST", "/api/habit-logs", {
+        habitId: data.habitId,
+        date: new Date(data.date),
+        completed: data.completed,
+        value: null,
+        notes: null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/habit-logs", selectedDate] });
+      toast({
+        title: "Habit updated",
+        description: "Habit completion status has been updated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update habit",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetWellnessForm = () => {
     setWellnessForm({
       moodRating: [3],
@@ -223,6 +253,28 @@ export function WellnessDashboard() {
       return;
     }
     createHabitMutation.mutate(habitForm);
+  };
+
+  const isHabitCompletedForDate = (habitId: number, date: string) => {
+    const log = habitLogs.find((log: HabitLog) => 
+      log.habitId === habitId && log.date.split('T')[0] === date
+    );
+    return log?.completed || false;
+  };
+
+  const getHabitStreak = (habitId: number) => {
+    // This is a simplified streak calculation - could be enhanced
+    const todayCompleted = isHabitCompletedForDate(habitId, selectedDate);
+    return todayCompleted ? 1 : 0; // Simplified for now
+  };
+
+  const toggleHabitCompletion = (habitId: number) => {
+    const isCompleted = isHabitCompletedForDate(habitId, selectedDate);
+    markHabitMutation.mutate({
+      habitId,
+      completed: !isCompleted,
+      date: selectedDate,
+    });
   };
 
   const getMoodEmoji = (rating: number) => {
@@ -350,25 +402,39 @@ export function WellnessDashboard() {
                 <p className="text-gray-500 text-center py-4">No habits created yet</p>
               ) : (
                 <div className="space-y-3">
-                  {habits.slice(0, 5).map((habit: Habit) => (
-                    <div key={habit.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Circle className="h-5 w-5 text-gray-400" />
-                        <div>
-                          <h4 className="font-medium">{habit.name}</h4>
-                          <p className="text-sm text-gray-500">{habit.description}</p>
+                  {habits.slice(0, 5).map((habit: Habit) => {
+                    const isCompleted = isHabitCompletedForDate(habit.id, selectedDate);
+                    const streak = getHabitStreak(habit.id);
+                    
+                    return (
+                      <div key={habit.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          {isCompleted ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <Circle className="h-5 w-5 text-gray-400" />
+                          )}
+                          <div>
+                            <h4 className="font-medium">{habit.name}</h4>
+                            <p className="text-sm text-gray-500">{habit.description}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="secondary">
+                            {streak} day streak
+                          </Badge>
+                          <Button 
+                            size="sm" 
+                            variant={isCompleted ? "default" : "outline"}
+                            onClick={() => toggleHabitCompletion(habit.id)}
+                            disabled={markHabitMutation.isPending}
+                          >
+                            {isCompleted ? "Completed" : "Mark Done"}
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="secondary">
-                          {habit.streakCount} day streak
-                        </Badge>
-                        <Button size="sm" variant="outline">
-                          Mark Done
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

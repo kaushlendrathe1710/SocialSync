@@ -2108,6 +2108,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/habit-logs", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const log = await storage.logHabit({
+        ...req.body,
+        userId: req.session.userId,
+      });
+      
+      res.json(log);
+    } catch (error) {
+      console.error("Log habit error:", error);
+      res.status(500).json({ message: "Failed to log habit" });
+    }
+  });
+
+  app.get("/api/habit-logs", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { date } = req.query;
+      const logs = await storage.getHabitLogsForDate(req.session.userId, date as string);
+      res.json(logs);
+    } catch (error) {
+      console.error("Get habit logs error:", error);
+      res.status(500).json({ message: "Failed to get habit logs" });
+    }
+  });
+
   // Beauty Products API Routes
   app.get("/api/beauty-products", async (req: Request, res: Response) => {
     try {
