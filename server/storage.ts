@@ -67,6 +67,7 @@ export interface IStorage {
   deleteLike(userId: number, postId: number): Promise<boolean>;
   updateLike(userId: number, postId: number, reactionType: string): Promise<Like | undefined>;
   getUserLikes(userId: number): Promise<Like[]>;
+  getPostReactions(postId: number): Promise<(Like & { user: User })[]>;
 
   // Comment methods
   createComment(comment: InsertComment): Promise<Comment>;
@@ -288,6 +289,20 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(likes.userId, userId), eq(likes.postId, postId)))
       .returning();
     return updated;
+  }
+
+  async getPostReactions(postId: number): Promise<(Like & { user: User })[]> {
+    const result = await db
+      .select({
+        like: likes,
+        user: users,
+      })
+      .from(likes)
+      .innerJoin(users, eq(likes.userId, users.id))
+      .where(eq(likes.postId, postId))
+      .orderBy(desc(likes.createdAt));
+
+    return result.map(({ like, user }) => ({ ...like, user }));
   }
 
   // Comment methods
