@@ -245,6 +245,8 @@ export default function SettingsPage() {
     document.body.removeChild(input);
   };
 
+
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="mb-6">
@@ -659,13 +661,6 @@ export default function SettingsPage() {
                       setSecuritySettings({...securitySettings, deviceApprovals: checked})
                     }
                   />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <h4 className="font-medium">Password</h4>
-                  <Button variant="outline">Change Password</Button>
                 </div>
 
                 <Separator />
