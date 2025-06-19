@@ -174,7 +174,7 @@ export default function SearchDropdown({
                   {(searchResults as any)?.users?.map((user: UserType) => (
                     <Link 
                       key={user.id} 
-                      href={`/profile/${user.username}`}
+                      href={`/profile/${user.id}`}
                       className="block"
                       onClick={() => {
                         addToRecentSearches(user.name || user.username);
