@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { UserPlus, UserCheck, UserX, Users, Clock, CheckCircle, XCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 interface FriendRequest {
   id: number;
@@ -184,17 +185,19 @@ export function FriendRequests() {
                   {friendSuggestions.map((user: User) => (
                     <Card key={user.id} className="p-4">
                       <div className="flex flex-col items-center text-center space-y-3">
-                        <Avatar className="h-16 w-16">
-                          <AvatarImage src={user.avatar || undefined} />
-                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{user.name}</h3>
-                          <p className="text-sm text-gray-500">@{user.username}</p>
-                          {user.bio && (
-                            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{user.bio}</p>
-                          )}
-                        </div>
+                        <Link href={`/profile/${user.id}`} className="flex flex-col items-center space-y-2 cursor-pointer hover:opacity-80">
+                          <Avatar className="h-16 w-16">
+                            <AvatarImage src={user.avatar || undefined} />
+                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="font-semibold">{user.name}</h3>
+                            <p className="text-sm text-gray-500">@{user.username}</p>
+                            {user.bio && (
+                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">{user.bio}</p>
+                            )}
+                          </div>
+                        </Link>
                         <Button
                           onClick={() => handleSendRequest(user)}
                           disabled={sendRequestMutation.isPending}
@@ -238,13 +241,17 @@ export function FriendRequests() {
                   {receivedRequests.map((request: FriendRequest) => (
                     <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.sender.avatar || undefined} />
-                          <AvatarFallback>{request.sender.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        <Link href={`/profile/${request.sender.id}`} className="cursor-pointer hover:opacity-80">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={request.sender.avatar || undefined} />
+                            <AvatarFallback>{request.sender.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                        </Link>
                         <div>
-                          <h3 className="font-semibold">{request.sender.name}</h3>
-                          <p className="text-sm text-gray-500">@{request.sender.username}</p>
+                          <Link href={`/profile/${request.sender.id}`} className="cursor-pointer hover:opacity-80">
+                            <h3 className="font-semibold">{request.sender.name}</h3>
+                            <p className="text-sm text-gray-500">@{request.sender.username}</p>
+                          </Link>
                           {request.message && (
                             <p className="text-sm text-gray-600 mt-1 italic">"{request.message}"</p>
                           )}
@@ -305,13 +312,17 @@ export function FriendRequests() {
                   {sentRequests.map((request: FriendRequest) => (
                     <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={request.receiver.avatar || undefined} />
-                          <AvatarFallback>{request.receiver.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                        <Link href={`/profile/${request.receiver.id}`} className="cursor-pointer hover:opacity-80">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={request.receiver.avatar || undefined} />
+                            <AvatarFallback>{request.receiver.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                        </Link>
                         <div>
-                          <h3 className="font-semibold">{request.receiver.name}</h3>
-                          <p className="text-sm text-gray-500">@{request.receiver.username}</p>
+                          <Link href={`/profile/${request.receiver.id}`} className="cursor-pointer hover:opacity-80">
+                            <h3 className="font-semibold">{request.receiver.name}</h3>
+                            <p className="text-sm text-gray-500">@{request.receiver.username}</p>
+                          </Link>
                           {request.message && (
                             <p className="text-sm text-gray-600 mt-1 italic">"{request.message}"</p>
                           )}
@@ -345,17 +356,19 @@ export function FriendRequests() {
                   {friends.map((friend: User) => (
                     <Card key={friend.id} className="p-4">
                       <div className="flex flex-col items-center text-center space-y-3">
-                        <Avatar className="h-16 w-16">
-                          <AvatarImage src={friend.avatar || undefined} />
-                          <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{friend.name}</h3>
-                          <p className="text-sm text-gray-500">@{friend.username}</p>
-                          {friend.bio && (
-                            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{friend.bio}</p>
-                          )}
-                        </div>
+                        <Link href={`/profile/${friend.id}`} className="flex flex-col items-center space-y-2 cursor-pointer hover:opacity-80">
+                          <Avatar className="h-16 w-16">
+                            <AvatarImage src={friend.avatar || undefined} />
+                            <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="font-semibold">{friend.name}</h3>
+                            <p className="text-sm text-gray-500">@{friend.username}</p>
+                            {friend.bio && (
+                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">{friend.bio}</p>
+                            )}
+                          </div>
+                        </Link>
                         <Badge variant="secondary" className="flex items-center gap-1">
                           <UserCheck className="h-3 w-3" />
                           Friends
