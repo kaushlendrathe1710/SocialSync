@@ -131,6 +131,255 @@ export const postViews = pgTable("post_views", {
   viewedAt: timestamp("viewed_at").defaultNow(),
 });
 
+// Friend Request System
+export const friendRequests = pgTable("friend_requests", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").notNull(),
+  receiverId: integer("receiver_id").notNull(),
+  status: text("status").default("pending"), // pending, accepted, declined
+  message: text("message"), // optional message with request
+  createdAt: timestamp("created_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+});
+
+export const friendships = pgTable("friendships", {
+  id: serial("id").primaryKey(),
+  user1Id: integer("user1_id").notNull(),
+  user2Id: integer("user2_id").notNull(),
+  closeFriend: boolean("close_friend").default(false), // for story privacy
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Privacy & Safety Features
+export const privacySettings = pgTable("privacy_settings", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  profileVisibility: text("profile_visibility").default("public"), // public, friends, private
+  messagePermission: text("message_permission").default("everyone"), // everyone, friends, none
+  storyVisibility: text("story_visibility").default("friends"), // public, friends, close_friends
+  phoneDiscovery: boolean("phone_discovery").default(true),
+  emailDiscovery: boolean("email_discovery").default(true),
+  locationSharing: boolean("location_sharing").default(false),
+  onlineStatus: boolean("online_status").default(true),
+  readReceipts: boolean("read_receipts").default(true),
+  screenshotNotifications: boolean("screenshot_notifications").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const blockedUsers = pgTable("blocked_users", {
+  id: serial("id").primaryKey(),
+  blockerId: integer("blocker_id").notNull(),
+  blockedId: integer("blocked_id").notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Community Features
+export const communityGroups = pgTable("community_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // beauty, wellness, career, motherhood, etc.
+  privacy: text("privacy").default("public"), // public, private, request_to_join
+  coverImage: text("cover_image"),
+  creatorId: integer("creator_id").notNull(),
+  memberCount: integer("member_count").default(0),
+  isVerified: boolean("is_verified").default(false),
+  tags: text("tags").array(), // for searchability
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const groupMemberships = pgTable("group_memberships", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  userId: integer("user_id").notNull(),
+  role: text("role").default("member"), // member, admin, moderator
+  status: text("status").default("active"), // active, pending, banned
+  joinedAt: timestamp("joined_at").defaultNow(),
+});
+
+export const groupPosts = pgTable("group_posts", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  userId: integer("user_id").notNull(),
+  content: text("content"),
+  imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  isPinned: boolean("is_pinned").default(false),
+  likesCount: integer("likes_count").default(0),
+  commentsCount: integer("comments_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Wellness Features
+export const wellnessTracking = pgTable("wellness_tracking", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  date: timestamp("date").notNull(),
+  moodRating: integer("mood_rating"), // 1-5 scale
+  energyLevel: integer("energy_level"), // 1-5 scale
+  stressLevel: integer("stress_level"), // 1-5 scale
+  sleepHours: integer("sleep_hours"),
+  waterIntake: integer("water_intake"), // glasses
+  exerciseMinutes: integer("exercise_minutes"),
+  notes: text("notes"),
+  isPrivate: boolean("is_private").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const habitTracking = pgTable("habit_tracking", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  frequency: text("frequency").default("daily"), // daily, weekly, monthly
+  category: text("category"), // fitness, wellness, beauty, career
+  targetValue: integer("target_value"), // for quantifiable habits
+  unit: text("unit"), // minutes, glasses, pages, etc.
+  isActive: boolean("is_active").default(true),
+  streakCount: integer("streak_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const habitLogs = pgTable("habit_logs", {
+  id: serial("id").primaryKey(),
+  habitId: integer("habit_id").notNull(),
+  userId: integer("user_id").notNull(),
+  date: timestamp("date").notNull(),
+  completed: boolean("completed").default(false),
+  value: integer("value"), // for quantifiable habits
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Beauty & Lifestyle Features
+export const beautyProducts = pgTable("beauty_products", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  brand: text("brand").notNull(),
+  category: text("category").notNull(), // skincare, makeup, hair, fragrance
+  price: integer("price"), // in cents
+  description: text("description"),
+  imageUrl: text("image_url"),
+  averageRating: integer("average_rating").default(0), // 1-5 scale * 100
+  reviewCount: integer("review_count").default(0),
+  ingredients: text("ingredients").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const productReviews = pgTable("product_reviews", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull(),
+  userId: integer("user_id").notNull(),
+  rating: integer("rating").notNull(), // 1-5 scale
+  title: text("title"),
+  content: text("content"),
+  imageUrls: text("image_urls").array(),
+  skinType: text("skin_type"), // oily, dry, combination, sensitive
+  ageRange: text("age_range"), // 18-25, 26-35, etc.
+  isVerifiedPurchase: boolean("is_verified_purchase").default(false),
+  helpfulCount: integer("helpful_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const wishlists = pgTable("wishlists", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isPublic: boolean("is_public").default(false),
+  isShared: boolean("is_shared").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const wishlistItems = pgTable("wishlist_items", {
+  id: serial("id").primaryKey(),
+  wishlistId: integer("wishlist_id").notNull(),
+  productId: integer("product_id"),
+  customName: text("custom_name"), // for items not in product database
+  customPrice: integer("custom_price"),
+  customUrl: text("custom_url"),
+  priority: text("priority").default("medium"), // high, medium, low
+  notes: text("notes"),
+  isPurchased: boolean("is_purchased").default(false),
+  purchasedAt: timestamp("purchased_at"),
+  addedAt: timestamp("added_at").defaultNow(),
+});
+
+// Social Shopping Features
+export const shoppingPosts = pgTable("shopping_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  content: text("content"),
+  imageUrl: text("image_url"),
+  productIds: integer("product_ids").array(),
+  outfitTags: text("outfit_tags").array(),
+  occasion: text("occasion"), // casual, work, party, date
+  season: text("season"), // spring, summer, fall, winter
+  budget: text("budget"), // budget, mid-range, luxury
+  likesCount: integer("likes_count").default(0),
+  savesCount: integer("saves_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Event Planning Features
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
+  creatorId: integer("creator_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  eventType: text("event_type").notNull(), // party, meetup, workshop, etc.
+  location: text("location"),
+  virtualLink: text("virtual_link"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  maxAttendees: integer("max_attendees"),
+  currentAttendees: integer("current_attendees").default(0),
+  isPrivate: boolean("is_private").default(false),
+  requiresApproval: boolean("requires_approval").default(false),
+  coverImage: text("cover_image"),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const eventAttendees = pgTable("event_attendees", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").notNull(),
+  userId: integer("user_id").notNull(),
+  status: text("status").default("going"), // going, interested, not_going, pending
+  responseDate: timestamp("response_date").defaultNow(),
+  notes: text("notes"),
+});
+
+// Mentorship Features
+export const mentorProfiles = pgTable("mentor_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  expertise: text("expertise").array(), // areas of expertise
+  industry: text("industry"),
+  yearsExperience: integer("years_experience"),
+  bio: text("bio"),
+  hourlyRate: integer("hourly_rate"), // in cents, optional
+  availability: text("availability"), // JSON string of available times
+  isActive: boolean("is_active").default(true),
+  rating: integer("rating").default(0), // average rating * 100
+  sessionCount: integer("session_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const mentorshipRequests = pgTable("mentorship_requests", {
+  id: serial("id").primaryKey(),
+  mentorId: integer("mentor_id").notNull(),
+  menteeId: integer("mentee_id").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: text("status").default("pending"), // pending, accepted, declined
+  preferredDate: timestamp("preferred_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -201,6 +450,117 @@ export const insertPostViewSchema = createInsertSchema(postViews).omit({
   viewedAt: true,
 });
 
+// Insert schemas for new tables
+export const insertFriendRequestSchema = createInsertSchema(friendRequests).omit({
+  id: true,
+  createdAt: true,
+  respondedAt: true,
+});
+
+export const insertFriendshipSchema = createInsertSchema(friendships).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPrivacySettingsSchema = createInsertSchema(privacySettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBlockedUserSchema = createInsertSchema(blockedUsers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCommunityGroupSchema = createInsertSchema(communityGroups).omit({
+  id: true,
+  createdAt: true,
+  memberCount: true,
+});
+
+export const insertGroupMembershipSchema = createInsertSchema(groupMemberships).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export const insertGroupPostSchema = createInsertSchema(groupPosts).omit({
+  id: true,
+  createdAt: true,
+  likesCount: true,
+  commentsCount: true,
+});
+
+export const insertWellnessTrackingSchema = createInsertSchema(wellnessTracking).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertHabitTrackingSchema = createInsertSchema(habitTracking).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertHabitLogSchema = createInsertSchema(habitLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBeautyProductSchema = createInsertSchema(beautyProducts).omit({
+  id: true,
+  createdAt: true,
+  averageRating: true,
+  reviewCount: true,
+});
+
+export const insertProductReviewSchema = createInsertSchema(productReviews).omit({
+  id: true,
+  createdAt: true,
+  helpfulCount: true,
+});
+
+export const insertWishlistSchema = createInsertSchema(wishlists).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWishlistItemSchema = createInsertSchema(wishlistItems).omit({
+  id: true,
+  addedAt: true,
+  purchasedAt: true,
+});
+
+export const insertShoppingPostSchema = createInsertSchema(shoppingPosts).omit({
+  id: true,
+  createdAt: true,
+  likesCount: true,
+  savesCount: true,
+});
+
+export const insertEventSchema = createInsertSchema(events).omit({
+  id: true,
+  createdAt: true,
+  currentAttendees: true,
+});
+
+export const insertEventAttendeeSchema = createInsertSchema(eventAttendees).omit({
+  id: true,
+  responseDate: true,
+});
+
+export const insertMentorProfileSchema = createInsertSchema(mentorProfiles).omit({
+  id: true,
+  createdAt: true,
+  rating: true,
+  sessionCount: true,
+});
+
+export const insertMentorshipRequestSchema = createInsertSchema(mentorshipRequests).omit({
+  id: true,
+  createdAt: true,
+  respondedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -238,6 +598,64 @@ export type InsertLiveStream = z.infer<typeof insertLiveStreamSchema>;
 export type PostView = typeof postViews.$inferSelect;
 export type InsertPostView = z.infer<typeof insertPostViewSchema>;
 
+// New table types
+export type FriendRequest = typeof friendRequests.$inferSelect;
+export type InsertFriendRequest = z.infer<typeof insertFriendRequestSchema>;
+
+export type Friendship = typeof friendships.$inferSelect;
+export type InsertFriendship = z.infer<typeof insertFriendshipSchema>;
+
+export type PrivacySettings = typeof privacySettings.$inferSelect;
+export type InsertPrivacySettings = z.infer<typeof insertPrivacySettingsSchema>;
+
+export type BlockedUser = typeof blockedUsers.$inferSelect;
+export type InsertBlockedUser = z.infer<typeof insertBlockedUserSchema>;
+
+export type CommunityGroup = typeof communityGroups.$inferSelect;
+export type InsertCommunityGroup = z.infer<typeof insertCommunityGroupSchema>;
+
+export type GroupMembership = typeof groupMemberships.$inferSelect;
+export type InsertGroupMembership = z.infer<typeof insertGroupMembershipSchema>;
+
+export type GroupPost = typeof groupPosts.$inferSelect;
+export type InsertGroupPost = z.infer<typeof insertGroupPostSchema>;
+
+export type WellnessTracking = typeof wellnessTracking.$inferSelect;
+export type InsertWellnessTracking = z.infer<typeof insertWellnessTrackingSchema>;
+
+export type HabitTracking = typeof habitTracking.$inferSelect;
+export type InsertHabitTracking = z.infer<typeof insertHabitTrackingSchema>;
+
+export type HabitLog = typeof habitLogs.$inferSelect;
+export type InsertHabitLog = z.infer<typeof insertHabitLogSchema>;
+
+export type BeautyProduct = typeof beautyProducts.$inferSelect;
+export type InsertBeautyProduct = z.infer<typeof insertBeautyProductSchema>;
+
+export type ProductReview = typeof productReviews.$inferSelect;
+export type InsertProductReview = z.infer<typeof insertProductReviewSchema>;
+
+export type Wishlist = typeof wishlists.$inferSelect;
+export type InsertWishlist = z.infer<typeof insertWishlistSchema>;
+
+export type WishlistItem = typeof wishlistItems.$inferSelect;
+export type InsertWishlistItem = z.infer<typeof insertWishlistItemSchema>;
+
+export type ShoppingPost = typeof shoppingPosts.$inferSelect;
+export type InsertShoppingPost = z.infer<typeof insertShoppingPostSchema>;
+
+export type Event = typeof events.$inferSelect;
+export type InsertEvent = z.infer<typeof insertEventSchema>;
+
+export type EventAttendee = typeof eventAttendees.$inferSelect;
+export type InsertEventAttendee = z.infer<typeof insertEventAttendeeSchema>;
+
+export type MentorProfile = typeof mentorProfiles.$inferSelect;
+export type InsertMentorProfile = z.infer<typeof insertMentorProfileSchema>;
+
+export type MentorshipRequest = typeof mentorshipRequests.$inferSelect;
+export type InsertMentorshipRequest = z.infer<typeof insertMentorshipRequestSchema>;
+
 // Extended types for API responses
 export type CommentWithUser = Comment & {
   user: User;
@@ -260,6 +678,37 @@ export type MessageWithUser = Message & {
 export type NotificationWithUser = Notification & {
   fromUser: User;
   post?: Post;
+};
+
+export type FriendRequestWithUser = FriendRequest & {
+  sender: User;
+  receiver: User;
+};
+
+export type GroupWithDetails = CommunityGroup & {
+  creator: User;
+  membershipStatus?: string;
+  isJoined?: boolean;
+};
+
+export type EventWithDetails = Event & {
+  creator: User;
+  attendeeStatus?: string;
+  attendeeCount?: number;
+};
+
+export type WishlistWithItems = Wishlist & {
+  items: (WishlistItem & { product?: BeautyProduct })[];
+  user: User;
+};
+
+export type ProductWithReviews = BeautyProduct & {
+  reviews?: (ProductReview & { user: User })[];
+  userReview?: ProductReview;
+};
+
+export type MentorWithProfile = User & {
+  mentorProfile: MentorProfile;
 };
 
 // Database relations
@@ -362,6 +811,191 @@ export const postViewsRelations = relations(postViews, ({ one }) => ({
   }),
   viewer: one(users, {
     fields: [postViews.viewerId],
+    references: [users.id],
+  }),
+}));
+
+// New table relations
+export const friendRequestsRelations = relations(friendRequests, ({ one }) => ({
+  sender: one(users, {
+    fields: [friendRequests.senderId],
+    references: [users.id],
+    relationName: "friendRequestSender",
+  }),
+  receiver: one(users, {
+    fields: [friendRequests.receiverId],
+    references: [users.id],
+    relationName: "friendRequestReceiver",
+  }),
+}));
+
+export const friendshipsRelations = relations(friendships, ({ one }) => ({
+  user1: one(users, {
+    fields: [friendships.user1Id],
+    references: [users.id],
+    relationName: "friendshipUser1",
+  }),
+  user2: one(users, {
+    fields: [friendships.user2Id],
+    references: [users.id],
+    relationName: "friendshipUser2",
+  }),
+}));
+
+export const privacySettingsRelations = relations(privacySettings, ({ one }) => ({
+  user: one(users, {
+    fields: [privacySettings.userId],
+    references: [users.id],
+  }),
+}));
+
+export const blockedUsersRelations = relations(blockedUsers, ({ one }) => ({
+  blocker: one(users, {
+    fields: [blockedUsers.blockerId],
+    references: [users.id],
+    relationName: "blocker",
+  }),
+  blocked: one(users, {
+    fields: [blockedUsers.blockedId],
+    references: [users.id],
+    relationName: "blocked",
+  }),
+}));
+
+export const communityGroupsRelations = relations(communityGroups, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [communityGroups.creatorId],
+    references: [users.id],
+  }),
+  memberships: many(groupMemberships),
+  posts: many(groupPosts),
+}));
+
+export const groupMembershipsRelations = relations(groupMemberships, ({ one }) => ({
+  group: one(communityGroups, {
+    fields: [groupMemberships.groupId],
+    references: [communityGroups.id],
+  }),
+  user: one(users, {
+    fields: [groupMemberships.userId],
+    references: [users.id],
+  }),
+}));
+
+export const groupPostsRelations = relations(groupPosts, ({ one }) => ({
+  group: one(communityGroups, {
+    fields: [groupPosts.groupId],
+    references: [communityGroups.id],
+  }),
+  user: one(users, {
+    fields: [groupPosts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const wellnessTrackingRelations = relations(wellnessTracking, ({ one }) => ({
+  user: one(users, {
+    fields: [wellnessTracking.userId],
+    references: [users.id],
+  }),
+}));
+
+export const habitTrackingRelations = relations(habitTracking, ({ one, many }) => ({
+  user: one(users, {
+    fields: [habitTracking.userId],
+    references: [users.id],
+  }),
+  logs: many(habitLogs),
+}));
+
+export const habitLogsRelations = relations(habitLogs, ({ one }) => ({
+  habit: one(habitTracking, {
+    fields: [habitLogs.habitId],
+    references: [habitTracking.id],
+  }),
+  user: one(users, {
+    fields: [habitLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const beautyProductsRelations = relations(beautyProducts, ({ many }) => ({
+  reviews: many(productReviews),
+  wishlistItems: many(wishlistItems),
+}));
+
+export const productReviewsRelations = relations(productReviews, ({ one }) => ({
+  product: one(beautyProducts, {
+    fields: [productReviews.productId],
+    references: [beautyProducts.id],
+  }),
+  user: one(users, {
+    fields: [productReviews.userId],
+    references: [users.id],
+  }),
+}));
+
+export const wishlistsRelations = relations(wishlists, ({ one, many }) => ({
+  user: one(users, {
+    fields: [wishlists.userId],
+    references: [users.id],
+  }),
+  items: many(wishlistItems),
+}));
+
+export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
+  wishlist: one(wishlists, {
+    fields: [wishlistItems.wishlistId],
+    references: [wishlists.id],
+  }),
+  product: one(beautyProducts, {
+    fields: [wishlistItems.productId],
+    references: [beautyProducts.id],
+  }),
+}));
+
+export const shoppingPostsRelations = relations(shoppingPosts, ({ one }) => ({
+  user: one(users, {
+    fields: [shoppingPosts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const eventsRelations = relations(events, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [events.creatorId],
+    references: [users.id],
+  }),
+  attendees: many(eventAttendees),
+}));
+
+export const eventAttendeesRelations = relations(eventAttendees, ({ one }) => ({
+  event: one(events, {
+    fields: [eventAttendees.eventId],
+    references: [events.id],
+  }),
+  user: one(users, {
+    fields: [eventAttendees.userId],
+    references: [users.id],
+  }),
+}));
+
+export const mentorProfilesRelations = relations(mentorProfiles, ({ one, many }) => ({
+  user: one(users, {
+    fields: [mentorProfiles.userId],
+    references: [users.id],
+  }),
+  mentorshipRequests: many(mentorshipRequests, { relationName: "mentorRequests" }),
+}));
+
+export const mentorshipRequestsRelations = relations(mentorshipRequests, ({ one }) => ({
+  mentor: one(mentorProfiles, {
+    fields: [mentorshipRequests.mentorId],
+    references: [mentorProfiles.id],
+    relationName: "mentorRequests",
+  }),
+  mentee: one(users, {
+    fields: [mentorshipRequests.menteeId],
     references: [users.id],
   }),
 }));
