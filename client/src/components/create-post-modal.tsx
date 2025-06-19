@@ -15,7 +15,8 @@ import {
   MapPin, 
   Flag, 
   X, 
-  Upload
+  Upload,
+  Clock
 } from 'lucide-react';
 
 interface CreatePostModalProps {
@@ -29,6 +30,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState('public');
+  const [duration, setDuration] = useState<string>('');
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [showMediaUpload, setShowMediaUpload] = useState(false);
@@ -58,6 +60,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const handleClose = () => {
     setContent('');
     setPrivacy('public');
+    setDuration('');
     setMediaFile(null);
     setMediaPreview(null);
     setShowMediaUpload(false);
@@ -101,6 +104,9 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
       formData.append('media', mediaFile);
     }
     formData.append('privacy', privacy);
+    if (duration) {
+      formData.append('duration', duration);
+    }
 
     createPostMutation.mutate(formData);
   };
@@ -133,6 +139,31 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          
+          {/* Post Duration */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Post Duration (Optional)</label>
+            <Select value={duration} onValueChange={setDuration}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select duration (permanent if not set)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Permanent</SelectItem>
+                <SelectItem value="24h">24 Hours</SelectItem>
+                <SelectItem value="7d">7 Days</SelectItem>
+                <SelectItem value="1m">1 Month</SelectItem>
+              </SelectContent>
+            </Select>
+            {duration && (
+              <p className="text-xs text-gray-500">
+                This post will automatically be deleted after {
+                  duration === '24h' ? '24 hours' :
+                  duration === '7d' ? '7 days' :
+                  duration === '1m' ? '1 month' : ''
+                }
+              </p>
+            )}
           </div>
           
           <Textarea

@@ -386,6 +386,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
 
+      // Calculate expiration date based on duration
+      let expiresAt = null;
+      if (req.body.duration) {
+        const now = new Date();
+        switch (req.body.duration) {
+          case '24h':
+            expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            break;
+          case '7d':
+            expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '1m':
+            expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            break;
+        }
+      }
+
       let postData = {
         userId: req.session.userId,
         content: req.body.content || null,
@@ -393,6 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         videoUrl: null as string | null,
         liveStreamId: req.body.liveStreamId ? parseInt(req.body.liveStreamId) : null,
         privacy: req.body.privacy || "public",
+        expiresAt: expiresAt,
       };
       
       console.log('Post data before creation:', postData);

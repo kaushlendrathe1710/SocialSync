@@ -41,6 +41,7 @@ export const posts = pgTable("posts", {
   commentsCount: integer("comments_count").default(0),
   sharesCount: integer("shares_count").default(0),
   viewsCount: integer("views_count").default(0),
+  expiresAt: timestamp("expires_at"), // For time-limited posts
   createdAt: timestamp("created_at").defaultNow(),
 });
 
