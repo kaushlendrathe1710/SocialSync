@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye, Clock } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye, Clock, Smile } from "lucide-react";
 import ReactionPicker, { reactions } from "@/components/reaction-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -206,6 +206,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || "");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditEmojiPicker, setShowEditEmojiPicker] = useState(false);
 
   // Track post views automatically
   const viewTrackingRef = usePostViewTracking({ 
@@ -353,16 +354,24 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                   const timeLeft = expiresDate.getTime() - Date.now();
                   const hoursLeft = timeLeft / (1000 * 60 * 60);
                   
-                  const isUrgent = hoursLeft < 24;
-                  const textColor = isUrgent 
-                    ? "text-red-600 dark:text-red-400" 
-                    : "text-orange-600 dark:text-orange-400";
+                  // More user-friendly color scheme
+                  let textColor, icon;
+                  if (hoursLeft < 1) {
+                    textColor = "text-red-600 dark:text-red-400";
+                    icon = "⚠️";
+                  } else if (hoursLeft < 6) {
+                    textColor = "text-amber-600 dark:text-amber-400";
+                    icon = "⏰";
+                  } else {
+                    textColor = "text-blue-600 dark:text-blue-400";
+                    icon = "📅";
+                  }
                   
                   return (
                     <div className={`flex items-center space-x-1 text-xs ${textColor}`}>
                       <Clock className="w-3 h-3" />
                       <span>
-                        {isUrgent ? "⚠️ " : ""}Expires {formatDistanceToNow(expiresDate, { addSuffix: true })}
+                        {icon} Expires {formatDistanceToNow(expiresDate, { addSuffix: true })}
                       </span>
                     </div>
                   );
@@ -399,17 +408,54 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
       <CardContent className="space-y-4">
         {isEditing ? (
           <div className="space-y-3">
-            <Textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[100px]"
-              placeholder="What's on your mind?"
-            />
+            <div className="relative">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="min-h-[100px] pr-12"
+                placeholder="What's on your mind?"
+              />
+              <div className="absolute bottom-3 right-3">
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEditEmojiPicker(!showEditEmojiPicker)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                  {showEditEmojiPicker && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50">
+                      <div className="grid grid-cols-8 gap-1">
+                        {['😀', '😁', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => {
+                              setEditContent(prev => prev + emoji);
+                              setShowEditEmojiPicker(false);
+                            }}
+                            className="text-lg hover:bg-gray-100 rounded p-1 transition-colors"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
             <div className="flex space-x-2">
               <Button onClick={handleUpdatePost} disabled={updatePostMutation.isPending}>
                 Save Changes
               </Button>
-              <Button variant="outline" onClick={() => setIsEditing(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsEditing(false);
+                setShowEditEmojiPicker(false);
+              }}>
                 Cancel
               </Button>
             </div>
