@@ -44,7 +44,7 @@ interface User {
 
 export function FriendRequests() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [requestMessage, setRequestMessage] = useState("");
+  const [requestMessages, setRequestMessages] = useState<Record<number, string>>({});
   const [showSendDialog, setShowSendDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,7 +79,9 @@ export function FriendRequests() {
       queryClient.invalidateQueries({ queryKey: ["/api/friend-requests/sent"] });
       queryClient.invalidateQueries({ queryKey: ["/api/friend-suggestions"] });
       setShowSendDialog(false);
-      setRequestMessage("");
+      if (selectedUser) {
+        setRequestMessages(prev => ({ ...prev, [selectedUser.id]: "" }));
+      }
       setSelectedUser(null);
     },
     onError: (error: any) => {
@@ -122,9 +124,10 @@ export function FriendRequests() {
   const handleConfirmSendRequest = () => {
     if (!selectedUser) return;
     
+    const message = requestMessages[selectedUser.id] || "";
     sendRequestMutation.mutate({
       receiverId: selectedUser.id,
-      message: requestMessage.trim() || undefined,
+      message: message.trim() || undefined,
     });
   };
 
@@ -406,8 +409,11 @@ export function FriendRequests() {
                 <Textarea
                   id="message"
                   placeholder="Say something nice..."
-                  value={requestMessage}
-                  onChange={(e) => setRequestMessage(e.target.value)}
+                  value={requestMessages[selectedUser.id] || ""}
+                  onChange={(e) => setRequestMessages(prev => ({ 
+                    ...prev, 
+                    [selectedUser.id]: e.target.value 
+                  }))}
                   rows={3}
                 />
               </div>
