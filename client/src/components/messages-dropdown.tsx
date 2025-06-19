@@ -117,7 +117,7 @@ export default function MessagesDropdown({
     return isFromCurrentUser ? `You: ${preview}` : preview;
   };
 
-  // Deduplicate conversations and keep the most recent message for each user
+  // Process conversations with real-time updates
   const uniqueConversations = conversations
     .reduce((acc, conv) => {
       const otherUserId = conv.senderId === user?.id ? conv.receiverId : conv.senderId;
@@ -148,7 +148,7 @@ export default function MessagesDropdown({
     );
   });
 
-  const unreadCount = uniqueConversations.filter((conv: MessageWithUser) => 
+  const unreadCount = conversations.filter((conv: MessageWithUser) => 
     !conv.readAt && conv.receiverId === user?.id
   ).length;
 

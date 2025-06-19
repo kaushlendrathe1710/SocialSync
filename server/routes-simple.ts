@@ -1028,6 +1028,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content,
       });
 
+      // Get sender info for WebSocket broadcast
+      const sender = await storage.getUser(req.session.userId);
+      
+      // Broadcast message to receiver in real-time if they're online
+      if (connectedUsers.has(receiverId)) {
+        const receiverSockets = connectedUsers.get(receiverId)!;
+        receiverSockets.forEach(socket => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+              type: 'message',
+              data: {
+                ...message,
+                senderName: sender?.name || 'Unknown'
+              }
+            }));
+          }
+        });
+      }
+
       res.json(message);
     } catch (error) {
       console.error("Send message error:", error);

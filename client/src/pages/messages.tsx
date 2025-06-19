@@ -1,5 +1,5 @@
-import EnhancedMessaging from '@/components/enhanced-messaging';
+import RealTimeMessaging from '@/components/real-time-messaging';
 
 export default function MessagesPage() {
-  return <EnhancedMessaging />;
+  return <RealTimeMessaging />;
 }
