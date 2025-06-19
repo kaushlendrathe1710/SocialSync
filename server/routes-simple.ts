@@ -1245,6 +1245,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create event endpoint
+  app.post("/api/events", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { title, description, eventDate, eventTime, location, maxAttendees } = req.body;
+
+      if (!title?.trim()) {
+        return res.status(400).json({ message: "Event title is required" });
+      }
+
+      // For now, we'll just return a success response since we don't have event storage implemented
+      // In a real implementation, you would save this to a database
+      const eventData = {
+        id: Date.now(),
+        title,
+        description,
+        eventDate,
+        eventTime,
+        location,
+        maxAttendees,
+        createdBy: req.session.userId,
+        createdAt: new Date().toISOString()
+      };
+
+      res.status(201).json({
+        message: "Event created successfully",
+        event: eventData
+      });
+    } catch (error) {
+      console.error("Create event error:", error);
+      res.status(500).json({ message: "Failed to create event" });
+    }
+  });
+
+  // Create room endpoint
+  app.post("/api/rooms", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { name, description, privacy, maxMembers } = req.body;
+
+      if (!name?.trim()) {
+        return res.status(400).json({ message: "Room name is required" });
+      }
+
+      // For now, we'll just return a success response since we don't have room storage implemented
+      // In a real implementation, you would save this to a database
+      const roomData = {
+        id: Date.now(),
+        name,
+        description,
+        privacy,
+        maxMembers,
+        createdBy: req.session.userId,
+        members: [req.session.userId],
+        createdAt: new Date().toISOString()
+      };
+
+      res.status(201).json({
+        message: "Room created successfully",
+        room: roomData
+      });
+    } catch (error) {
+      console.error("Create room error:", error);
+      res.status(500).json({ message: "Failed to create room" });
+    }
+  });
+
   // Admin endpoints
   app.get("/api/admin/stats", async (req: Request, res: Response) => {
     try {

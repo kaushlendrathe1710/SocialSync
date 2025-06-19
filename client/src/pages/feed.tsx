@@ -28,6 +28,8 @@ export default function FeedPage() {
   const [isLiveVideoModalOpen, setIsLiveVideoModalOpen] = useState(false);
   const [isPhotoVideoModalOpen, setIsPhotoVideoModalOpen] = useState(false);
   const [isFeelingActivityModalOpen, setIsFeelingActivityModalOpen] = useState(false);
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
   const [selectedStory, setSelectedStory] = useState<(Story & { user: User }) | null>(null);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
 
@@ -38,13 +40,19 @@ export default function FeedPage() {
       // For now, just open the post modal - can be extended for story creation
       setIsCreatePostModalOpen(true);
     };
+    const handleOpenCreateEvent = () => setIsCreateEventModalOpen(true);
+    const handleOpenCreateRoom = () => setIsCreateRoomModalOpen(true);
 
     window.addEventListener('openCreatePost', handleOpenCreatePost);
     window.addEventListener('openCreateStory', handleOpenCreateStory);
+    window.addEventListener('openCreateEvent', handleOpenCreateEvent);
+    window.addEventListener('openCreateRoom', handleOpenCreateRoom);
 
     return () => {
       window.removeEventListener('openCreatePost', handleOpenCreatePost);
       window.removeEventListener('openCreateStory', handleOpenCreateStory);
+      window.removeEventListener('openCreateEvent', handleOpenCreateEvent);
+      window.removeEventListener('openCreateRoom', handleOpenCreateRoom);
     };
   }, []);
 
@@ -259,6 +267,16 @@ export default function FeedPage() {
       <FeelingActivityModal 
         isOpen={isFeelingActivityModalOpen}
         onClose={() => setIsFeelingActivityModalOpen(false)}
+      />
+      
+      <CreateEventModal 
+        isOpen={isCreateEventModalOpen}
+        onClose={() => setIsCreateEventModalOpen(false)}
+      />
+      
+      <CreateRoomModal 
+        isOpen={isCreateRoomModalOpen}
+        onClose={() => setIsCreateRoomModalOpen(false)}
       />
       
       {selectedStory && (
