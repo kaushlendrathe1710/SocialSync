@@ -127,7 +127,7 @@ export function WellnessDashboard() {
   // Mutations
   const recordWellnessMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/wellness-tracking", "POST", {
+      return apiRequest("POST", "/api/wellness-tracking", {
         date: new Date(selectedDate),
         moodRating: data.moodRating[0],
         energyLevel: data.energyLevel[0],
@@ -159,7 +159,7 @@ export function WellnessDashboard() {
 
   const createHabitMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/habits", "POST", {
+      return apiRequest("POST", "/api/habits", {
         name: data.name,
         description: data.description || null,
         category: data.category,
