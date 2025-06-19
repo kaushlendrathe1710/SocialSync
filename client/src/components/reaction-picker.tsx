@@ -37,10 +37,16 @@ const extendedReactions = [
 
 export default function ReactionPicker({ onReaction, currentReaction, disabled, children }: ReactionPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showExtended, setShowExtended] = useState(false);
 
   const handleReaction = (reactionType: string) => {
     onReaction(reactionType);
     setIsOpen(false);
+    setShowExtended(false);
+  };
+
+  const handleExtendedClick = () => {
+    setShowExtended(true);
   };
 
   const getCurrentReaction = () => {
@@ -48,6 +54,7 @@ export default function ReactionPicker({ onReaction, currentReaction, disabled, 
   };
 
   const currentReactionData = getCurrentReaction();
+  const reactionsToShow = showExtended ? extendedReactions : reactions;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -65,9 +72,9 @@ export default function ReactionPicker({ onReaction, currentReaction, disabled, 
           {children}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-3" align="start" side="top">
-        <div className="grid grid-cols-7 gap-2">
-          {reactions.map((reaction) => {
+      <PopoverContent className={`w-auto p-3 ${showExtended ? 'max-w-md' : ''}`} align="start" side="top">
+        <div className={`grid gap-2 ${showExtended ? 'grid-cols-6' : 'grid-cols-7'}`}>
+          {reactionsToShow.map((reaction) => {
             const isSelected = currentReaction === reaction.type;
             
             return (
@@ -95,26 +102,39 @@ export default function ReactionPicker({ onReaction, currentReaction, disabled, 
               </div>
             );
           })}
-          <div className="flex flex-col items-center">
+          {!showExtended && (
+            <div className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-12 w-12 p-0 rounded-full hover:scale-110 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleExtendedClick();
+                }}
+                title="More reactions"
+              >
+                <span className="text-xl text-gray-500">+</span>
+              </Button>
+              <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
+                More
+              </span>
+            </div>
+          )}
+        </div>
+        {showExtended && (
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             <Button
               variant="ghost"
               size="sm"
-              className="h-12 w-12 p-0 rounded-full hover:scale-110 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // TODO: Open extended emoji picker
-                console.log('Open extended emoji picker');
-              }}
-              title="More reactions"
+              className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              onClick={() => setShowExtended(false)}
             >
-              <span className="text-xl text-gray-500">+</span>
+              Show less
             </Button>
-            <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
-              More
-            </span>
           </div>
-        </div>
+        )}
       </PopoverContent>
     </Popover>
   );

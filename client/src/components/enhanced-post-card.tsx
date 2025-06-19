@@ -66,13 +66,13 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
     }
   };
 
-  const getTooltipContent = () => {
+  const renderReactionsContent = () => {
     if (isLoading) {
-      return "Loading reactions...";
+      return <div className="text-gray-500">Loading reactions...</div>;
     }
 
     if (!reactions || reactions.length === 0) {
-      return "No reactions yet";
+      return <div className="text-gray-500">No reactions yet</div>;
     }
 
     // Group reactions by type
@@ -86,46 +86,57 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
       reactionGroups[type].push(username);
     });
 
-    // Format the tooltip content with proper emoji mapping
-    const lines = Object.entries(reactionGroups).map(([type, users]) => {
-      let emoji = '👍';
-      let label = 'Like';
-      
-      // Map reaction types to emojis and labels
-      switch(type) {
-        case 'like': 
-          emoji = '👍'; 
-          label = 'Like';
-          break;
-        case 'love': 
-          emoji = '❤️'; 
-          label = 'Love';
-          break;
-        case 'laugh': 
-          emoji = '😂'; 
-          label = 'Haha';
-          break;
-        case 'wow': 
-          emoji = '😮'; 
-          label = 'Wow';
-          break;
-        case 'sad': 
-          emoji = '😢'; 
-          label = 'Sad';
-          break;
-        case 'angry': 
-          emoji = '😠'; 
-          label = 'Angry';
-          break;
-        default: 
-          emoji = '👍';
-          label = 'Like';
-      }
-      
-      return `${emoji} ${label}: ${users.join(', ')}`;
-    });
-
-    return lines.join('\n');
+    return (
+      <div className="space-y-2">
+        {Object.entries(reactionGroups).map(([type, users]) => {
+          let emoji = '👍';
+          let label = 'Like';
+          
+          // Map reaction types to emojis and labels
+          switch(type) {
+            case 'like': 
+              emoji = '👍'; 
+              label = 'Like';
+              break;
+            case 'love': 
+              emoji = '❤️'; 
+              label = 'Love';
+              break;
+            case 'laugh': 
+              emoji = '😂'; 
+              label = 'Haha';
+              break;
+            case 'wow': 
+              emoji = '😮'; 
+              label = 'Wow';
+              break;
+            case 'sad': 
+              emoji = '😢'; 
+              label = 'Sad';
+              break;
+            case 'angry': 
+              emoji = '😠'; 
+              label = 'Angry';
+              break;
+            default: 
+              emoji = '👍';
+              label = 'Like';
+          }
+          
+          return (
+            <div key={type} className="flex items-start space-x-2">
+              <span className="text-lg">{emoji}</span>
+              <div>
+                <div className="font-medium text-sm">{label}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {users.join(', ')}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -138,14 +149,12 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
           {children}
         </span>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-        <div className="space-y-2">
-          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 mb-2">
+      <PopoverContent className="w-80 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">
             Who reacted
           </h4>
-          <div className="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
-            {getTooltipContent()}
-          </div>
+          {renderReactionsContent()}
         </div>
       </PopoverContent>
     </Popover>
