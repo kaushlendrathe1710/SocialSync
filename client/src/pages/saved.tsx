@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { Bookmark, Search, Grid, List, Heart, MessageCircle, Share, MoreHorizontal, Filter, Plus } from 'lucide-react';
+import { Bookmark, Search, Grid, List, Heart, MessageCircle, Share, MoreHorizontal, Filter, Plus, Trash2, Edit } from 'lucide-react';
 import PostCard from '@/components/post-card';
 import type { PostWithUser } from '@shared/schema';
 
@@ -99,6 +101,33 @@ export default function SavedPage() {
       toast({
         title: "Error",
         description: "Failed to create collection",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCollection = async (collectionId: number, collectionName: string) => {
+    try {
+      // Prevent deletion of "All Saved" collection
+      if (collectionName === "All Saved") {
+        toast({
+          title: "Error",
+          description: "Cannot delete the default 'All Saved' collection",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setCollections(collections.filter(collection => collection.id !== collectionId));
+      
+      toast({
+        title: "Success",
+        description: `Collection "${collectionName}" deleted successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete collection",
         variant: "destructive",
       });
     }
@@ -253,17 +282,67 @@ export default function SavedPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {savedCollections.map((collection) => (
-                  <Card key={collection.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                  <Card key={collection.id} className="hover:shadow-md transition-shadow cursor-pointer group">
                     <CardContent className="p-4">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className={`w-10 h-10 ${collection.color} rounded-lg flex items-center justify-center`}>
-                          <Bookmark className="w-5 h-5 text-white" />
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 ${collection.color} rounded-lg flex items-center justify-center`}>
+                            <Bookmark className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-900">{collection.name}</h3>
+                            <p className="text-sm text-gray-500">{collection.count} saved</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900">{collection.name}</h3>
-                          <p className="text-sm text-gray-500">{collection.count} saved</p>
-                        </div>
+                        
+                        {/* Collection Actions */}
+                        {collection.name !== "All Saved" && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit Collection
+                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Collection
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Collection</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "{collection.name}"? This action cannot be undone.
+                                      All posts in this collection will be moved to "All Saved".
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteCollection(collection.id, collection.name)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
+                      
                       <div className="grid grid-cols-3 gap-1">
                         {[...Array(3)].map((_, i) => (
                           <div key={i} className="aspect-square bg-gray-100 rounded"></div>
