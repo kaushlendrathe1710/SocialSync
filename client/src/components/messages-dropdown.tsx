@@ -154,6 +154,89 @@ export default function MessagesDropdown({
 
   if (!isOpen) return null;
 
+  // If compose modal is open, render it instead of the dropdown
+  if (showComposeModal) {
+    return (
+      <Dialog open={showComposeModal} onOpenChange={setShowComposeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New Message</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSendMessage} className="space-y-4">
+            <div className="relative">
+              <Label htmlFor="recipient">To</Label>
+              <Input
+                id="recipient"
+                placeholder="Search for people..."
+                className="mt-1"
+                value={recipientQuery}
+                onChange={(e) => setRecipientQuery(e.target.value)}
+              />
+              
+              {/* Search Results Dropdown */}
+              {recipientQuery.length > 2 && searchResults.length > 0 && !selectedRecipient && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {searchResults.map((user: User) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => handleRecipientSelect(user)}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={user.avatar || undefined} />
+                        <AvatarFallback>
+                          {user.name?.charAt(0).toUpperCase() || user.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm">{user.name}</p>
+                        <p className="text-xs text-gray-500">@{user.username}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                placeholder="Write your message..."
+                className="mt-1 min-h-[100px]"
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowComposeModal(false);
+                  setSelectedRecipient(null);
+                  setMessageContent("");
+                  setRecipientQuery("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                disabled={!selectedRecipient || !messageContent.trim() || sendMessageMutation.isPending}
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {sendMessageMutation.isPending ? 'Sending...' : 'Send'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <div 
       ref={dropdownRef}
@@ -312,84 +395,7 @@ export default function MessagesDropdown({
         </Link>
       </div>
 
-      {/* Compose Message Modal */}
-      <Dialog open={showComposeModal} onOpenChange={setShowComposeModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>New Message</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSendMessage} className="space-y-4">
-            <div className="relative">
-              <Label htmlFor="recipient">To</Label>
-              <Input
-                id="recipient"
-                placeholder="Search for people..."
-                className="mt-1"
-                value={recipientQuery}
-                onChange={(e) => setRecipientQuery(e.target.value)}
-              />
-              
-              {/* Search Results Dropdown */}
-              {recipientQuery.length > 2 && searchResults.length > 0 && !selectedRecipient && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {searchResults.map((user: User) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => handleRecipientSelect(user)}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
-                    >
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={user.avatar || undefined} />
-                        <AvatarFallback>
-                          {user.name?.charAt(0).toUpperCase() || user.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{user.name}</p>
-                        <p className="text-xs text-gray-500">@{user.username}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            <div>
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                placeholder="Write your message..."
-                className="mt-1 min-h-[100px]"
-                value={messageContent}
-                onChange={(e) => setMessageContent(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex justify-end space-x-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setShowComposeModal(false);
-                  setSelectedRecipient(null);
-                  setMessageContent("");
-                  setRecipientQuery("");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit"
-                disabled={!selectedRecipient || !messageContent.trim() || sendMessageMutation.isPending}
-              >
-                <Send className="w-4 h-4 mr-2" />
-                {sendMessageMutation.isPending ? 'Sending...' : 'Send'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Settings Modal */}
       <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
