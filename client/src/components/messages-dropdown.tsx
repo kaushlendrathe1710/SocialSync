@@ -256,7 +256,7 @@ export default function MessagesDropdown({
                           {otherUser.name || otherUser.username}
                         </div>
                         <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(new Date(conversation.createdAt), { addSuffix: true })}
+                          {conversation.createdAt ? formatDistanceToNow(conversation.createdAt, { addSuffix: true }) : ''}
                         </span>
                       </div>
                       
@@ -342,7 +342,7 @@ export default function MessagesDropdown({
                       <Avatar className="w-8 h-8">
                         <AvatarImage src={user.avatar || undefined} />
                         <AvatarFallback>
-                          {getUserInitials(user.name || user.username)}
+                          {user.name?.charAt(0).toUpperCase() || user.username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
