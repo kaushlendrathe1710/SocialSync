@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -79,6 +79,67 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
     highContrast: false,
     autoplay: true,
   });
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('displaySettings');
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      setDisplay(parsed);
+      applySettings(parsed);
+    }
+  }, []);
+
+  // Apply settings to the document
+  const applySettings = (settings: typeof display) => {
+    // Apply theme
+    const root = document.documentElement;
+    if (settings.theme === 'dark') {
+      root.classList.add('dark');
+    } else if (settings.theme === 'light') {
+      root.classList.remove('dark');
+    } else {
+      // System theme
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    }
+
+    // Apply font size
+    root.classList.remove('text-small', 'text-medium', 'text-large', 'text-extra-large');
+    root.classList.add(`text-${settings.fontSize}`);
+
+    // Apply accessibility settings
+    if (settings.reducedMotion) {
+      root.classList.add('motion-reduced');
+    } else {
+      root.classList.remove('motion-reduced');
+    }
+
+    if (settings.highContrast) {
+      root.classList.add('high-contrast');
+    } else {
+      root.classList.remove('high-contrast');
+    }
+
+    // Store language preference
+    document.documentElement.lang = settings.language;
+  };
+
+  // Save settings and apply them
+  const saveDisplaySettings = (newSettings: typeof display) => {
+    setDisplay(newSettings);
+    localStorage.setItem('displaySettings', JSON.stringify(newSettings));
+    applySettings(newSettings);
+    
+    toast({
+      title: "Settings saved",
+      description: "Your display preferences have been updated.",
+    });
+  };
 
   const helpTopics = {
     'getting-started': {
@@ -328,7 +389,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Choose your preferred color scheme</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={display.theme} onValueChange={(value) => setDisplay({...display, theme: value})}>
+                <Select value={display.theme} onValueChange={(value) => saveDisplaySettings({...display, theme: value})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -363,7 +424,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Select your preferred language</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={display.language} onValueChange={(value) => setDisplay({...display, language: value})}>
+                <Select value={display.language} onValueChange={(value) => saveDisplaySettings({...display, language: value})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -390,7 +451,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Adjust text size for better readability</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={display.fontSize} onValueChange={(value) => setDisplay({...display, fontSize: value})}>
+                <Select value={display.fontSize} onValueChange={(value) => saveDisplaySettings({...display, fontSize: value})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -419,7 +480,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   <Switch
                     id="reduced-motion"
                     checked={display.reducedMotion}
-                    onCheckedChange={(checked) => setDisplay({...display, reducedMotion: checked})}
+                    onCheckedChange={(checked) => saveDisplaySettings({...display, reducedMotion: checked})}
                   />
                 </div>
                 <Separator />
@@ -431,7 +492,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   <Switch
                     id="high-contrast"
                     checked={display.highContrast}
-                    onCheckedChange={(checked) => setDisplay({...display, highContrast: checked})}
+                    onCheckedChange={(checked) => saveDisplaySettings({...display, highContrast: checked})}
                   />
                 </div>
                 <Separator />
