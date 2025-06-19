@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -35,8 +35,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [showMediaUpload, setShowMediaUpload] = useState(false);
 
-  // Debug logging
-  console.log('CreatePostModal rendered:', { isOpen, user: !!user });
+
 
   const createPostMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -47,7 +46,6 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
         }
         return response.json();
       } catch (error) {
-        console.error('Create post error:', error);
         throw error;
       }
     },
@@ -135,6 +133,9 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Post</DialogTitle>
+            <DialogDescription>
+              Share what's on your mind with your friends and followers
+            </DialogDescription>
           </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
