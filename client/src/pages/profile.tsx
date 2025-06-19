@@ -82,9 +82,15 @@ export default function ProfilePage() {
     );
   }
 
-  const { data: profileUser, isLoading: userLoading } = useQuery({
+  const { data: profileUser, isLoading: userLoading, error: userError } = useQuery({
     queryKey: ['/api/users', profileUserId],
-    queryFn: () => fetch(`/api/users/${profileUserId}`).then(res => res.json()) as Promise<User>,
+    queryFn: async () => {
+      const response = await fetch(`/api/users/${profileUserId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user: ${response.status}`);
+      }
+      return response.json() as Promise<User>;
+    },
     enabled: !!profileUserId,
   });
 

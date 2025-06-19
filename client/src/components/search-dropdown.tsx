@@ -41,7 +41,9 @@ export default function SearchDropdown({
       if (!searchQuery.trim()) return { users: [], posts: [] };
       const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
       if (!response.ok) throw new Error('Search failed');
-      return response.json();
+      const data = await response.json();
+      console.log('Search results:', data); // Debug log
+      return data;
     },
     enabled: searchQuery.length > 0,
   });

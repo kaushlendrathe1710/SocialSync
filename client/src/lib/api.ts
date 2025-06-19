@@ -55,5 +55,11 @@ export const api = {
   markNotificationRead: (id: number) => apiRequest('PUT', `/api/notifications/${id}/read`),
   markAllNotificationsRead: () => apiRequest('PUT', '/api/notifications/read-all'),
 
-
+  // Search
+  search: (query: string, type?: string) => {
+    const params = new URLSearchParams();
+    params.append('q', query);
+    if (type) params.append('type', type);
+    return apiRequest('GET', `/api/search?${params.toString()}`);
+  },
 };
