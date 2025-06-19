@@ -532,6 +532,22 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
               </CardContent>
             </Card>
           </div>
+          
+          {/* Apply and Cancel Buttons */}
+          <div className="flex justify-end space-x-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => {
+              cancelDisplaySettings();
+              onClose();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              saveDisplaySettings();
+              onClose();
+            }}>
+              Apply Changes
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     );
