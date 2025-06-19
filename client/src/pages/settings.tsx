@@ -68,6 +68,15 @@ export default function SettingsPage() {
   });
 
   const [websiteError, setWebsiteError] = useState<string>('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<'password' | 'otp' | 'confirm'>('password');
+  const [deleteData, setDeleteData] = useState({
+    password: '',
+    otp: '',
+    confirmText: '',
+  });
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const isValidUrl = (url: string) => {
     if (!url.trim()) return true; // Allow empty URL
@@ -116,22 +125,112 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      try {
-        // Implementation for account deletion
-        toast({
-          title: "Account Deletion",
-          description: "Account deletion request submitted",
+  const handleDeleteAccount = () => {
+    setShowDeleteDialog(true);
+    setDeleteStep('password');
+    setDeleteData({ password: '', otp: '', confirmText: '' });
+    setDeleteError('');
+  };
+
+  const handleDeleteStep = async () => {
+    setDeleteError('');
+    setDeleteLoading(true);
+
+    try {
+      if (deleteStep === 'password') {
+        // Step 1: Verify password
+        if (!deleteData.password) {
+          setDeleteError('Password is required');
+          setDeleteLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/auth/verify-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ password: deleteData.password }),
         });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete account",
-          variant: "destructive",
+
+        if (response.ok) {
+          // Send OTP to user's email
+          const otpResponse = await fetch('/api/auth/send-delete-otp', {
+            method: 'POST',
+            credentials: 'include',
+          });
+
+          if (otpResponse.ok) {
+            setDeleteStep('otp');
+            toast({
+              title: "Verification Code Sent",
+              description: "Check your email for the verification code",
+            });
+          } else {
+            setDeleteError('Failed to send verification code');
+          }
+        } else {
+          const errorData = await response.json();
+          setDeleteError(errorData.message || 'Invalid password');
+        }
+      } else if (deleteStep === 'otp') {
+        // Step 2: Verify OTP
+        if (!deleteData.otp || deleteData.otp.length !== 6) {
+          setDeleteError('Please enter the 6-digit verification code');
+          setDeleteLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/auth/verify-delete-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ otp: deleteData.otp }),
         });
+
+        if (response.ok) {
+          setDeleteStep('confirm');
+        } else {
+          const errorData = await response.json();
+          setDeleteError(errorData.message || 'Invalid verification code');
+        }
+      } else if (deleteStep === 'confirm') {
+        // Step 3: Final confirmation
+        if (deleteData.confirmText !== 'DELETE') {
+          setDeleteError('Please type "DELETE" to confirm account deletion');
+          setDeleteLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/auth/delete-account', {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          toast({
+            title: "Account Deleted",
+            description: "Your account has been permanently deleted",
+          });
+          // Redirect to home page after successful deletion
+          window.location.href = '/';
+        } else {
+          const errorData = await response.json();
+          setDeleteError(errorData.message || 'Failed to delete account');
+        }
       }
+    } catch (error) {
+      setDeleteError('Something went wrong. Please try again.');
+    } finally {
+      setDeleteLoading(false);
     }
+  };
+
+  const resetDeleteFlow = () => {
+    setShowDeleteDialog(false);
+    setDeleteStep('password');
+    setDeleteData({ password: '', otp: '', confirmText: '' });
+    setDeleteError('');
+    setDeleteLoading(false);
   };
 
   const handleDownloadData = async () => {
@@ -747,6 +846,113 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Secure Delete Account Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={resetDeleteFlow}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Delete Account - Step {deleteStep === 'password' ? '1' : deleteStep === 'otp' ? '2' : '3'} of 3
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {deleteStep === 'password' && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  To delete your account, first confirm your password:
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="delete-password">Current Password</Label>
+                  <Input
+                    id="delete-password"
+                    type="password"
+                    value={deleteData.password}
+                    onChange={(e) => setDeleteData({...deleteData, password: e.target.value})}
+                    placeholder="Enter your current password"
+                  />
+                </div>
+              </div>
+            )}
+
+            {deleteStep === 'otp' && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  We've sent a verification code to your email. Enter it below:
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="delete-otp">Verification Code</Label>
+                  <Input
+                    id="delete-otp"
+                    type="text"
+                    maxLength={6}
+                    value={deleteData.otp}
+                    onChange={(e) => setDeleteData({...deleteData, otp: e.target.value.replace(/\D/g, '')})}
+                    placeholder="Enter 6-digit code"
+                    className="text-center text-lg tracking-widest"
+                  />
+                </div>
+              </div>
+            )}
+
+            {deleteStep === 'confirm' && (
+              <div className="space-y-3">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800 font-medium">
+                    ⚠️ This action cannot be undone!
+                  </p>
+                  <p className="text-sm text-red-600 mt-1">
+                    All your data, posts, messages, and account information will be permanently deleted.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="delete-confirm">Type "DELETE" to confirm</Label>
+                  <Input
+                    id="delete-confirm"
+                    type="text"
+                    value={deleteData.confirmText}
+                    onChange={(e) => setDeleteData({...deleteData, confirmText: e.target.value})}
+                    placeholder="Type DELETE to confirm"
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+            )}
+
+            {deleteError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{deleteError}</p>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-4">
+              <Button 
+                variant="outline" 
+                onClick={resetDeleteFlow}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleDeleteStep}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  "Processing..."
+                ) : deleteStep === 'password' ? (
+                  "Verify Password"
+                ) : deleteStep === 'otp' ? (
+                  "Verify Code"
+                ) : (
+                  "Delete Account"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
