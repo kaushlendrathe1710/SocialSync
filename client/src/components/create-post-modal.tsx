@@ -116,7 +116,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
       formData.append('media', mediaFile);
     }
     formData.append('privacy', privacy);
-    if (duration) {
+    if (duration && duration !== 'permanent') {
       formData.append('duration', duration);
     }
 
@@ -168,13 +168,13 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 <SelectValue placeholder="Select duration (permanent if not set)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Permanent</SelectItem>
+                <SelectItem value="permanent">Permanent</SelectItem>
                 <SelectItem value="24h">24 Hours</SelectItem>
                 <SelectItem value="7d">7 Days</SelectItem>
                 <SelectItem value="1m">1 Month</SelectItem>
               </SelectContent>
             </Select>
-            {duration && (
+            {duration && duration !== 'permanent' && (
               <p className="text-xs text-gray-500">
                 This post will automatically be deleted after {
                   duration === '24h' ? '24 hours' :
