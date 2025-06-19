@@ -16,6 +16,10 @@ import {
   Bell,
   BellOff
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 import type { NotificationWithUser } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
@@ -30,6 +34,20 @@ export default function NotificationsDropdown({
 }: NotificationsDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  
+  // Notification settings state
+  const [notificationSettings, setNotificationSettings] = useState({
+    pushNotifications: true,
+    emailNotifications: false,
+    likesComments: true,
+    follows: true,
+    messages: true,
+    posts: true,
+    mentions: true,
+    marketing: false
+  });
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['/api/notifications'],
@@ -147,7 +165,12 @@ export default function NotificationsDropdown({
               Mark all read
             </Button>
           )}
-          <Button variant="ghost" size="sm" className="p-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="p-1"
+            onClick={() => setShowSettingsModal(true)}
+          >
             <Settings className="h-4 w-4 text-gray-500" />
           </Button>
         </div>
@@ -282,6 +305,105 @@ export default function NotificationsDropdown({
           </Link>
         </div>
       )}
+      
+      {/* Notification Settings Modal */}
+      <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Notification Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Push Notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  Receive push notifications on your device
+                </p>
+              </div>
+              <Switch
+                checked={notificationSettings.pushNotifications}
+                onCheckedChange={(checked) => 
+                  setNotificationSettings({...notificationSettings, pushNotifications: checked})
+                }
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Email Notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  Receive notifications via email
+                </p>
+              </div>
+              <Switch
+                checked={notificationSettings.emailNotifications}
+                onCheckedChange={(checked) => 
+                  setNotificationSettings({...notificationSettings, emailNotifications: checked})
+                }
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Likes and Comments</Label>
+                <p className="text-sm text-muted-foreground">
+                  When someone likes or comments on your posts
+                </p>
+              </div>
+              <Switch
+                checked={notificationSettings.likesComments}
+                onCheckedChange={(checked) => 
+                  setNotificationSettings({...notificationSettings, likesComments: checked})
+                }
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>New Followers</Label>
+                <p className="text-sm text-muted-foreground">
+                  When someone starts following you
+                </p>
+              </div>
+              <Switch
+                checked={notificationSettings.follows}
+                onCheckedChange={(checked) => 
+                  setNotificationSettings({...notificationSettings, follows: checked})
+                }
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Messages</Label>
+                <p className="text-sm text-muted-foreground">
+                  When you receive new messages
+                </p>
+              </div>
+              <Switch
+                checked={notificationSettings.messages}
+                onCheckedChange={(checked) => 
+                  setNotificationSettings({...notificationSettings, messages: checked})
+                }
+              />
+            </div>
+            
+            <div className="flex justify-end">
+              <Button 
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  toast({
+                    title: "Settings saved",
+                    description: "Your notification preferences have been updated.",
+                  });
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
