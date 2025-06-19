@@ -152,8 +152,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState('public');
   const [duration, setDuration] = useState<string>('');
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -202,8 +202,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     setContent('');
     setPrivacy('public');
     setDuration('');
-    setMediaFile(null);
-    setMediaPreview(null);
+    setMediaFiles([]);
+    setMediaPreviews([]);
     setShowMediaUpload(false);
     setShowEmojiPicker(false);
     setShowLocationPicker(false);
@@ -224,14 +224,19 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setMediaFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setMediaPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setMediaFiles(prev => [...prev, ...files]);
+      
+      // Generate previews for all selected files
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setMediaPreviews(prev => [...prev, e.target?.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+      
       setShowMediaUpload(false); // Hide upload area after selection
     }
   };
@@ -243,9 +248,9 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     }
   };
 
-  const handleRemoveMedia = () => {
-    setMediaFile(null);
-    setMediaPreview(null);
+  const handleRemoveMedia = (index: number) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index));
+    setMediaPreviews(prev => prev.filter((_, i) => i !== index));
     // Reset image editor state
     setShowImageEditor(false);
     setImageScale(1);
@@ -258,7 +263,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!content.trim() && !mediaFile) {
+    if (!content.trim() && mediaFiles.length === 0) {
       toast({
         title: "Error",
         description: "Please add some content or media to your post",
@@ -271,9 +276,11 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     if (content.trim()) {
       formData.append('content', content.trim());
     }
-    if (mediaFile) {
-      formData.append('media', mediaFile);
-    }
+    
+    // Append all media files
+    mediaFiles.forEach((file, index) => {
+      formData.append(`media`, file);
+    });
     formData.append('privacy', privacy);
     if (duration && duration !== 'permanent') {
       formData.append('duration', duration);
