@@ -117,7 +117,28 @@ export default function MessagesDropdown({
     return isFromCurrentUser ? `You: ${preview}` : preview;
   };
 
-  const filteredConversations = conversations.filter((conv: MessageWithUser) => {
+  // Deduplicate conversations and keep the most recent message for each user
+  const uniqueConversations = conversations
+    .reduce((acc, conv) => {
+      const otherUserId = conv.senderId === user?.id ? conv.receiverId : conv.senderId;
+      const existing = acc.find(c => {
+        const existingOtherUserId = c.senderId === user?.id ? c.receiverId : c.senderId;
+        return existingOtherUserId === otherUserId;
+      });
+      
+      if (!existing || new Date(conv.createdAt!) > new Date(existing.createdAt!)) {
+        if (existing) {
+          const index = acc.indexOf(existing);
+          acc[index] = conv;
+        } else {
+          acc.push(conv);
+        }
+      }
+      return acc;
+    }, [] as MessageWithUser[])
+    .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+
+  const filteredConversations = uniqueConversations.filter((conv: MessageWithUser) => {
     const otherUser = getOtherUser(conv);
     const searchLower = searchQuery.toLowerCase();
     return (

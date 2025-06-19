@@ -99,6 +99,7 @@ function AppContent() {
             <Route path="/profile/:id?" component={ProfilePage} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/explore" component={ExplorePage} />
+            <Route path="/messages/:userId?" component={MessagesPage} />
             <Route path="/messages" component={MessagesPage} />
             <Route path="/notifications" component={NotificationsPage} />
             <Route path="/friends" component={FriendsPage} />

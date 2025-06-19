@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'wouter';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ export default function MessagesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userId: paramUserId } = useParams();
   const [selectedConversation, setSelectedConversation] = useState<User | null>(null);
   const [messageText, setMessageText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +40,22 @@ export default function MessagesPage() {
       return response.json() as Promise<MessageWithUser[]>;
     },
   });
+
+  // Handle URL parameters to select conversation
+  useEffect(() => {
+    if (paramUserId && conversations) {
+      const targetUserId = parseInt(paramUserId);
+      const conversation = conversations.find(conv => {
+        const otherUserId = conv.senderId === user?.id ? conv.receiverId : conv.senderId;
+        return otherUserId === targetUserId;
+      });
+      
+      if (conversation) {
+        const otherUser = conversation.senderId === user?.id ? conversation.receiver : conversation.sender;
+        setSelectedConversation(otherUser);
+      }
+    }
+  }, [paramUserId, conversations, user?.id]);
 
   const { data: messages, isLoading: messagesLoading } = useQuery({
     queryKey: ['/api/conversations', selectedConversation?.id],
@@ -107,16 +125,26 @@ export default function MessagesPage() {
     return otherUser.name.toLowerCase().includes(searchQuery.toLowerCase());
   }) || [];
 
-  const uniqueConversations = filteredConversations.reduce((acc, message) => {
-    const otherUserId = message.senderId === user?.id ? message.receiverId : message.senderId;
-    if (!acc.find(m => {
-      const uid = m.senderId === user?.id ? m.receiverId : m.senderId;
-      return uid === otherUserId;
-    })) {
-      acc.push(message);
-    }
-    return acc;
-  }, [] as MessageWithUser[]);
+  const uniqueConversations = filteredConversations
+    .reduce((acc, message) => {
+      const otherUserId = message.senderId === user?.id ? message.receiverId : message.senderId;
+      const existing = acc.find(m => {
+        const uid = m.senderId === user?.id ? m.receiverId : m.senderId;
+        return uid === otherUserId;
+      });
+      
+      // Keep the most recent message for each conversation
+      if (!existing || new Date(message.createdAt!) > new Date(existing.createdAt!)) {
+        if (existing) {
+          const index = acc.indexOf(existing);
+          acc[index] = message;
+        } else {
+          acc.push(message);
+        }
+      }
+      return acc;
+    }, [] as MessageWithUser[])
+    .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
