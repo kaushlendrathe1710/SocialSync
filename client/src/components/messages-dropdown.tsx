@@ -57,7 +57,9 @@ export default function MessagesDropdown({
     queryKey: ['/api/search', recipientQuery],
     queryFn: async () => {
       const response = await api.search(recipientQuery, 'users');
-      return response.json();
+      const data = await response.json();
+      // Extract users array from nested response structure
+      return data.users || data || [];
     },
     enabled: recipientQuery.length > 2 && showComposeModal,
   });
@@ -207,27 +209,33 @@ export default function MessagesDropdown({
               />
               
               {/* Search Results Dropdown */}
-              {recipientQuery.length > 2 && searchResults.length > 0 && !selectedRecipient && (
+              {recipientQuery.length > 2 && !selectedRecipient && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {searchResults.map((user: User) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => handleRecipientSelect(user)}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
-                    >
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={user.avatar || undefined} />
-                        <AvatarFallback>
-                          {user.name?.charAt(0).toUpperCase() || user.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{user.name}</p>
-                        <p className="text-xs text-gray-500">@{user.username}</p>
-                      </div>
-                    </button>
-                  ))}
+                  {searchResults.length > 0 ? (
+                    searchResults.map((user: User) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handleRecipientSelect(user)}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
+                      >
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={user.avatar || undefined} />
+                          <AvatarFallback>
+                            {user.name?.charAt(0).toUpperCase() || user.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{user.name}</p>
+                          <p className="text-xs text-gray-500">@{user.username}</p>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      No users found matching "{recipientQuery}"
+                    </div>
+                  )}
                 </div>
               )}
             </div>
