@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,8 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose, type }: SettingsModalProps) {
+  const { toast } = useToast();
+  const [selectedHelpTopic, setSelectedHelpTopic] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     likes: true,
     comments: true,
@@ -76,6 +79,72 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
     highContrast: false,
     autoplay: true,
   });
+
+  const helpTopics = {
+    'getting-started': {
+      title: 'Getting Started Guide',
+      content: [
+        'Welcome to our social platform! Here are the basics:',
+        '• Create your profile by adding a photo and bio',
+        '• Start following friends and discover new content',
+        '• Share posts, stories, and engage with others',
+        '• Customize your privacy settings',
+        '• Explore different features like live streaming and events'
+      ]
+    },
+    'account-privacy': {
+      title: 'Account & Privacy',
+      content: [
+        'Manage your account security and privacy:',
+        '• Change your password regularly',
+        '• Enable two-factor authentication',
+        '• Control who can see your posts and profile',
+        '• Manage your data and download information',
+        '• Block or report users if needed',
+        '• Review login sessions and devices'
+      ]
+    },
+    'posts-stories': {
+      title: 'Posts & Stories',
+      content: [
+        'Learn about sharing content:',
+        '• Create posts with text, images, or videos',
+        '• Add reactions and comments to interact',
+        '• Share temporary stories that disappear',
+        '• Use hashtags to reach more people',
+        '• Edit or delete your content anytime',
+        '• Save posts to collections for later'
+      ]
+    },
+    'messages-notifications': {
+      title: 'Messages & Notifications',
+      content: [
+        'Stay connected with messaging:',
+        '• Send private messages to other users',
+        '• Create group conversations and rooms',
+        '• Customize notification preferences',
+        '• Control who can message you',
+        '• Manage read receipts and online status',
+        '• Mute conversations when needed'
+      ]
+    },
+    'troubleshooting': {
+      title: 'Troubleshooting',
+      content: [
+        'Common issues and solutions:',
+        '• Check your internet connection',
+        '• Clear browser cache and cookies',
+        '• Try refreshing the page',
+        '• Ensure you have the latest browser version',
+        '• Contact support if problems persist',
+        '• Report bugs through the feedback system'
+      ]
+    }
+  };
+
+  const handleHelpTopicClick = (topicKey: string) => {
+    setSelectedHelpTopic(topicKey);
+  };
 
   const getModalContent = () => {
     switch (type) {
@@ -129,23 +198,70 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Find answers to common questions</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleHelpTopicClick('getting-started')}
+                >
                   Getting Started Guide
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleHelpTopicClick('account-privacy')}
+                >
                   Account & Privacy
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleHelpTopicClick('posts-stories')}
+                >
                   Posts & Stories
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleHelpTopicClick('messages-notifications')}
+                >
                   Messages & Notifications
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleHelpTopicClick('troubleshooting')}
+                >
                   Troubleshooting
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Selected Help Topic Content */}
+            {selectedHelpTopic && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{helpTopics[selectedHelpTopic as keyof typeof helpTopics].title}</CardTitle>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setSelectedHelpTopic(null)}
+                    >
+                      Back
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {helpTopics[selectedHelpTopic as keyof typeof helpTopics].content.map((item, index) => (
+                      <p key={index} className="text-sm text-gray-700 leading-relaxed">
+                        {item}
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Contact Support */}
             <Card>
