@@ -312,6 +312,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
             type="file"
             accept="image/*,video/*"
             onChange={handleFileSelect}
+            multiple
             className="hidden"
             id="media-upload"
           />
@@ -372,60 +373,67 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
           />
           
           {/* Media Preview */}
-          {mediaPreview && (
-            <div className="relative">
-              {mediaFile?.type.startsWith('image/') ? (
-                <div className="relative">
-                  <img 
-                    src={mediaPreview} 
-                    alt="Preview" 
-                    className="w-full h-64 object-cover rounded-lg"
-                    style={{
-                      transform: `scale(${imageScale})`,
-                      filter: `
-                        ${imageFilter === 'none' ? '' : imageFilter === 'grayscale' ? 'grayscale(100%)' : 
-                          imageFilter === 'sepia' ? 'sepia(100%)' : 
-                          imageFilter === 'blur' ? 'blur(2px)' : 
-                          imageFilter === 'vintage' ? 'sepia(50%) contrast(1.2) brightness(1.1)' : ''}
-                        brightness(${imageBrightness}%) 
-                        contrast(${imageContrast}%) 
-                        saturate(${imageSaturation}%)
-                      `
-                    }}
-                  />
-                  <div className="absolute top-2 left-2 flex gap-2">
+          {mediaPreviews.length > 0 && (
+            <div className="space-y-2">
+              {mediaPreviews.map((preview, index) => {
+                const file = mediaFiles[index];
+                return (
+                  <div key={index} className="relative">
+                    {file?.type.startsWith('image/') ? (
+                      <div className="relative">
+                        <img 
+                          src={preview} 
+                          alt={`Preview ${index + 1}`} 
+                          className="w-full h-64 object-cover rounded-lg"
+                          style={{
+                            transform: `scale(${imageScale})`,
+                            filter: `
+                              ${imageFilter === 'none' ? '' : imageFilter === 'grayscale' ? 'grayscale(100%)' : 
+                                imageFilter === 'sepia' ? 'sepia(100%)' : 
+                                imageFilter === 'blur' ? 'blur(2px)' : 
+                                imageFilter === 'vintage' ? 'sepia(50%) contrast(1.2) brightness(1.1)' : ''}
+                              brightness(${imageBrightness}%) 
+                              contrast(${imageContrast}%) 
+                              saturate(${imageSaturation}%)
+                            `
+                          }}
+                        />
+                        <div className="absolute top-2 left-2 flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowImageEditor(!showImageEditor)}
+                            className="bg-white/80 backdrop-blur-sm"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <video 
+                        src={preview} 
+                        controls 
+                        className="w-full h-64 rounded-lg"
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowImageEditor(!showImageEditor)}
-                      className="bg-white/80 backdrop-blur-sm"
+                      className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm"
+                      onClick={() => handleRemoveMedia(index)}
                     >
-                      <Edit3 className="w-4 h-4" />
+                      <X className="w-4 h-4" />
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <video 
-                  src={mediaPreview} 
-                  controls 
-                  className="w-full h-64 rounded-lg"
-                />
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm"
-                onClick={handleRemoveMedia}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+                );
+              })}
             </div>
           )}
 
           {/* Image Editor Panel */}
-          {showImageEditor && mediaPreview && mediaFile?.type.startsWith('image/') && (
+          {showImageEditor && mediaPreviews.length > 0 && mediaFiles[0]?.type.startsWith('image/') && (
             <div className="border rounded-lg p-4 bg-muted/50">
               <div className="flex items-center gap-2 mb-4">
                 <Sliders className="w-4 h-4" />
@@ -549,7 +557,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
           )}
           
           {/* Media Upload Area */}
-          {showMediaUpload && !mediaPreview && (
+          {showMediaUpload && mediaPreviews.length === 0 && (
             <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
               <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground mb-2">Add photos/videos</p>
@@ -722,7 +730,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
           <Button 
             type="submit" 
             className="w-full facebook-blue"
-            disabled={createPostMutation.isPending || (!content.trim() && !mediaFile)}
+            disabled={createPostMutation.isPending || (!content.trim() && mediaFiles.length === 0)}
           >
             {createPostMutation.isPending ? 'Posting...' : 'Post'}
           </Button>
