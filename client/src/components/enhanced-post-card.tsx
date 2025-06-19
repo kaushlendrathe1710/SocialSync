@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -112,16 +113,16 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
         {children}
       </span>
       
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reactions</DialogTitle>
-          </DialogHeader>
+      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reactions</AlertDialogTitle>
+          </AlertDialogHeader>
           <div className="py-4">
             {renderReactionsContent()}
           </div>
-        </DialogContent>
-      </Dialog>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -643,7 +644,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
             
             <div className="flex items-center space-x-1 text-gray-500">
               <Eye className="h-4 w-4" />
-              <span className="text-sm">{viewData?.viewCount || post.viewsCount || 0}</span>
+              <span className="text-sm">{(viewData as any)?.viewCount || post.viewsCount || 0}</span>
             </div>
           </div>
         </div>
