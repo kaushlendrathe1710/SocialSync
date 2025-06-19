@@ -17,13 +17,17 @@ interface CreateDropdownProps {
   onClose: () => void;
   onCreatePost: () => void;
   onCreateStory: () => void;
+  onCreateEvent?: () => void;
+  onCreateRoom?: () => void;
 }
 
 export default function CreateDropdown({ 
   isOpen, 
   onClose, 
   onCreatePost, 
-  onCreateStory 
+  onCreateStory,
+  onCreateEvent,
+  onCreateRoom
 }: CreateDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -58,13 +62,19 @@ export default function CreateDropdown({
       icon: <Calendar className="h-5 w-5 text-orange-500" />,
       title: "Event",
       description: "Create and invite people to an event",
-      onClick: () => console.log("Create Event clicked")
+      onClick: onCreateEvent || (() => {
+        const event = new CustomEvent('openCreateEvent');
+        window.dispatchEvent(event);
+      })
     },
     {
       icon: <Users className="h-5 w-5 text-teal-500" />,
       title: "Room",
       description: "Start a conversation room",
-      onClick: () => console.log("Create Room clicked")
+      onClick: onCreateRoom || (() => {
+        const event = new CustomEvent('openCreateRoom');
+        window.dispatchEvent(event);
+      })
     }
   ];
 

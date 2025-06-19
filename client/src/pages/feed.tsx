@@ -11,6 +11,8 @@ import CreatePostModal from "@/components/create-post-modal";
 import LiveVideoModal from "@/components/live-video-modal";
 import PhotoVideoModal from "@/components/photo-video-modal";
 import FeelingActivityModal from "@/components/feeling-activity-modal";
+import CreateEventModal from "@/components/create-event-modal";
+import CreateRoomModal from "@/components/create-room-modal";
 import { 
   Plus, 
   ImageIcon, 

@@ -151,7 +151,6 @@ export default function Navigation() {
               isOpen={isCreateOpen}
               onClose={() => setIsCreateOpen(false)}
               onCreatePost={() => {
-                // This will be handled by the parent component
                 setIsCreateOpen(false);
                 const event = new CustomEvent('openCreatePost');
                 window.dispatchEvent(event);
@@ -159,6 +158,16 @@ export default function Navigation() {
               onCreateStory={() => {
                 setIsCreateOpen(false);
                 const event = new CustomEvent('openCreateStory');
+                window.dispatchEvent(event);
+              }}
+              onCreateEvent={() => {
+                setIsCreateOpen(false);
+                const event = new CustomEvent('openCreateEvent');
+                window.dispatchEvent(event);
+              }}
+              onCreateRoom={() => {
+                setIsCreateOpen(false);
+                const event = new CustomEvent('openCreateRoom');
                 window.dispatchEvent(event);
               }}
             />
