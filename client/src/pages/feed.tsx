@@ -144,52 +144,54 @@ export default function FeedPage() {
           </Card>
         )}
 
-        {/* Create Post */}
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3 mb-4">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.avatar || ""} />
-                <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
-                  {getUserInitials(user)}
-                </AvatarFallback>
-              </Avatar>
-              <div 
-                className="flex-1 bg-gray-100 rounded-full px-4 py-3 cursor-pointer hover:bg-gray-200 transition-colors"
-                onClick={() => setIsCreatePostModalOpen(true)}
-              >
-                <span className="text-gray-500">What's on your mind, {user?.name || user?.username}?</span>
+        {/* Create Post - Sticky */}
+        <div className="sticky top-4 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <Card className="shadow-lg border-2">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3 mb-4">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={user?.avatar || ""} />
+                  <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
+                    {getUserInitials(user)}
+                  </AvatarFallback>
+                </Avatar>
+                <div 
+                  className="flex-1 bg-gray-100 rounded-full px-4 py-3 cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => setIsCreatePostModalOpen(true)}
+                >
+                  <span className="text-gray-500">What's on your mind, {user?.name || user?.username}?</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-              <Button 
-                variant="ghost" 
-                className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
-                onClick={() => setIsLiveVideoModalOpen(true)}
-              >
-                <Video className="h-5 w-5 mr-2 text-red-500" />
-                Live Video
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
-                onClick={() => setIsPhotoVideoModalOpen(true)}
-              >
-                <ImageIcon className="h-5 w-5 mr-2 text-green-500" />
-                Photo/Video
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
-                onClick={() => setIsFeelingActivityModalOpen(true)}
-              >
-                <Smile className="h-5 w-5 mr-2 text-yellow-500" />
-                Feeling/Activity
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
+                  onClick={() => setIsLiveVideoModalOpen(true)}
+                >
+                  <Video className="h-5 w-5 mr-2 text-red-500" />
+                  Live Video
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
+                  onClick={() => setIsPhotoVideoModalOpen(true)}
+                >
+                  <ImageIcon className="h-5 w-5 mr-2 text-green-500" />
+                  Photo/Video
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
+                  onClick={() => setIsFeelingActivityModalOpen(true)}
+                >
+                  <Smile className="h-5 w-5 mr-2 text-yellow-500" />
+                  Feeling/Activity
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Posts Feed */}
         <div className="space-y-4">
