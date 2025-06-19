@@ -232,6 +232,7 @@ export interface IStorage {
   getUserHabits(userId: number): Promise<HabitTracking[]>;
   logHabit(log: InsertHabitLog): Promise<HabitLog>;
   getHabitLogs(habitId: number, days?: number): Promise<HabitLog[]>;
+  getHabitLogsForDate(userId: number, date: string): Promise<HabitLog[]>;
   updateHabitStreak(habitId: number, streak: number): Promise<void>;
 
   // Beauty & Shopping methods
@@ -1323,6 +1324,23 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(habitLogs.habitId, habitId),
         gt(habitLogs.date, startDate)
+      ))
+      .orderBy(desc(habitLogs.date));
+  }
+
+  async getHabitLogsForDate(userId: number, date: string): Promise<HabitLog[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return await db
+      .select()
+      .from(habitLogs)
+      .where(and(
+        eq(habitLogs.userId, userId),
+        gt(habitLogs.date, startOfDay),
+        gt(endOfDay, habitLogs.date)
       ))
       .orderBy(desc(habitLogs.date));
   }
