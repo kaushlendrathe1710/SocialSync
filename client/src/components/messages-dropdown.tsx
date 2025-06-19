@@ -22,7 +22,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import type { MessageWithUser } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
+import type { MessageWithUser, User } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
 interface MessagesDropdownProps {
@@ -36,13 +38,52 @@ export default function MessagesDropdown({
 }: MessagesDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showComposeModal, setShowComposeModal] = useState(false);
+  const [recipientQuery, setRecipientQuery] = useState("");
+  const [selectedRecipient, setSelectedRecipient] = useState<User | null>(null);
+  const [messageContent, setMessageContent] = useState("");
 
-  const { data: conversations = [], isLoading } = useQuery({
+  const { data: conversations = [], isLoading } = useQuery<MessageWithUser[]>({
     queryKey: ['/api/conversations'],
     enabled: isOpen,
+  });
+
+  // Search users for recipient selection
+  const { data: searchResults = [] } = useQuery<User[]>({
+    queryKey: ['/api/search', recipientQuery],
+    queryFn: async () => {
+      const response = await api.search(recipientQuery, 'users');
+      return response.json();
+    },
+    enabled: recipientQuery.length > 2 && showComposeModal,
+  });
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: (data: { receiverId: number; content: string }) => 
+      api.sendMessage(data.receiverId, data.content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      toast({
+        title: "Message sent!",
+        description: "Your message has been delivered.",
+      });
+      setShowComposeModal(false);
+      setSelectedRecipient(null);
+      setMessageContent("");
+      setRecipientQuery("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message",
+        variant: "destructive",
+      });
+    },
   });
 
   useEffect(() => {
@@ -94,6 +135,21 @@ export default function MessagesDropdown({
 
   const handleSettingsClick = () => {
     setShowSettingsModal(true);
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRecipient || !messageContent.trim()) return;
+    
+    sendMessageMutation.mutate({
+      receiverId: selectedRecipient.id,
+      content: messageContent.trim()
+    });
+  };
+
+  const handleRecipientSelect = (user: User) => {
+    setSelectedRecipient(user);
+    setRecipientQuery(user.name || user.username);
   };
 
   if (!isOpen) return null;
@@ -262,33 +318,76 @@ export default function MessagesDropdown({
           <DialogHeader>
             <DialogTitle>New Message</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+          <form onSubmit={handleSendMessage} className="space-y-4">
+            <div className="relative">
               <Label htmlFor="recipient">To</Label>
               <Input
                 id="recipient"
                 placeholder="Search for people..."
                 className="mt-1"
+                value={recipientQuery}
+                onChange={(e) => setRecipientQuery(e.target.value)}
               />
+              
+              {/* Search Results Dropdown */}
+              {recipientQuery.length > 2 && searchResults.length > 0 && !selectedRecipient && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {searchResults.map((user: User) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => handleRecipientSelect(user)}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={user.avatar || undefined} />
+                        <AvatarFallback>
+                          {getUserInitials(user.name || user.username)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm">{user.name}</p>
+                        <p className="text-xs text-gray-500">@{user.username}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            
             <div>
               <Label htmlFor="message">Message</Label>
               <Textarea
                 id="message"
                 placeholder="Write your message..."
                 className="mt-1 min-h-[100px]"
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
               />
             </div>
+            
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowComposeModal(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowComposeModal(false);
+                  setSelectedRecipient(null);
+                  setMessageContent("");
+                  setRecipientQuery("");
+                }}
+              >
                 Cancel
               </Button>
-              <Button>
+              <Button 
+                type="submit"
+                disabled={!selectedRecipient || !messageContent.trim() || sendMessageMutation.isPending}
+              >
                 <Send className="w-4 h-4 mr-2" />
-                Send
+                {sendMessageMutation.isPending ? 'Sending...' : 'Send'}
               </Button>
             </div>
-          </div>
+          </form>
         </DialogContent>
       </Dialog>
 
