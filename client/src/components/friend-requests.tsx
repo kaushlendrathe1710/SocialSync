@@ -69,7 +69,7 @@ export function FriendRequests() {
   // Mutations
   const sendRequestMutation = useMutation({
     mutationFn: async ({ receiverId, message }: { receiverId: number; message?: string }) => {
-      return apiRequest("/api/friend-requests", "POST", { receiverId, message });
+      return apiRequest("POST", "/api/friend-requests", { receiverId, message });
     },
     onSuccess: () => {
       toast({
@@ -93,7 +93,7 @@ export function FriendRequests() {
 
   const respondToRequestMutation = useMutation({
     mutationFn: async ({ requestId, action }: { requestId: number; action: 'accept' | 'decline' }) => {
-      return apiRequest(`/api/friend-requests/${requestId}`, "PUT", { action });
+      return apiRequest("PUT", `/api/friend-requests/${requestId}`, { action });
     },
     onSuccess: (_, { action }) => {
       toast({
