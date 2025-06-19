@@ -80,15 +80,32 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
     autoplay: true,
   });
 
+  const [tempDisplay, setTempDisplay] = useState({
+    theme: 'system',
+    language: 'en',
+    fontSize: 'medium',
+    reducedMotion: false,
+    highContrast: false,
+    autoplay: true,
+  });
+
   // Load settings from localStorage on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem('displaySettings');
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings);
       setDisplay(parsed);
+      setTempDisplay(parsed);
       applySettings(parsed);
     }
   }, []);
+
+  // Reset temp settings when modal opens
+  useEffect(() => {
+    if (isOpen && type === 'display') {
+      setTempDisplay(display);
+    }
+  }, [isOpen, type, display]);
 
   // Apply settings to the document
   const applySettings = (settings: typeof display) => {
@@ -130,15 +147,20 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
   };
 
   // Save settings and apply them
-  const saveDisplaySettings = (newSettings: typeof display) => {
-    setDisplay(newSettings);
-    localStorage.setItem('displaySettings', JSON.stringify(newSettings));
-    applySettings(newSettings);
+  const saveDisplaySettings = () => {
+    setDisplay(tempDisplay);
+    localStorage.setItem('displaySettings', JSON.stringify(tempDisplay));
+    applySettings(tempDisplay);
     
     toast({
       title: "Settings saved",
       description: "Your display preferences have been updated.",
     });
+  };
+
+  // Cancel changes and revert to saved settings
+  const cancelDisplaySettings = () => {
+    setTempDisplay(display);
   };
 
   const helpTopics = {
@@ -389,7 +411,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Choose your preferred color scheme</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={display.theme} onValueChange={(value) => saveDisplaySettings({...display, theme: value})}>
+                <Select value={tempDisplay.theme} onValueChange={(value) => setTempDisplay({...tempDisplay, theme: value})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -424,7 +446,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Select your preferred language</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={display.language} onValueChange={(value) => saveDisplaySettings({...display, language: value})}>
+                <Select value={tempDisplay.language} onValueChange={(value) => setTempDisplay({...tempDisplay, language: value})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -451,7 +473,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Adjust text size for better readability</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={display.fontSize} onValueChange={(value) => saveDisplaySettings({...display, fontSize: value})}>
+                <Select value={tempDisplay.fontSize} onValueChange={(value) => setTempDisplay({...tempDisplay, fontSize: value})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -479,8 +501,8 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   </div>
                   <Switch
                     id="reduced-motion"
-                    checked={display.reducedMotion}
-                    onCheckedChange={(checked) => saveDisplaySettings({...display, reducedMotion: checked})}
+                    checked={tempDisplay.reducedMotion}
+                    onCheckedChange={(checked) => setTempDisplay({...tempDisplay, reducedMotion: checked})}
                   />
                 </div>
                 <Separator />
@@ -491,8 +513,8 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   </div>
                   <Switch
                     id="high-contrast"
-                    checked={display.highContrast}
-                    onCheckedChange={(checked) => saveDisplaySettings({...display, highContrast: checked})}
+                    checked={tempDisplay.highContrast}
+                    onCheckedChange={(checked) => setTempDisplay({...tempDisplay, highContrast: checked})}
                   />
                 </div>
                 <Separator />
@@ -503,8 +525,8 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   </div>
                   <Switch
                     id="autoplay"
-                    checked={display.autoplay}
-                    onCheckedChange={(checked) => saveDisplaySettings({...display, autoplay: checked})}
+                    checked={tempDisplay.autoplay}
+                    onCheckedChange={(checked) => setTempDisplay({...tempDisplay, autoplay: checked})}
                   />
                 </div>
               </CardContent>
