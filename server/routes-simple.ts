@@ -192,7 +192,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/verify-otp", async (req: Request, res: Response) => {
     try {
-      const { email, code, name, username, verificationToken } = req.body;
+      console.log("Full request body:", req.body);
+      const { email, otp, name, username, verificationToken } = req.body;
+      const code = otp;
+      console.log("Extracted values:", { email, otp, code, name, username, verificationToken });
       
       // Handle new user registration completion with verification token
       if (name && username && verificationToken) {
