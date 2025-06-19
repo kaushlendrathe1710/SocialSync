@@ -35,10 +35,21 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [showMediaUpload, setShowMediaUpload] = useState(false);
 
+  // Debug logging
+  console.log('CreatePostModal rendered:', { isOpen, user: !!user });
+
   const createPostMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await api.createPost(data);
-      return response.json();
+      try {
+        const response = await api.createPost(data);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Create post error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
@@ -49,6 +60,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
       handleClose();
     },
     onError: (error: any) => {
+      console.error('Post creation failed:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create post",
@@ -111,12 +123,19 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     createPostMutation.mutate(formData);
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create Post</DialogTitle>
-        </DialogHeader>
+  // Early return if user is not loaded to prevent errors
+  if (!user) {
+    console.log('CreatePostModal: User not loaded, returning null');
+    return null;
+  }
+
+  try {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Post</DialogTitle>
+          </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center space-x-3">
@@ -285,7 +304,23 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
             {createPostMutation.isPending ? 'Posting...' : 'Post'}
           </Button>
         </form>
-      </DialogContent>
-    </Dialog>
-  );
+        </DialogContent>
+      </Dialog>
+    );
+  } catch (error) {
+    console.error('CreatePostModal render error:', error);
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Error</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p>There was an error loading the create post form. Please try again.</p>
+            <Button onClick={handleClose} className="mt-4">Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 }
