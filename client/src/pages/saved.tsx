@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { Bookmark, Search, Grid, List, Heart, MessageCircle, Share, MoreHorizontal, Filter } from 'lucide-react';
+import { Bookmark, Search, Grid, List, Heart, MessageCircle, Share, MoreHorizontal, Filter, Plus } from 'lucide-react';
 import PostCard from '@/components/post-card';
 import type { PostWithUser } from '@shared/schema';
 
@@ -16,6 +18,15 @@ export default function SavedPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [collections, setCollections] = useState([
+    { id: 1, name: "All Saved", count: 0, color: "bg-blue-500" },
+    { id: 2, name: "Travel", count: 0, color: "bg-green-500" },
+    { id: 3, name: "Food", count: 0, color: "bg-orange-500" },
+    { id: 4, name: "Tech", count: 0, color: "bg-purple-500" },
+    { id: 5, name: "Inspiration", count: 0, color: "bg-pink-500" },
+  ]);
 
   // Fetch user's liked posts as saved items
   const { data: likedPosts = [], isLoading: postsLoading } = useQuery({
@@ -55,13 +66,49 @@ export default function SavedPage() {
     }
   };
 
-  const savedCollections = [
-    { id: 1, name: "All Saved", count: savedPosts.length, color: "bg-blue-500" },
-    { id: 2, name: "Travel", count: Math.floor(savedPosts.length * 0.3), color: "bg-green-500" },
-    { id: 3, name: "Food", count: Math.floor(savedPosts.length * 0.2), color: "bg-orange-500" },
-    { id: 4, name: "Tech", count: Math.floor(savedPosts.length * 0.25), color: "bg-purple-500" },
-    { id: 5, name: "Inspiration", count: Math.floor(savedPosts.length * 0.25), color: "bg-pink-500" },
-  ];
+  const handleCreateCollection = async () => {
+    if (!newCollectionName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a collection name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const colors = ["bg-blue-500", "bg-green-500", "bg-orange-500", "bg-purple-500", "bg-pink-500", "bg-indigo-500", "bg-red-500"];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      
+      const newCollection = {
+        id: collections.length + 1,
+        name: newCollectionName.trim(),
+        count: 0,
+        color: randomColor
+      };
+
+      setCollections([...collections, newCollection]);
+      setNewCollectionName('');
+      setShowCreateDialog(false);
+
+      toast({
+        title: "Success",
+        description: `Collection "${newCollectionName}" created successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create collection",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Update collection counts based on saved posts
+  const savedCollections = collections.map(collection => ({
+    ...collection,
+    count: collection.name === "All Saved" ? savedPosts.length : Math.floor(savedPosts.length * 0.2)
+  }));
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -226,15 +273,48 @@ export default function SavedPage() {
                   </Card>
                 ))}
                 
-                <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors cursor-pointer">
-                  <CardContent className="p-4 flex flex-col items-center justify-center h-full text-center">
-                    <div className="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center mb-2">
-                      <Bookmark className="w-5 h-5 text-gray-400" />
+                <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                  <DialogTrigger asChild>
+                    <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors cursor-pointer">
+                      <CardContent className="p-4 flex flex-col items-center justify-center h-full text-center">
+                        <div className="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center mb-2">
+                          <Plus className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-700">Create Collection</p>
+                        <p className="text-xs text-gray-500">Organize your saved posts</p>
+                      </CardContent>
+                    </Card>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Create New Collection</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="collection-name">Collection Name</Label>
+                        <Input
+                          id="collection-name"
+                          placeholder="Enter collection name..."
+                          value={newCollectionName}
+                          onChange={(e) => setNewCollectionName(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleCreateCollection();
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleCreateCollection}>
+                          Create Collection
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-sm font-medium text-gray-700">Create Collection</p>
-                    <p className="text-xs text-gray-500">Organize your saved posts</p>
-                  </CardContent>
-                </Card>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>
