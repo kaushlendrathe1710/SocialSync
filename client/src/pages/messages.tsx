@@ -1,28 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'wouter';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/hooks/use-toast';
-import { api } from '@/lib/api';
-import { MessageWithUser, User } from '@shared/schema';
-import { 
-  Search, 
-  Send, 
-  Phone, 
-  Video, 
-  Info, 
-  MoreHorizontal,
-  ArrowLeft,
-  Circle
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import EnhancedMessaging from '@/components/enhanced-messaging';
 
 export default function MessagesPage() {
   const { user } = useAuth();
