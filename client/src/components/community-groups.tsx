@@ -185,7 +185,8 @@ export function CommunityGroups() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-6 w-6 text-purple-500" />
           <h1 className="text-2xl font-bold">Community Groups</h1>
@@ -200,41 +201,37 @@ export function CommunityGroups() {
         </Dialog>
       </div>
 
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search communities..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => {
-                const IconComponent = category.icon;
-                return (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategory === category.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category.id)}
-                    className="flex items-center gap-1"
-                  >
-                    <IconComponent className="h-3 w-3" />
-                    {category.label}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search Bar */}
+      <div className="w-full">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search communities..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-full"
+          />
+        </div>
+      </div>
+
+      {/* Category Filters */}
+      <div className="flex flex-wrap gap-2">
+        {categories.map((category) => {
+          const IconComponent = category.icon;
+          return (
+            <Button
+              key={category.id}
+              variant={selectedCategory === category.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedCategory(category.id)}
+              className="flex items-center gap-1"
+            >
+              <IconComponent className="h-3 w-3" />
+              {category.label}
+            </Button>
+          );
+        })}
+      </div>
 
       {/* Featured Communities */}
       <Card>
