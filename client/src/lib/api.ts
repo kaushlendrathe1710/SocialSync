@@ -17,13 +17,7 @@ export const api = {
   getFollowers: (id: number) => apiRequest('GET', `/api/users/${id}/followers`),
   getFollowing: (id: number) => apiRequest('GET', `/api/users/${id}/following`),
 
-  // Search
-  search: (query: string, type?: string) => {
-    const params = new URLSearchParams();
-    params.append('q', query);
-    if (type) params.append('type', type);
-    return apiRequest('GET', `/api/search?${params.toString()}`);
-  },
+
 
   // Posts
   getPosts: (userId?: number, limit?: number, offset?: number) => {
@@ -61,10 +55,5 @@ export const api = {
   markNotificationRead: (id: number) => apiRequest('PUT', `/api/notifications/${id}/read`),
   markAllNotificationsRead: () => apiRequest('PUT', '/api/notifications/read-all'),
 
-  // Search
-  search: (query: string, type?: string) => {
-    const params = new URLSearchParams({ q: query });
-    if (type) params.append('type', type);
-    return apiRequest('GET', `/api/search?${params.toString()}`);
-  },
+
 };
