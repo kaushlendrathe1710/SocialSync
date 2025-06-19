@@ -46,6 +46,13 @@ export default function MessagesDropdown({
   const [recipientQuery, setRecipientQuery] = useState("");
   const [selectedRecipient, setSelectedRecipient] = useState<User | null>(null);
   const [messageContent, setMessageContent] = useState("");
+  
+  // Message settings state
+  const [messageSettings, setMessageSettings] = useState({
+    readReceipts: true,
+    onlineStatus: true,
+    messageNotifications: true
+  });
 
   const { data: conversations = [], isLoading } = useQuery<MessageWithUser[]>({
     queryKey: ['/api/conversations'],
@@ -473,7 +480,12 @@ export default function MessagesDropdown({
                   Let others know when you've read their messages
                 </p>
               </div>
-              <Switch />
+              <Switch
+                checked={messageSettings.readReceipts}
+                onCheckedChange={(checked) => 
+                  setMessageSettings({...messageSettings, readReceipts: checked})
+                }
+              />
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
@@ -482,7 +494,12 @@ export default function MessagesDropdown({
                   Show when you're active
                 </p>
               </div>
-              <Switch defaultChecked />
+              <Switch
+                checked={messageSettings.onlineStatus}
+                onCheckedChange={(checked) => 
+                  setMessageSettings({...messageSettings, onlineStatus: checked})
+                }
+              />
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
@@ -491,7 +508,12 @@ export default function MessagesDropdown({
                   Get notified about new messages
                 </p>
               </div>
-              <Switch defaultChecked />
+              <Switch
+                checked={messageSettings.messageNotifications}
+                onCheckedChange={(checked) => 
+                  setMessageSettings({...messageSettings, messageNotifications: checked})
+                }
+              />
             </div>
             <div className="flex justify-end">
               <Button onClick={() => setShowSettingsModal(false)}>
