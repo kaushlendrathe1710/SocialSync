@@ -120,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test S3 configuration
+  // Test S3 configuration and upload
   app.get("/api/test-s3", async (req: Request, res: Response) => {
     try {
       const isConfigured = validateS3Config();
@@ -132,10 +132,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Test actual upload to S3
+      let uploadTest = { success: false, error: null, url: null };
+      try {
+        const testContent = Buffer.from(`S3 test upload - ${new Date().toISOString()}`);
+        const uploadResult = await uploadToS3(
+          testContent,
+          'test-upload.txt',
+          'text/plain',
+          'test'
+        );
+        
+        uploadTest = {
+          success: true,
+          error: null,
+          url: uploadResult.url
+        } as any;
+        
+        console.log('S3 test upload successful:', uploadResult.url);
+        
+        // Clean up test file
+        setTimeout(async () => {
+          try {
+            await deleteFromS3(uploadResult.key);
+            console.log('S3 test file cleaned up');
+          } catch (deleteError) {
+            console.warn('Could not delete S3 test file:', deleteError);
+          }
+        }, 5000);
+        
+      } catch (uploadError: any) {
+        console.error('S3 upload test failed:', uploadError);
+        uploadTest = {
+          success: false,
+          error: uploadError.message,
+          url: null
+        };
+      }
+
       res.json({ 
-        status: "S3 configuration valid",
+        status: uploadTest.success ? "S3 working correctly" : "S3 upload failed",
+        configured: true,
         region: process.env.AWS_REGION,
-        bucket: process.env.AWS_S3_BUCKET_NAME
+        bucket: process.env.AWS_S3_BUCKET_NAME,
+        uploadTest
       });
     } catch (error: any) {
       console.error("S3 configuration test failed:", error);
@@ -431,6 +471,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (validateS3Config()) {
             try {
               const folder = isVideo ? 'videos' : 'images';
+              console.log('Attempting S3 upload:', {
+                folder,
+                filename: req.file.originalname,
+                size: req.file.buffer.length,
+                mimetype: req.file.mimetype
+              });
+              
               const uploadResult = await uploadToS3(
                 req.file.buffer,
                 req.file.originalname,
@@ -438,11 +485,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 folder
               );
               fileUrl = uploadResult.url;
-              console.log('File uploaded to S3:', fileUrl);
+              console.log('✓ File uploaded to S3 successfully:', fileUrl);
             } catch (s3Error) {
-              console.warn("S3 upload failed, falling back to local storage:", s3Error);
+              console.error("✗ S3 upload failed:", s3Error);
+              console.warn("Falling back to local storage");
               fileUrl = null; // Will trigger local storage fallback
             }
+          } else {
+            console.log('S3 not configured, using local storage');
           }
 
           // Fallback to local storage if S3 failed or not configured
