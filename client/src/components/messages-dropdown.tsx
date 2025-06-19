@@ -137,12 +137,45 @@ export default function MessagesDropdown({
     setShowSettingsModal(true);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRecipient || !messageContent.trim()) return;
+    if (!messageContent.trim()) return;
+    
+    let recipientId: number;
+    
+    if (selectedRecipient) {
+      recipientId = selectedRecipient.id;
+    } else if (recipientQuery.trim()) {
+      // Search for user by name/username if no recipient is selected
+      try {
+        const response = await api.search(recipientQuery.trim(), 'users');
+        const searchData = await response.json();
+        const users = searchData.users || searchData;
+        
+        if (users.length === 0) {
+          toast({
+            title: "User not found",
+            description: "Could not find a user with that name or username.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        recipientId = users[0].id;
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to find user. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      return;
+    }
     
     sendMessageMutation.mutate({
-      receiverId: selectedRecipient.id,
+      receiverId: recipientId,
       content: messageContent.trim()
     });
   };
@@ -225,7 +258,7 @@ export default function MessagesDropdown({
               </Button>
               <Button 
                 type="submit"
-                disabled={!selectedRecipient || !messageContent.trim() || sendMessageMutation.isPending}
+                disabled={(!selectedRecipient && !recipientQuery.trim()) || !messageContent.trim() || sendMessageMutation.isPending}
               >
                 <Send className="w-4 h-4 mr-2" />
                 {sendMessageMutation.isPending ? 'Sending...' : 'Send'}
