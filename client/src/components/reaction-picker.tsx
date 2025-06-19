@@ -19,6 +19,22 @@ const reactions = [
   { type: 'angry', emoji: '😡', icon: Angry, color: 'text-red-600', label: 'Angry' },
 ];
 
+const extendedReactions = [
+  ...reactions,
+  { type: 'heart_eyes', emoji: '😍', icon: Heart, color: 'text-pink-500', label: 'Heart Eyes' },
+  { type: 'kiss', emoji: '😘', icon: Heart, color: 'text-pink-400', label: 'Kiss' },
+  { type: 'wink', emoji: '😉', icon: Lightbulb, color: 'text-yellow-400', label: 'Wink' },
+  { type: 'cool', emoji: '😎', icon: Lightbulb, color: 'text-blue-600', label: 'Cool' },
+  { type: 'thinking', emoji: '🤔', icon: Lightbulb, color: 'text-gray-500', label: 'Thinking' },
+  { type: 'thumbs_down', emoji: '👎', icon: ThumbsUp, color: 'text-red-400', label: 'Dislike' },
+  { type: 'clap', emoji: '👏', icon: ThumbsUp, color: 'text-green-500', label: 'Clap' },
+  { type: 'fire', emoji: '🔥', icon: Lightbulb, color: 'text-orange-600', label: 'Fire' },
+  { type: 'party', emoji: '🎉', icon: Lightbulb, color: 'text-purple-500', label: 'Party' },
+  { type: 'shocked', emoji: '😱', icon: Lightbulb, color: 'text-yellow-600', label: 'Shocked' },
+  { type: 'confused', emoji: '😕', icon: Frown, color: 'text-gray-600', label: 'Confused' },
+  { type: 'sleepy', emoji: '😴', icon: Frown, color: 'text-blue-300', label: 'Sleepy' },
+];
+
 export default function ReactionPicker({ onReaction, currentReaction, disabled, children }: ReactionPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -50,38 +66,54 @@ export default function ReactionPicker({ onReaction, currentReaction, disabled, 
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-3" align="start" side="top">
-        <div className="flex space-x-2">
+        <div className="grid grid-cols-7 gap-2">
           {reactions.map((reaction) => {
             const isSelected = currentReaction === reaction.type;
             
             return (
-              <Button
-                key={reaction.type}
-                variant="ghost"
-                size="sm"
-                className={`h-10 w-10 p-0 rounded-full hover:scale-125 transition-all duration-200 ${
-                  isSelected ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleReaction(reaction.type);
-                }}
-                title={reaction.label}
-              >
-                <span className="text-xl">
-                  {reaction.emoji}
+              <div key={reaction.type} className="flex flex-col items-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`h-12 w-12 p-0 rounded-full hover:scale-110 transition-all duration-200 ${
+                    isSelected ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleReaction(reaction.type);
+                  }}
+                  title={reaction.label}
+                >
+                  <span className="text-2xl">
+                    {reaction.emoji}
+                  </span>
+                </Button>
+                <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
+                  {reaction.label}
                 </span>
-              </Button>
+              </div>
             );
           })}
-        </div>
-        <div className="flex justify-center mt-2 space-x-2">
-          {reactions.map((reaction) => (
-            <span key={reaction.type} className="text-xs text-gray-500 dark:text-gray-400">
-              {reaction.label}
+          <div className="flex flex-col items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-12 w-12 p-0 rounded-full hover:scale-110 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // TODO: Open extended emoji picker
+                console.log('Open extended emoji picker');
+              }}
+              title="More reactions"
+            >
+              <span className="text-xl text-gray-500">+</span>
+            </Button>
+            <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
+              More
             </span>
-          ))}
+          </div>
         </div>
       </PopoverContent>
     </Popover>
