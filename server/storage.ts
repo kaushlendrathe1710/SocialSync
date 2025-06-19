@@ -161,6 +161,7 @@ export interface IStorage {
   getConversation(userId1: number, userId2: number): Promise<MessageWithUser[]>;
   getConversations(userId: number): Promise<MessageWithUser[]>;
   markMessageRead(id: number): Promise<void>;
+  markMessageAsRead(messageId: number, userId: number): Promise<void>;
 
   // Notification methods
   createNotification(notification: InsertNotification): Promise<Notification>;
@@ -678,6 +679,14 @@ export class DatabaseStorage implements IStorage {
 
   async markMessageRead(id: number): Promise<void> {
     await db.update(messages).set({ readAt: new Date() }).where(eq(messages.id, id));
+  }
+
+  async markMessageAsRead(messageId: number, userId: number): Promise<void> {
+    // Only allow marking messages as read if the user is the receiver
+    await db
+      .update(messages)
+      .set({ readAt: new Date() })
+      .where(and(eq(messages.id, messageId), eq(messages.receiverId, userId)));
   }
 
   // Notification methods
