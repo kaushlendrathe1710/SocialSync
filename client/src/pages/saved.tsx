@@ -297,49 +297,49 @@ export default function SavedPage() {
                         
                         {/* Collection Actions */}
                         {collection.name !== "All Saved" && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Edit Collection
-                              </DropdownMenuItem>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete Collection
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Collection</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete "{collection.name}"? This action cannot be undone.
-                                      All posts in this collection will be moved to "All Saved".
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeleteCollection(collection.id, collection.name)}
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center space-x-1">
+                            {/* Edit Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600"
+                              title="Edit Collection"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            
+                            {/* Delete Button with Confirmation */}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 text-gray-400 hover:text-red-600"
+                                  title="Delete Collection"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Collection</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{collection.name}"? This action cannot be undone.
+                                    All posts in this collection will be moved to "All Saved".
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteCollection(collection.id, collection.name)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         )}
                       </div>
                       
