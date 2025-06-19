@@ -229,7 +229,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Find valid OTP code for initial verification
+      console.log(`Looking for OTP: email=${email}, code=${code}`);
       const validOtp = await storage.getValidOtpCode(email, code);
+      console.log(`OTP lookup result:`, validOtp);
       if (!validOtp) {
         return res.status(400).json({ message: "Invalid or expired OTP" });
       }
