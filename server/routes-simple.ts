@@ -36,6 +36,17 @@ declare module 'express-session' {
   }
 }
 
+interface SessionData {
+  userId?: number;
+  verifiedEmail?: string;
+  otpId?: number;
+  originalUserId?: number;
+  isImpersonating?: boolean;
+  deleteOtp?: string;
+  deleteOtpExpiry?: number;
+  deleteOtpVerified?: boolean;
+}
+
 // Email configuration
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -63,6 +74,42 @@ const userSockets = new Map<WebSocket, number>(); // WebSocket -> userId
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Send OTP via email
+async function sendOtpEmail(email: string, otp: string, purpose: string = "Verification"): Promise<void> {
+  try {
+    await transporter.sendMail({
+      from: process.env.FROM_EMAIL,
+      to: email,
+      subject: `Your SocialConnect ${purpose} Code`,
+      text: `Your ${purpose.toLowerCase()} code is: ${otp}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
+          <h2 style="color: #333;">Your ${purpose} Code</h2>
+          <p>Use this code to complete your ${purpose.toLowerCase()}:</p>
+          <div style="background: #f5f5f5; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb;">${otp}</span>
+          </div>
+          <p style="color: #666;">This code will expire in 10 minutes.</p>
+          ${purpose === "Account Deletion" ? '<p style="color: #dc2626; font-weight: bold;">⚠️ This action is permanent and cannot be undone.</p>' : ''}
+        </div>
+      `,
+    });
+    console.log(`✓ ${purpose} email sent successfully to ${email} - OTP: ${otp}`);
+  } catch (emailError: any) {
+    console.log(`\n--- EMAIL SERVICE UNAVAILABLE - Development Mode ---`);
+    console.log(`Email: ${email}`);
+    console.log(`Purpose: ${purpose}`);
+    console.log(`OTP Code: ${otp}`);
+    console.log(`Copy this code to complete ${purpose.toLowerCase()}`);
+    console.log(`--- End Development Mode ---\n`);
+    
+    // Don't throw error in development, just log
+    if (process.env.NODE_ENV === 'production') {
+      throw emailError;
+    }
+  }
 }
 
 // Ensure uploads directory exists (fallback for local storage)

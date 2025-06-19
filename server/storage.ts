@@ -112,6 +112,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
 
   // OTP methods
   createOtpCode(otp: InsertOtpCode): Promise<OtpCode>;
@@ -284,6 +285,102 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined> {
     const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return user;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      // Delete all user-related data in proper order (respecting foreign key constraints)
+      
+      // Delete habit logs first
+      await db.delete(habitLogs).where(eq(habitLogs.userId, id));
+      
+      // Delete habits
+      await db.delete(habitTracking).where(eq(habitTracking.userId, id));
+      
+      // Delete wellness tracking
+      await db.delete(wellnessTracking).where(eq(wellnessTracking.userId, id));
+      
+      // Delete wishlist items and wishlists
+      const userWishlists = await db.select({ id: wishlists.id }).from(wishlists).where(eq(wishlists.userId, id));
+      for (const wishlist of userWishlists) {
+        await db.delete(wishlistItems).where(eq(wishlistItems.wishlistId, wishlist.id));
+      }
+      await db.delete(wishlists).where(eq(wishlists.userId, id));
+      
+      // Delete product reviews
+      await db.delete(productReviews).where(eq(productReviews.userId, id));
+      
+      // Delete event attendees
+      await db.delete(eventAttendees).where(eq(eventAttendees.userId, id));
+      
+      // Delete events created by user
+      await db.delete(events).where(eq(events.creatorId, id));
+      
+      // Delete shopping posts
+      await db.delete(shoppingPosts).where(eq(shoppingPosts.userId, id));
+      
+      // Delete group posts and memberships
+      await db.delete(groupPosts).where(eq(groupPosts.userId, id));
+      await db.delete(groupMemberships).where(eq(groupMemberships.userId, id));
+      
+      // Delete community groups created by user
+      await db.delete(communityGroups).where(eq(communityGroups.creatorId, id));
+      
+      // Delete blocked users relationships
+      await db.delete(blockedUsers).where(or(eq(blockedUsers.blockerId, id), eq(blockedUsers.blockedId, id)));
+      
+      // Delete privacy settings
+      await db.delete(privacySettings).where(eq(privacySettings.userId, id));
+      
+      // Delete friendships and friend requests
+      await db.delete(friendships).where(or(eq(friendships.user1Id, id), eq(friendships.user2Id, id)));
+      await db.delete(friendRequests).where(or(eq(friendRequests.senderId, id), eq(friendRequests.receiverId, id)));
+      
+      // Delete mentorship data
+      await db.delete(mentorshipRequests).where(or(eq(mentorshipRequests.menteeId, id), eq(mentorshipRequests.mentorId, id)));
+      await db.delete(mentorProfiles).where(eq(mentorProfiles.userId, id));
+      
+      // Delete post views
+      await db.delete(postViews).where(eq(postViews.viewerId, id));
+      
+      // Delete live streams
+      await db.delete(liveStreams).where(eq(liveStreams.userId, id));
+      
+      // Delete notifications
+      await db.delete(notifications).where(or(eq(notifications.userId, id), eq(notifications.fromUserId, id)));
+      
+      // Delete messages
+      await db.delete(messages).where(or(eq(messages.senderId, id), eq(messages.receiverId, id)));
+      
+      // Delete stories
+      await db.delete(stories).where(eq(stories.userId, id));
+      
+      // Delete follows
+      await db.delete(follows).where(or(eq(follows.followerId, id), eq(follows.followingId, id)));
+      
+      // Delete comment likes
+      await db.delete(commentLikes).where(eq(commentLikes.userId, id));
+      
+      // Delete comments
+      await db.delete(comments).where(eq(comments.userId, id));
+      
+      // Delete likes
+      await db.delete(likes).where(eq(likes.userId, id));
+      
+      // Delete posts
+      await db.delete(posts).where(eq(posts.userId, id));
+      
+      // Delete OTP codes
+      await db.delete(otpCodes).where(eq(otpCodes.email, (await this.getUser(id))?.email || ''));
+      
+      // Finally delete the user
+      const result = await db.delete(users).where(eq(users.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
   }
 
   // OTP methods
