@@ -67,7 +67,29 @@ export default function SettingsPage() {
     deviceApprovals: true,
   });
 
+  const [websiteError, setWebsiteError] = useState<string>('');
+
+  const isValidUrl = (url: string) => {
+    if (!url.trim()) return true; // Allow empty URL
+    try {
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
   const handleSaveAccount = async () => {
+    // Validate website URL
+    if (accountData.website && !isValidUrl(accountData.website)) {
+      toast({
+        title: "Invalid Website URL",
+        description: "Please enter a valid website URL (starting with http:// or https://)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const response = await fetch(`/api/users/${user?.id}`, {
         method: 'PUT',
@@ -308,9 +330,26 @@ export default function SettingsPage() {
                   <Input
                     id="website"
                     value={accountData.website}
-                    onChange={(e) => setAccountData({...accountData, website: e.target.value})}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setAccountData({...accountData, website: value});
+                      
+                      // Real-time validation
+                      if (value && !isValidUrl(value)) {
+                        setWebsiteError('Please enter a valid URL (starting with http:// or https://)');
+                      } else {
+                        setWebsiteError('');
+                      }
+                    }}
                     placeholder="https://yourwebsite.com"
+                    className={websiteError ? 'border-red-500 focus:border-red-500' : ''}
                   />
+                  {websiteError && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertTriangle className="w-4 h-4" />
+                      {websiteError}
+                    </p>
+                  )}
                 </div>
               </div>
 
