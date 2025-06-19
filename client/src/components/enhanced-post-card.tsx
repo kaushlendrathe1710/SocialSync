@@ -43,48 +43,58 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
     enabled: isOpen,
   });
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
+  const handleClick = () => {
+    setIsOpen(true);
   };
 
   const renderReactionsContent = () => {
     if (isLoading) {
-      return <div className="text-gray-500">Loading reactions...</div>;
+      return <div className="text-gray-500 text-center py-4">Loading reactions...</div>;
     }
 
     const reactionsArray = (reactions as any[]) || [];
     
     if (reactionsArray.length === 0) {
-      return <div className="text-gray-500">No reactions yet</div>;
+      return <div className="text-gray-500 text-center py-4">No reactions yet</div>;
     }
 
-    // Group reactions by type
-    const reactionGroups: { [key: string]: string[] } = {};
+    // Group reactions by type with user details
+    const reactionGroups: { [key: string]: Array<{name: string, avatar?: string}> } = {};
     reactionsArray.forEach((reaction: any) => {
       const type = reaction.reactionType || 'like';
-      const username = reaction.user?.username || reaction.user?.name || reaction.user?.email?.split('@')[0] || 'Unknown User';
+      const name = reaction.user?.name || reaction.user?.username || reaction.user?.email?.split('@')[0] || 'Unknown User';
+      const avatar = reaction.user?.avatar;
       if (!reactionGroups[type]) {
         reactionGroups[type] = [];
       }
-      reactionGroups[type].push(username);
+      reactionGroups[type].push({ name, avatar });
     });
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-3 max-h-64 overflow-y-auto">
         {Object.entries(reactionGroups).map(([type, users]) => {
-          // Find reaction data from extended reactions
           const reactionData = extendedReactions.find(r => r.type === type);
           const emoji = reactionData?.emoji || '👍';
           const label = reactionData?.label || 'Like';
           
           return (
-            <div key={type} className="flex items-start space-x-2">
-              <span className="text-lg">{emoji}</span>
-              <div>
-                <div className="font-medium text-sm">{label}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {users.join(', ')}
-                </div>
+            <div key={type} className="space-y-2">
+              <div className="flex items-center space-x-2 border-b border-gray-100 dark:border-gray-700 pb-1">
+                <span className="text-lg">{emoji}</span>
+                <span className="font-medium text-sm">{label} ({users.length})</span>
+              </div>
+              <div className="space-y-1 pl-6">
+                {users.map((user, idx) => (
+                  <div key={idx} className="flex items-center space-x-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback className="text-xs">
+                        {user.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm">{user.name}</span>
+                  </div>
+                ))}
               </div>
             </div>
           );
@@ -94,23 +104,25 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <span 
-          className="cursor-pointer hover:underline transition-colors"
-        >
-          {children}
-        </span>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">
-            Who reacted
-          </h4>
-          {renderReactionsContent()}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <>
+      <span 
+        onClick={handleClick}
+        className="cursor-pointer hover:underline transition-colors"
+      >
+        {children}
+      </span>
+      
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reactions</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {renderReactionsContent()}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -304,6 +316,12 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   const { data: comments } = useQuery({
     queryKey: [`/api/posts/${post.id}/comments`],
     enabled: showComments,
+  });
+
+  // Fetch real view count data
+  const { data: viewData } = useQuery({
+    queryKey: [`/api/posts/${post.id}/views`],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const likeMutation = useMutation({
@@ -625,7 +643,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
             
             <div className="flex items-center space-x-1 text-gray-500">
               <Eye className="h-4 w-4" />
-              <span className="text-sm">{post.viewsCount || 0}</span>
+              <span className="text-sm">{viewData?.viewCount || post.viewsCount || 0}</span>
             </div>
           </div>
         </div>

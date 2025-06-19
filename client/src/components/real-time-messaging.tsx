@@ -28,6 +28,7 @@ import {
   Mic,
   ThumbsUp
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 
 const EMOJI_PICKER = [
