@@ -99,9 +99,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files statically
   app.use('/uploads', express.static(uploadsDir));
 
-  // Basic health check
+  // Basic health check - also serves as root endpoint for deployment
   app.get("/api/health", (req: Request, res: Response) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Alternative root health check for deployment
+  app.get("/health", (req: Request, res: Response) => {
+    res.status(200).json({ status: "ok", service: "SocialConnect API" });
   });
 
   // Test email configuration
