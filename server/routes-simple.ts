@@ -220,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Set session for persistent login
-        req.session.userId = user.id;
+        req.req.session.userId = user.id;
         
         // Clean up verification token
         global.verificationTokens.delete(verificationToken);
@@ -253,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           await storage.markOtpCodeUsed(validOtp.id);
-          req.session.userId = adminUser.id;
+          req.req.session.userId = adminUser.id;
           
           return res.json({ 
             user: adminUser, 
@@ -287,7 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Returning user - mark OTP as used and login
         await storage.markOtpCodeUsed(validOtp.id);
-        req.session.userId = user.id;
+        req.req.session.userId = user.id;
         
         const isAdmin = user.role === 'admin' || user.role === 'super_admin';
         
@@ -307,13 +307,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication check endpoint
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.json({ user: null });
       }
 
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.req.session.userId);
       if (!user) {
-        req.session.userId = undefined;
+        req.req.session.userId = undefined;
         return res.json({ user: null });
       }
 
@@ -357,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filterUserId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
-      const currentUserId = req.session.userId; // Pass current user for reactions
+      const currentUserId = req.req.session.userId; // Pass current user for reactions
       
       const posts = await storage.getPosts(filterUserId, limit, offset, currentUserId);
       res.json(posts);
@@ -385,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/posts", uploadSingle, async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -408,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let postData = {
-        userId: req.session.userId,
+        userId: req.req.session.userId,
         content: req.body.content || null,
         imageUrl: null as string | null,
         videoUrl: null as string | null,
@@ -466,12 +466,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // React to post endpoint (supports multiple emoji reactions)
   app.post("/api/posts/:id/react", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const postId = parseInt(req.params.id);
-      const userId = req.session.userId;
+      const userId = req.req.session.userId;
       const { reactionType } = req.body;
 
       // Validate reaction type - includes all extended reactions
@@ -512,12 +512,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy like endpoint (for backward compatibility)
   app.post("/api/posts/:id/like", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const postId = parseInt(req.params.id);
-      const userId = req.session.userId;
+      const userId = req.req.session.userId;
 
       // Check if already liked
       const userLikes = await storage.getUserLikes(userId);
@@ -539,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update post endpoint
   app.put("/api/posts/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -552,7 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Post not found" });
       }
 
-      if (post.userId !== req.session.userId) {
+      if (post.userId !== req.req.session.userId) {
         return res.status(403).json({ message: "Not authorized to edit this post" });
       }
 
@@ -572,15 +572,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete post endpoint
   app.delete("/api/posts/:id", async (req: Request, res: Response) => {
     try {
-      console.log(`DELETE request for post ${req.params.id} from user ${req.session.userId}`);
+      console.log(`DELETE request for post ${req.params.id} from user ${req.req.session.userId}`);
       
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         console.log("Delete post: Not authenticated");
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const postId = parseInt(req.params.id);
-      console.log(`Deleting post ${postId} for user ${req.session.userId}`);
+      console.log(`Deleting post ${postId} for user ${req.req.session.userId}`);
       
       // Get the post to check ownership
       const post = await storage.getPost(postId);
@@ -589,8 +589,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Post not found" });
       }
 
-      if (post.userId !== req.session.userId) {
-        console.log(`User ${req.session.userId} not authorized to delete post ${postId} owned by ${post.userId}`);
+      if (post.userId !== req.req.session.userId) {
+        console.log(`User ${req.req.session.userId} not authorized to delete post ${postId} owned by ${post.userId}`);
         return res.status(403).json({ message: "Not authorized to delete this post" });
       }
 
@@ -634,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/posts/:id/comments", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -642,7 +642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { content, parentCommentId } = req.body;
 
       const comment = await storage.createComment({
-        userId: req.session.userId,
+        userId: req.req.session.userId,
         postId,
         content,
         parentCommentId: parentCommentId || null,
@@ -670,7 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update comment
   app.put("/api/comments/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -697,7 +697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete comment
   app.delete("/api/comments/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -718,12 +718,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Like/unlike comment
   app.post("/api/comments/:id/like", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const commentId = parseInt(req.params.id);
-      const userId = req.session.userId;
+      const userId = req.req.session.userId;
 
       // Check if user already liked this comment
       const existingLikes = await storage.getCommentLikes(commentId);
@@ -758,7 +758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/stories", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -766,7 +766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       const story = await storage.createStory({
-        userId: req.session.userId,
+        userId: req.req.session.userId,
         text: text || null,
         imageUrl: imageUrl || null,
         videoUrl: videoUrl || null,
@@ -784,7 +784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/posts/:id/view", async (req: Request, res: Response) => {
     try {
       const postId = parseInt(req.params.id);
-      const viewerId = req.session.userId || null;
+      const viewerId = req.req.session.userId || null;
       const ipAddress = req.ip || req.connection.remoteAddress;
       const userAgent = req.get('User-Agent');
 
@@ -882,14 +882,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user profile
   app.put("/api/users/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const userId = parseInt(req.params.id);
       
       // Users can only update their own profile
-      if (userId !== req.session.userId) {
+      if (userId !== req.req.session.userId) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -909,12 +909,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Follow/unfollow user
   app.post("/api/users/:id/follow", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const followingId = parseInt(req.params.id);
-      const followerId = req.session.userId;
+      const followerId = req.req.session.userId;
 
       if (followingId === followerId) {
         return res.status(400).json({ message: "Cannot follow yourself" });
@@ -973,11 +973,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notifications endpoints
   app.get("/api/notifications", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const notifications = await storage.getUserNotifications(req.session.userId);
+      const notifications = await storage.getUserNotifications(req.req.session.userId);
       res.json(notifications);
     } catch (error) {
       console.error("Get notifications error:", error);
@@ -987,7 +987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/notifications/:id/read", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -1003,11 +1003,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Messages endpoints
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const conversations = await storage.getConversations(req.session.userId);
+      const conversations = await storage.getConversations(req.req.session.userId);
       res.json(conversations);
     } catch (error) {
       console.error("Get conversations error:", error);
@@ -1017,12 +1017,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/conversations/:userId", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const otherUserId = parseInt(req.params.userId);
-      const messages = await storage.getConversation(req.session.userId, otherUserId);
+      const messages = await storage.getConversation(req.req.session.userId, otherUserId);
       res.json(messages);
     } catch (error) {
       console.error("Get conversation error:", error);
@@ -1032,20 +1032,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/messages", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const { receiverId, content } = req.body;
 
       const message = await storage.createMessage({
-        senderId: req.session.userId,
+        senderId: req.req.session.userId,
         receiverId,
         content,
       });
 
       // Get sender info for WebSocket broadcast
-      const sender = await storage.getUser(req.session.userId);
+      const sender = await storage.getUser(req.req.session.userId);
       
       // Create message with sender info for broadcast
       const messageWithSender = {
@@ -1068,8 +1068,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Also broadcast to sender for confirmation
-      if (connectedUsers.has(req.session.userId)) {
-        const senderSockets = connectedUsers.get(req.session.userId)!;
+      if (connectedUsers.has(req.req.session.userId)) {
+        const senderSockets = connectedUsers.get(req.req.session.userId)!;
         senderSockets.forEach(socket => {
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
@@ -1084,7 +1084,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createNotification({
         userId: receiverId,
         type: "message",
-        fromUserId: req.session.userId,
+        fromUserId: req.req.session.userId,
         isRead: false,
       });
 
@@ -1119,11 +1119,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mark all notifications as read
   app.post("/api/notifications/mark-all-read", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      await storage.markAllNotificationsRead(req.session.userId);
+      await storage.markAllNotificationsRead(req.req.session.userId);
       res.json({ success: true });
     } catch (error) {
       console.error("Mark all notifications read error:", error);
@@ -1134,12 +1134,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cover photo upload endpoint
   app.post("/api/users/:id/cover-photo", upload.single('coverPhoto'), async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const userId = parseInt(req.params.id);
-      if (userId !== req.session.userId) {
+      if (userId !== req.req.session.userId) {
         return res.status(403).json({ message: "Can only update own cover photo" });
       }
 
@@ -1181,12 +1181,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile picture upload endpoint
   app.post("/api/users/:id/profile-picture", upload.single('profilePicture'), async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const userId = parseInt(req.params.id);
-      if (userId !== req.session.userId) {
+      if (userId !== req.req.session.userId) {
         return res.status(403).json({ message: "Can only update own profile picture" });
       }
 
@@ -1228,11 +1228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User data export endpoint
   app.get("/api/user/export", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const userId = req.session.userId;
+      const userId = req.req.session.userId;
       
       // Get user data
       const user = await storage.getUser(userId);
@@ -1294,11 +1294,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User data usage endpoint
   app.get("/api/user/data-usage", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const userId = req.session.userId;
+      const userId = req.req.session.userId;
       
       // Get user's posts count
       const posts = await storage.getPosts(userId);
@@ -1330,7 +1330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create event endpoint
   app.post("/api/events", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -1350,7 +1350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eventTime,
         location,
         maxAttendees,
-        createdBy: req.session.userId,
+        createdBy: req.req.session.userId,
         createdAt: new Date().toISOString()
       };
 
@@ -1367,7 +1367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create room endpoint
   app.post("/api/rooms", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -1385,8 +1385,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description,
         privacy,
         maxMembers,
-        createdBy: req.session.userId,
-        members: [req.session.userId],
+        createdBy: req.req.session.userId,
+        members: [req.req.session.userId],
         createdAt: new Date().toISOString()
       };
 
@@ -1403,11 +1403,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoints
   app.get("/api/admin/stats", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.req.session.userId);
       if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -1432,11 +1432,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/users", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.req.session.userId);
       if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -1455,11 +1455,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/users/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const adminUser = await storage.getUser(req.session.userId);
+      const adminUser = await storage.getUser(req.req.session.userId);
       if (!adminUser || !adminUser.canDelete) {
         return res.status(403).json({ message: "Delete permission required" });
       }
@@ -1490,11 +1490,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/admin/users/:id/role", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const adminUser = await storage.getUser(req.session.userId);
+      const adminUser = await storage.getUser(req.req.session.userId);
       if (!adminUser || adminUser.role !== 'super_admin') {
         return res.status(403).json({ message: "Super admin access required" });
       }
@@ -1526,11 +1526,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/posts", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.req.session.userId);
       if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
         return res.status(403).json({ message: "Admin access required" });
       }
@@ -1548,11 +1548,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/posts/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const adminUser = await storage.getUser(req.session.userId);
+      const adminUser = await storage.getUser(req.req.session.userId);
       if (!adminUser || !adminUser.canDelete) {
         return res.status(403).json({ message: "Delete permission required" });
       }
@@ -1573,11 +1573,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/posts/bulk-delete", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const adminUser = await storage.getUser(req.session.userId);
+      const adminUser = await storage.getUser(req.req.session.userId);
       if (!adminUser || !adminUser.canDelete) {
         return res.status(403).json({ message: "Delete permission required" });
       }
@@ -1608,11 +1608,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Impersonation endpoints
   app.post("/api/admin/impersonate/:userId", async (req: Request, res: Response) => {
-    if (!req.session.userId) {
+    if (!req.req.session.userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const adminUser = await storage.getUser(req.session.userId);
+    const adminUser = await storage.getUser(req.req.session.userId);
     if (!adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'super_admin')) {
       return res.status(403).json({ error: "Admin access required" });
     }
@@ -1626,8 +1626,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Store the original admin user ID for later restoration
-      req.session.originalUserId = req.session.userId;
-      req.session.userId = targetUserId;
+      req.session.originalUserId = req.req.session.userId;
+      req.req.session.userId = targetUserId;
       req.session.isImpersonating = true;
 
       res.json({ 
@@ -1655,7 +1655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Restore the original admin session
-      req.session.userId = originalUserId;
+      req.req.session.userId = originalUserId;
       delete req.session.originalUserId;
       delete req.session.isImpersonating;
 
@@ -1672,32 +1672,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Friend Request API Routes
   app.post("/api/friend-requests", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const { receiverId, message } = req.body;
       
-      if (req.session.userId === receiverId) {
+      if (req.req.session.userId === receiverId) {
         return res.status(400).json({ message: "Cannot send friend request to yourself" });
       }
 
-      const existingRequest = await storage.getFriendRequestStatus(req.session.userId, receiverId);
+      const existingRequest = await storage.getFriendRequestStatus(req.req.session.userId, receiverId);
       if (existingRequest) {
         return res.status(400).json({ message: "Friend request already sent" });
       }
 
-      const areFriends = await storage.areFriends(req.session.userId, receiverId);
+      const areFriends = await storage.areFriends(req.req.session.userId, receiverId);
       if (areFriends) {
         return res.status(400).json({ message: "Already friends" });
       }
 
-      const friendRequest = await storage.sendFriendRequest(req.session.userId, receiverId, message);
+      const friendRequest = await storage.sendFriendRequest(req.req.session.userId, receiverId, message);
       
       await storage.createNotification({
         userId: receiverId,
         type: "friend_request",
-        fromUserId: req.session.userId,
+        fromUserId: req.req.session.userId,
       });
 
       res.json(friendRequest);
@@ -1709,7 +1709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/friend-requests/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
@@ -1722,7 +1722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createNotification({
           userId: request.senderId,
           type: "friend_accept",
-          fromUserId: session.userId,
+          fromUserId: req.session.userId,
         });
       }
 
@@ -1735,11 +1735,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/friend-requests/received", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const requests = await storage.getFriendRequests(req.session.userId, 'received');
+      const requests = await storage.getFriendRequests(req.req.session.userId, 'received');
       res.json(requests);
     } catch (error) {
       console.error("Get received friend requests error:", error);
@@ -1749,11 +1749,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/friend-requests/sent", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const requests = await storage.getFriendRequests(req.session.userId, 'sent');
+      const requests = await storage.getFriendRequests(req.req.session.userId, 'sent');
       res.json(requests);
     } catch (error) {
       console.error("Get sent friend requests error:", error);
@@ -1763,11 +1763,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/friends", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const friends = await storage.getFriends(req.session.userId);
+      const friends = await storage.getFriends(req.req.session.userId);
       res.json(friends);
     } catch (error) {
       console.error("Get friends error:", error);
@@ -1777,12 +1777,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/friend-suggestions", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const suggestions = await storage.getFriendSuggestions(session.userId, 10);
+      const suggestions = await storage.getFriendSuggestions(req.session.userId, 10);
       res.json(suggestions);
     } catch (error) {
       console.error("Get friend suggestions error:", error);
@@ -1792,13 +1792,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/friends/:id", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const { id } = req.params;
-      const success = await storage.deleteFriendship(session.userId, parseInt(id));
+      const success = await storage.deleteFriendship(req.session.userId, parseInt(id));
       
       if (!success) {
         return res.status(404).json({ message: "Friendship not found" });
@@ -1814,12 +1814,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Privacy Settings API Routes
   app.get("/api/privacy-settings", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const settings = await storage.getPrivacySettings(session.userId);
+      const settings = await storage.getPrivacySettings(req.session.userId);
       res.json(settings);
     } catch (error) {
       console.error("Get privacy settings error:", error);
@@ -1829,12 +1829,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/privacy-settings", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const settings = await storage.updatePrivacySettings(session.userId, req.body);
+      const settings = await storage.updatePrivacySettings(req.session.userId, req.body);
       res.json(settings);
     } catch (error) {
       console.error("Update privacy settings error:", error);
@@ -1845,17 +1845,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Community Groups API Routes
   app.post("/api/community-groups", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const group = await storage.createCommunityGroup({
         ...req.body,
-        creatorId: session.userId,
+        creatorId: req.session.userId,
       });
       
-      await storage.joinGroup(group.id, session.userId);
+      await storage.joinGroup(group.id, req.session.userId);
       res.json(group);
     } catch (error) {
       console.error("Create community group error:", error);
@@ -1865,12 +1865,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/community-groups", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
+      // Authentication handled above
       const { category } = req.query;
       
       const groups = await storage.getCommunityGroups(
         category as string, 
-        session.userId
+        req.session.userId
       );
       res.json(groups);
     } catch (error) {
@@ -1881,13 +1881,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/community-groups/:id/join", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const { id } = req.params;
-      const membership = await storage.joinGroup(parseInt(id), session.userId);
+      const membership = await storage.joinGroup(parseInt(id), req.session.userId);
       res.json(membership);
     } catch (error) {
       console.error("Join group error:", error);
@@ -1898,14 +1898,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wellness Tracking API Routes
   app.post("/api/wellness-tracking", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const tracking = await storage.recordWellnessTracking({
         ...req.body,
-        userId: session.userId,
+        userId: req.session.userId,
       });
       
       res.json(tracking);
@@ -1917,14 +1917,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/wellness-tracking", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const { days } = req.query;
       const tracking = await storage.getWellnessTracking(
-        session.userId, 
+        req.session.userId, 
         days ? parseInt(days as string) : undefined
       );
       
@@ -1938,14 +1938,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Habit Tracking API Routes
   app.post("/api/habits", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const habit = await storage.createHabit({
         ...req.body,
-        userId: session.userId,
+        userId: req.session.userId,
       });
       
       res.json(habit);
@@ -1957,12 +1957,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/habits", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const habits = await storage.getUserHabits(session.userId);
+      const habits = await storage.getUserHabits(req.session.userId);
       res.json(habits);
     } catch (error) {
       console.error("Get habits error:", error);
@@ -1989,8 +1989,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/beauty-products/:id/reviews", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
@@ -1998,7 +1998,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const review = await storage.createProductReview({
         ...req.body,
         productId: parseInt(id),
-        userId: session.userId,
+        userId: req.session.userId,
       });
       
       res.json(review);
@@ -2011,14 +2011,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wishlist API Routes
   app.post("/api/wishlists", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const wishlist = await storage.createWishlist({
         ...req.body,
-        userId: session.userId,
+        userId: req.session.userId,
       });
       
       res.json(wishlist);
@@ -2030,12 +2030,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/wishlists", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const wishlists = await storage.getUserWishlists(session.userId);
+      const wishlists = await storage.getUserWishlists(req.session.userId);
       res.json(wishlists);
     } catch (error) {
       console.error("Get wishlists error:", error);
@@ -2046,14 +2046,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Events API Routes
   app.post("/api/events", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      // Authentication handled above
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
       const event = await storage.createEvent({
         ...req.body,
-        creatorId: session.userId,
+        creatorId: req.session.userId,
       });
       
       res.json(event);
@@ -2065,8 +2065,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/events", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      const events = await storage.getEvents(session.userId);
+      // Authentication handled above
+      const events = await storage.getEvents(req.session.userId);
       res.json(events);
     } catch (error) {
       console.error("Get events error:", error);
@@ -2077,7 +2077,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Live streams endpoints
   app.post("/api/live-streams", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -2088,7 +2088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const liveStream = await storage.createLiveStream({
-        userId: req.session.userId,
+        userId: req.req.session.userId,
         title: title.trim(),
         description: description?.trim() || null,
         privacy: privacy || "public"
@@ -2113,12 +2113,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/live-streams/:id/end", async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
+      if (!req.req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const streamId = parseInt(req.params.id);
-      const success = await storage.endLiveStream(streamId, req.session.userId);
+      const success = await storage.endLiveStream(streamId, req.req.session.userId);
       
       if (!success) {
         return res.status(404).json({ message: "Live stream not found or not authorized" });

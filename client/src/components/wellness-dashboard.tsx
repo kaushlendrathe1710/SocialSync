@@ -127,19 +127,16 @@ export function WellnessDashboard() {
   // Mutations
   const recordWellnessMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/wellness-tracking", {
-        method: "POST",
-        body: {
-          date: new Date(selectedDate),
-          moodRating: data.moodRating[0],
-          energyLevel: data.energyLevel[0],
-          stressLevel: data.stressLevel[0],
-          sleepHours: data.sleepHours ? parseInt(data.sleepHours) : null,
-          waterIntake: data.waterIntake ? parseInt(data.waterIntake) : null,
-          exerciseMinutes: data.exerciseMinutes ? parseInt(data.exerciseMinutes) : null,
-          notes: data.notes || null,
-          isPrivate: true,
-        },
+      return apiRequest("/api/wellness-tracking", "POST", {
+        date: new Date(selectedDate),
+        moodRating: data.moodRating[0],
+        energyLevel: data.energyLevel[0],
+        stressLevel: data.stressLevel[0],
+        sleepHours: data.sleepHours ? parseInt(data.sleepHours) : null,
+        waterIntake: data.waterIntake ? parseInt(data.waterIntake) : null,
+        exerciseMinutes: data.exerciseMinutes ? parseInt(data.exerciseMinutes) : null,
+        notes: data.notes || null,
+        isPrivate: true,
       });
     },
     onSuccess: () => {
@@ -162,16 +159,13 @@ export function WellnessDashboard() {
 
   const createHabitMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/habits", {
-        method: "POST",
-        body: {
-          name: data.name,
-          description: data.description || null,
-          category: data.category,
-          frequency: data.frequency,
-          targetValue: data.targetValue ? parseInt(data.targetValue) : null,
-          unit: data.unit || null,
-        },
+      return apiRequest("/api/habits", "POST", {
+        name: data.name,
+        description: data.description || null,
+        category: data.category,
+        frequency: data.frequency,
+        targetValue: data.targetValue ? parseInt(data.targetValue) : null,
+        unit: data.unit || null,
       });
     },
     onSuccess: () => {
