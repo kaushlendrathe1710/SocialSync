@@ -434,7 +434,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   };
 
   return (
-    <Card ref={viewTrackingRef} className="w-full max-w-2xl mx-auto">
+    <Card id={`post-${post.id}`} ref={viewTrackingRef} className="w-full max-w-2xl mx-auto">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">

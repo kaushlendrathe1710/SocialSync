@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getUserInitials } from "@/lib/auth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { 
   Heart, 
   MessageCircle, 
@@ -36,6 +36,7 @@ export default function NotificationsDropdown({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [, navigate] = useLocation();
   
   // Notification settings state
   const [notificationSettings, setNotificationSettings] = useState({
@@ -207,8 +208,31 @@ export default function NotificationsDropdown({
                   !notification.isRead ? 'bg-blue-50' : ''
                 }`}
                 onClick={() => {
+                  // Mark as read if unread
                   if (!notification.isRead) {
                     markAsReadMutation.mutate(notification.id);
+                  }
+                  
+                  // Navigate to the related post or user profile
+                  if (notification.postId) {
+                    // Navigate to feed page and scroll to the post
+                    navigate('/');
+                    // Use setTimeout to ensure navigation completes before closing
+                    setTimeout(() => {
+                      onClose();
+                      // Scroll to post if it exists
+                      const postElement = document.getElementById(`post-${notification.postId}`);
+                      if (postElement) {
+                        postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }, 100);
+                  } else if (notification.type === 'follow') {
+                    // Navigate to user profile
+                    navigate(`/profile/${notification.fromUserId}`);
+                    onClose();
+                  } else {
+                    // For other notifications, just close the dropdown
+                    onClose();
                   }
                 }}
               >
