@@ -1678,26 +1678,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { receiverId, message } = req.body;
       
-      if (session.userId === receiverId) {
+      if (req.session.userId === receiverId) {
         return res.status(400).json({ message: "Cannot send friend request to yourself" });
       }
 
-      const existingRequest = await storage.getFriendRequestStatus(session.userId, receiverId);
+      const existingRequest = await storage.getFriendRequestStatus(req.session.userId, receiverId);
       if (existingRequest) {
         return res.status(400).json({ message: "Friend request already sent" });
       }
 
-      const areFriends = await storage.areFriends(session.userId, receiverId);
+      const areFriends = await storage.areFriends(req.session.userId, receiverId);
       if (areFriends) {
         return res.status(400).json({ message: "Already friends" });
       }
 
-      const friendRequest = await storage.sendFriendRequest(session.userId, receiverId, message);
+      const friendRequest = await storage.sendFriendRequest(req.session.userId, receiverId, message);
       
       await storage.createNotification({
         userId: receiverId,
         type: "friend_request",
-        fromUserId: session.userId,
+        fromUserId: req.session.userId,
       });
 
       res.json(friendRequest);
@@ -1709,8 +1709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/friend-requests/:id", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
@@ -1736,12 +1735,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/friend-requests/received", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const requests = await storage.getFriendRequests(session.userId, 'received');
+      const requests = await storage.getFriendRequests(req.session.userId, 'received');
       res.json(requests);
     } catch (error) {
       console.error("Get received friend requests error:", error);
@@ -1751,12 +1749,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/friend-requests/sent", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const requests = await storage.getFriendRequests(session.userId, 'sent');
+      const requests = await storage.getFriendRequests(req.session.userId, 'sent');
       res.json(requests);
     } catch (error) {
       console.error("Get sent friend requests error:", error);
@@ -1766,12 +1763,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/friends", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const friends = await storage.getFriends(session.userId);
+      const friends = await storage.getFriends(req.session.userId);
       res.json(friends);
     } catch (error) {
       console.error("Get friends error:", error);
