@@ -1672,8 +1672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Friend Request API Routes
   app.post("/api/friend-requests", async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionData;
-      if (!session.userId) {
+      if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
