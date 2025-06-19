@@ -148,7 +148,7 @@ export default function MessagesDropdown({
     );
   });
 
-  const unreadCount = conversations.filter((conv: MessageWithUser) => 
+  const unreadCount = uniqueConversations.filter((conv: MessageWithUser) => 
     !conv.readAt && conv.receiverId === user?.id
   ).length;
 
