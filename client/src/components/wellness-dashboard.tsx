@@ -332,6 +332,16 @@ export function WellnessDashboard() {
                       Add Habit
                     </Button>
                   </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Habit</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-500">
+                        Habit creation functionality coming soon!
+                      </p>
+                    </div>
+                  </DialogContent>
                 </Dialog>
               </CardTitle>
             </CardHeader>
@@ -377,6 +387,16 @@ export function WellnessDashboard() {
                       Create Habit
                     </Button>
                   </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Habit</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-500">
+                        Habit creation functionality coming soon!
+                      </p>
+                    </div>
+                  </DialogContent>
                 </Dialog>
               </CardTitle>
             </CardHeader>
