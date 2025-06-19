@@ -51,7 +51,7 @@ export default function Navigation() {
 
   const { data: conversations = [] } = useQuery({
     queryKey: ['/api/conversations'],
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Refresh every 5 seconds for faster updates
   });
 
   const unreadNotifications = Array.isArray(notifications) 
