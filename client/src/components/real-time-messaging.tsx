@@ -234,6 +234,73 @@ export default function RealTimeMessaging() {
     }
   };
 
+  const handleAttachmentClick = () => {
+    triggerFileInput();
+  };
+
+  const handleCameraClick = () => {
+    // Request camera access for taking photos
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .then((stream) => {
+          // Create video element to capture photo
+          const video = document.createElement('video');
+          video.srcObject = stream;
+          video.play();
+          
+          toast({
+            title: "Camera access granted",
+            description: "Camera functionality will be available in the next update",
+          });
+          
+          // Stop the stream for now
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch((error) => {
+          toast({
+            title: "Camera access denied",
+            description: "Please allow camera access to take photos",
+            variant: "destructive",
+          });
+        });
+    } else {
+      toast({
+        title: "Camera not supported",
+        description: "Your browser doesn't support camera access",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMicClick = () => {
+    // Request microphone access for voice messages
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then((stream) => {
+          toast({
+            title: "Microphone access granted",
+            description: "Voice message functionality will be available in the next update",
+          });
+          
+          // Stop the stream for now
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch((error) => {
+          toast({
+            title: "Microphone access denied",
+            description: "Please allow microphone access to send voice messages",
+            variant: "destructive",
+          });
+        });
+    } else {
+      toast({
+        title: "Microphone not supported",
+        description: "Your browser doesn't support microphone access",
+        variant: "destructive",
+      });
+    }
+  };
+
   const removeSelectedFile = () => {
     setSelectedFile(null);
     setFilePreview(null);
@@ -545,7 +612,13 @@ export default function RealTimeMessaging() {
                   
                   <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
                     <div className="flex items-center space-x-1">
-                      <Button type="button" variant="ghost" size="sm">
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={handleAttachmentClick}
+                        title="Attach file"
+                      >
                         <Paperclip className="w-4 h-4" />
                       </Button>
                       <Button 
@@ -557,7 +630,13 @@ export default function RealTimeMessaging() {
                       >
                         <ImageIcon className="w-4 h-4" />
                       </Button>
-                      <Button type="button" variant="ghost" size="sm">
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={handleCameraClick}
+                        title="Take photo"
+                      >
                         <Camera className="w-4 h-4" />
                       </Button>
                     </div>
@@ -611,7 +690,13 @@ export default function RealTimeMessaging() {
                         </Button>
                       ) : (
                         <>
-                          <Button type="button" variant="ghost" size="sm">
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={handleMicClick}
+                            title="Send voice message"
+                          >
                             <Mic className="w-4 h-4" />
                           </Button>
                           <Button 
@@ -622,6 +707,7 @@ export default function RealTimeMessaging() {
                               setMessageText('👍');
                               setTimeout(() => handleSendMessage(new Event('submit') as any), 100);
                             }}
+                            title="Send thumbs up"
                           >
                             <ThumbsUp className="w-4 h-4" />
                           </Button>
