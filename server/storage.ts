@@ -1275,8 +1275,44 @@ export class DatabaseStorage implements IStorage {
 
   // Wellness methods
   async recordWellnessTracking(tracking: InsertWellnessTracking): Promise<WellnessTracking> {
-    const [record] = await db.insert(wellnessTracking).values(tracking).returning();
-    return record;
+    // Check if a record already exists for this user and date
+    const trackingDate = tracking.date instanceof Date ? tracking.date : new Date(tracking.date);
+    const dateString = trackingDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    const existingRecord = await db
+      .select()
+      .from(wellnessTracking)
+      .where(and(
+        eq(wellnessTracking.userId, tracking.userId),
+        sql`DATE(${wellnessTracking.date}) = ${dateString}`
+      ))
+      .limit(1);
+
+    if (existingRecord.length > 0) {
+      // Update existing record
+      const [updatedRecord] = await db
+        .update(wellnessTracking)
+        .set({
+          moodRating: tracking.moodRating,
+          energyLevel: tracking.energyLevel,
+          stressLevel: tracking.stressLevel,
+          sleepHours: tracking.sleepHours,
+          waterIntake: tracking.waterIntake,
+          exerciseMinutes: tracking.exerciseMinutes,
+          notes: tracking.notes,
+          isPrivate: tracking.isPrivate,
+        })
+        .where(eq(wellnessTracking.id, existingRecord[0].id))
+        .returning();
+      return updatedRecord;
+    } else {
+      // Create new record
+      const [record] = await db.insert(wellnessTracking).values({
+        ...tracking,
+        date: trackingDate
+      }).returning();
+      return record;
+    }
   }
 
   async getWellnessTracking(userId: number, days = 30): Promise<WellnessTracking[]> {

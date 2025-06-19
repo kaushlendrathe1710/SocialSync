@@ -2041,9 +2041,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
+      const { date, moodRating, energyLevel, stressLevel, sleepHours, waterIntake, exerciseMinutes, notes, isPrivate } = req.body;
       const tracking = await storage.recordWellnessTracking({
-        ...req.body,
         userId: req.session.userId,
+        date: new Date(date),
+        moodRating,
+        energyLevel,
+        stressLevel,
+        sleepHours,
+        waterIntake,
+        exerciseMinutes,
+        notes,
+        isPrivate,
       });
       
       res.json(tracking);
