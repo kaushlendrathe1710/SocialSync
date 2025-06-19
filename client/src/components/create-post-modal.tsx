@@ -414,34 +414,18 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 <UserRound className="w-5 h-5 text-blue-500" />
               </Button>
               
-              {/* Emoji Picker with + button */}
+              {/* Single Emoji Icon */}
               <div className="relative">
-                <div className="flex items-center">
-                  {/* Show popular emojis */}
-                  {popularEmojis.slice(0, 3).map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => addEmoji(emoji)}
-                      className="text-lg hover:bg-gray-100 rounded p-1 transition-colors mr-1"
-                      title={emojiData.find(e => e.emoji === emoji)?.name}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                  
-                  {/* Plus button to show all emojis */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="p-1 hover:bg-muted"
-                    title="More emojis"
-                  >
-                    <Plus className="w-4 h-4 text-yellow-500" />
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="p-2 hover:bg-muted"
+                  title="Add emoji"
+                >
+                  <Smile className="w-5 h-5 text-yellow-500" />
+                </Button>
                 
                 {/* Emoji Picker Dropdown */}
                 {showEmojiPicker && (
