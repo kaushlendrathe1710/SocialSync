@@ -13,6 +13,8 @@ import ExplorePage from "@/pages/explore";
 import MessagesPage from "@/pages/messages";
 import NotificationsPage from "@/pages/notifications";
 import FriendsPage from "@/pages/friends";
+import WellnessPage from "@/pages/wellness";
+import CommunitiesPage from "@/pages/communities";
 import SavedPage from "@/pages/saved";
 import SettingsPage from "@/pages/settings";
 import AdminDashboard from "@/pages/admin";
@@ -55,6 +57,8 @@ function AppContent() {
               <Route path="/messages" component={MessagesPage} />
               <Route path="/notifications" component={NotificationsPage} />
               <Route path="/friends" component={FriendsPage} />
+              <Route path="/wellness" component={WellnessPage} />
+              <Route path="/communities" component={CommunitiesPage} />
               <Route path="/saved" component={SavedPage} />
               <Route path="/settings" component={SettingsPage} />
               {/* During impersonation, redirect any admin routes to feed */}
