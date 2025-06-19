@@ -35,34 +35,42 @@ interface ReactionsTooltipProps {
 }
 
 function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
-  const { data: reactions, isLoading } = useQuery({
-    queryKey: [`/api/posts/${postId}/reactions`],
-    enabled: false, // Only fetch when tooltip opens
-  });
-
+  const [reactions, setReactions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
+  const fetchReactions = async () => {
+    if (reactions.length > 0) return; // Already loaded
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/posts/${postId}/reactions`, { 
+        credentials: 'include' 
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setReactions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching reactions:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
-    if (open && !reactions) {
-      // Manually trigger the query when tooltip opens
-      window.fetch(`/api/posts/${postId}/reactions`, { credentials: 'include' })
-        .then(res => res.json())
-        .then(data => {
-          // Update query cache
-          const queryClient = useQueryClient();
-          queryClient.setQueryData([`/api/posts/${postId}/reactions`], data);
-        })
-        .catch(console.error);
+    if (open) {
+      fetchReactions();
     }
   };
 
   const getTooltipContent = () => {
-    if (isLoading || !reactions || !Array.isArray(reactions)) {
+    if (isLoading) {
       return "Loading reactions...";
     }
 
-    if (reactions.length === 0) {
+    if (!reactions || reactions.length === 0) {
       return "No reactions yet";
     }
 
@@ -70,30 +78,50 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
     const reactionGroups: { [key: string]: string[] } = {};
     reactions.forEach((reaction: any) => {
       const type = reaction.reactionType || 'like';
-      const username = reaction.user?.username || reaction.user?.email || 'Unknown';
+      const username = reaction.user?.username || reaction.user?.name || reaction.user?.email?.split('@')[0] || 'Unknown User';
       if (!reactionGroups[type]) {
         reactionGroups[type] = [];
       }
       reactionGroups[type].push(username);
     });
 
-    // Format the tooltip content
+    // Format the tooltip content with proper emoji mapping
     const lines = Object.entries(reactionGroups).map(([type, users]) => {
-      const reactionInfo = reactions.find((r: any) => r.type === type);
       let emoji = '👍';
+      let label = 'Like';
       
-      // Map reaction types to emojis
+      // Map reaction types to emojis and labels
       switch(type) {
-        case 'like': emoji = '👍'; break;
-        case 'love': emoji = '❤️'; break;
-        case 'laugh': emoji = '😂'; break;
-        case 'wow': emoji = '😮'; break;
-        case 'sad': emoji = '😢'; break;
-        case 'angry': emoji = '😠'; break;
-        default: emoji = '👍';
+        case 'like': 
+          emoji = '👍'; 
+          label = 'Like';
+          break;
+        case 'love': 
+          emoji = '❤️'; 
+          label = 'Love';
+          break;
+        case 'laugh': 
+          emoji = '😂'; 
+          label = 'Haha';
+          break;
+        case 'wow': 
+          emoji = '😮'; 
+          label = 'Wow';
+          break;
+        case 'sad': 
+          emoji = '😢'; 
+          label = 'Sad';
+          break;
+        case 'angry': 
+          emoji = '😠'; 
+          label = 'Angry';
+          break;
+        default: 
+          emoji = '👍';
+          label = 'Like';
       }
       
-      return `${emoji} ${users.join(', ')}`;
+      return `${emoji} ${label}: ${users.join(', ')}`;
     });
 
     return lines.join('\n');
@@ -103,11 +131,15 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
     <TooltipProvider>
       <Tooltip open={isOpen} onOpenChange={handleOpenChange}>
         <TooltipTrigger asChild>
-          <span className="cursor-pointer hover:underline">
+          <span 
+            className="cursor-pointer hover:underline transition-colors"
+            onMouseEnter={() => handleOpenChange(true)}
+            onMouseLeave={() => handleOpenChange(false)}
+          >
             {children}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
+        <TooltipContent side="top" className="max-w-xs p-3 bg-black text-white rounded-lg shadow-lg">
           <div className="whitespace-pre-line text-sm">
             {getTooltipContent()}
           </div>
