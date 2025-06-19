@@ -1047,21 +1047,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get sender info for WebSocket broadcast
       const sender = await storage.getUser(req.session.userId);
       
+      // Create message with sender info for broadcast
+      const messageWithSender = {
+        ...message,
+        sender: sender,
+        senderName: sender?.name || 'Unknown'
+      };
+      
       // Broadcast message to receiver in real-time if they're online
       if (connectedUsers.has(receiverId)) {
         const receiverSockets = connectedUsers.get(receiverId)!;
         receiverSockets.forEach(socket => {
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
-              type: 'message',
-              data: {
-                ...message,
-                senderName: sender?.name || 'Unknown'
-              }
+              type: 'new_message',
+              data: messageWithSender
             }));
           }
         });
       }
+      
+      // Also broadcast to sender for confirmation
+      if (connectedUsers.has(req.session.userId)) {
+        const senderSockets = connectedUsers.get(req.session.userId)!;
+        senderSockets.forEach(socket => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+              type: 'message_sent',
+              data: messageWithSender
+            }));
+          }
+        });
+      }
+      
+      // Create notification for the receiver
+      await storage.createNotification({
+        userId: receiverId,
+        type: "message",
+        fromUserId: req.session.userId,
+        isRead: false,
+      });
 
       res.json(message);
     } catch (error) {

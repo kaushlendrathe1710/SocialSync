@@ -58,6 +58,7 @@ export default function RealTimeMessaging() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [showUserInfo, setShowUserInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
@@ -84,8 +85,9 @@ export default function RealTimeMessaging() {
       try {
         const message = JSON.parse(event.data);
         
-        if (message.type === 'message') {
-          // Refresh conversations and messages immediately
+        // Handle new incoming messages
+        if (message.type === 'new_message' || message.type === 'message') {
+          // Immediately refresh conversations and messages
           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
           if (selectedConversation) {
             queryClient.invalidateQueries({ 
@@ -93,12 +95,25 @@ export default function RealTimeMessaging() {
             });
           }
           
-          // Show notification for new messages
+          // Show notification for new messages from others
           if (message.data.senderId !== user.id) {
             toast({
               title: `New message from ${message.data.senderName}`,
               description: message.data.content.substring(0, 50) + (message.data.content.length > 50 ? '...' : ''),
             });
+          }
+        }
+        
+        // Handle message sent confirmation
+        if (message.type === 'message_sent') {
+          // Refresh only if it's our message
+          if (message.data.senderId === user.id) {
+            queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+            if (selectedConversation) {
+              queryClient.invalidateQueries({ 
+                queryKey: ['/api/conversations', selectedConversation.id] 
+              });
+            }
           }
         }
         
@@ -420,7 +435,7 @@ export default function RealTimeMessaging() {
                     <Button variant="ghost" size="sm">
                       <Video className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => setShowUserInfo(true)}>
                       <Info className="w-4 h-4" />
                     </Button>
                   </div>
@@ -631,6 +646,76 @@ export default function RealTimeMessaging() {
           </div>
         </div>
       </Card>
+
+      {/* User Info Dialog */}
+      <Dialog open={showUserInfo} onOpenChange={setShowUserInfo}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>User Information</DialogTitle>
+          </DialogHeader>
+          {selectedConversation && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={selectedConversation.avatar || undefined} />
+                  <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-lg">
+                    {selectedConversation.name?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-lg font-semibold">{selectedConversation.name}</h3>
+                  <p className="text-sm text-muted-foreground">@{selectedConversation.username}</p>
+                  <div className="flex items-center mt-1">
+                    <div className={`w-2 h-2 rounded-full mr-2 ${onlineUsers.includes(selectedConversation.id) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <span className="text-xs text-muted-foreground">
+                      {onlineUsers.includes(selectedConversation.id) ? 'Active now' : 'Offline'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {selectedConversation.bio && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Bio</h4>
+                  <p className="text-sm text-muted-foreground">{selectedConversation.bio}</p>
+                </div>
+              )}
+              
+              {selectedConversation.location && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Location</h4>
+                  <p className="text-sm text-muted-foreground">{selectedConversation.location}</p>
+                </div>
+              )}
+              
+              {selectedConversation.website && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Website</h4>
+                  <a 
+                    href={selectedConversation.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    {selectedConversation.website}
+                  </a>
+                </div>
+              )}
+              
+              <div className="flex space-x-2 pt-4">
+                <Button variant="outline" className="flex-1">
+                  <Phone className="w-4 h-4 mr-2" />
+                  Call
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  <Video className="w-4 h-4 mr-2" />
+                  Video Call
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
