@@ -214,6 +214,14 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
         setMediaPreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
+      setShowMediaUpload(false); // Hide upload area after selection
+    }
+  };
+
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('media-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
     }
   };
 
@@ -267,6 +275,15 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
           </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Hidden file input */}
+          <input
+            type="file"
+            accept="image/*,video/*"
+            onChange={handleFileSelect}
+            className="hidden"
+            id="media-upload"
+          />
+          
           <div className="flex items-center space-x-3">
             <Avatar className="w-10 h-10">
               <AvatarImage src={user?.avatar || undefined} />
@@ -356,17 +373,10 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
               <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground mb-2">Add photos/videos</p>
               <p className="text-xs text-muted-foreground mb-4">or drag and drop</p>
-              <input
-                type="file"
-                accept="image/*,video/*"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="media-upload"
-              />
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => document.getElementById('media-upload')?.click()}
+                onClick={triggerFileInput}
               >
                 Select Files
               </Button>
@@ -381,8 +391,9 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowMediaUpload(!showMediaUpload)}
+                onClick={triggerFileInput}
                 className="p-2 hover:bg-muted"
+                title="Add photos/videos"
               >
                 <Image className="w-5 h-5 text-green-500" />
               </Button>
