@@ -504,7 +504,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   <Switch
                     id="autoplay"
                     checked={display.autoplay}
-                    onCheckedChange={(checked) => setDisplay({...display, autoplay: checked})}
+                    onCheckedChange={(checked) => saveDisplaySettings({...display, autoplay: checked})}
                   />
                 </div>
               </CardContent>

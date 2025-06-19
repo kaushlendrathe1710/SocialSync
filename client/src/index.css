@@ -33,6 +33,45 @@
   --instagram-yellow: hsl(36, 95%, 60%);
 }
 
+/* Font Size Settings */
+html.text-small {
+  font-size: 14px;
+}
+
+html.text-medium {
+  font-size: 16px;
+}
+
+html.text-large {
+  font-size: 18px;
+}
+
+html.text-extra-large {
+  font-size: 20px;
+}
+
+/* Accessibility Settings */
+.motion-reduced * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.high-contrast {
+  filter: contrast(150%);
+}
+
+.high-contrast .text-gray-500,
+.high-contrast .text-muted-foreground {
+  color: hsl(0, 0%, 30%) !important;
+}
+
+.dark.high-contrast .text-gray-500,
+.dark.high-contrast .text-muted-foreground {
+  color: hsl(0, 0%, 80%) !important;
+}
+
 .dark {
   --background: hsl(240, 10%, 3.9%);
   --foreground: hsl(0, 0%, 98%);
