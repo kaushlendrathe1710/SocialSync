@@ -474,8 +474,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const { reactionType } = req.body;
 
-      // Validate reaction type
-      const validReactions = ['like', 'love', 'laugh', 'wow', 'sad', 'angry'];
+      // Validate reaction type - includes all extended reactions
+      const validReactions = [
+        'like', 'love', 'laugh', 'wow', 'sad', 'angry',
+        'heart_eyes', 'kiss', 'wink', 'cool', 'thinking', 'thumbs_down', 
+        'clap', 'fire', 'party', 'shocked', 'confused', 'sleepy'
+      ];
       if (!validReactions.includes(reactionType)) {
         return res.status(400).json({ message: "Invalid reaction type" });
       }
