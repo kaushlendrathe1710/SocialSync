@@ -194,7 +194,7 @@ export function WellnessDashboard() {
     mutationFn: async (data: { habitId: number; completed: boolean; date: string }) => {
       return apiRequest("POST", "/api/habit-logs", {
         habitId: data.habitId,
-        date: new Date(data.date),
+        date: data.date,
         completed: data.completed,
         value: null,
         notes: null,

@@ -2133,7 +2133,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { date } = req.query;
-      const logs = await storage.getHabitLogsForDate(req.session.userId, date as string);
+      const targetDate = date ? date as string : new Date().toISOString().split('T')[0];
+      const logs = await storage.getHabitLogsForDate(req.session.userId, targetDate);
       res.json(logs);
     } catch (error) {
       console.error("Get habit logs error:", error);

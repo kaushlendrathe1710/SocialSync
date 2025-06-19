@@ -1310,8 +1310,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async logHabit(log: InsertHabitLog): Promise<HabitLog> {
-    const [newLog] = await db.insert(habitLogs).values(log).returning();
-    return newLog;
+    // Check if a log already exists for this habit and date
+    const existingLog = await db
+      .select()
+      .from(habitLogs)
+      .where(and(
+        eq(habitLogs.habitId, log.habitId),
+        eq(habitLogs.userId, log.userId),
+        sql`DATE(${habitLogs.date}) = DATE(${log.date})`
+      ))
+      .limit(1);
+
+    if (existingLog.length > 0) {
+      // Update existing log
+      const [updatedLog] = await db
+        .update(habitLogs)
+        .set({ completed: log.completed, value: log.value, notes: log.notes })
+        .where(eq(habitLogs.id, existingLog[0].id))
+        .returning();
+      return updatedLog;
+    } else {
+      // Create new log
+      const [newLog] = await db.insert(habitLogs).values(log).returning();
+      return newLog;
+    }
   }
 
   async getHabitLogs(habitId: number, days = 30): Promise<HabitLog[]> {
@@ -1329,18 +1351,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getHabitLogsForDate(userId: number, date: string): Promise<HabitLog[]> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
     return await db
       .select()
       .from(habitLogs)
       .where(and(
         eq(habitLogs.userId, userId),
-        gt(habitLogs.date, startOfDay),
-        gt(endOfDay, habitLogs.date)
+        sql`DATE(${habitLogs.date}) = ${date}`
       ))
       .orderBy(desc(habitLogs.date));
   }
