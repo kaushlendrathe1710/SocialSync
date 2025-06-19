@@ -1134,6 +1134,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { receiverId, content } = req.body;
 
+      if (!receiverId || !content) {
+        console.log("Missing fields:", { receiverId, content, body: req.body });
+        return res.status(400).json({ message: "receiverId and content are required" });
+      }
+
+      console.log("Creating message:", { senderId: req.session.userId, receiverId, content });
+      
       const message = await storage.createMessage({
         senderId: req.session.userId,
         receiverId,

@@ -463,7 +463,7 @@ export default function RealTimeMessaging() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <h4 className={`truncate ${isUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground'}`}>
-                                {otherUser.name}
+                                {isSelfMessage ? `${otherUser.name} (Notes to self)` : otherUser.name}
                               </h4>
                               <span className="text-xs text-muted-foreground">
                                 {formatDistanceToNow(new Date(message.createdAt!), { addSuffix: true })}
