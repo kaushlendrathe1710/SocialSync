@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, code: string, name?: string, username?: string, verificationToken?: string | null) => {
     const response = await apiRequest('POST', '/api/auth/verify-otp', { 
       email, 
-      code, 
+      otp: code, 
       name, 
       username,
       verificationToken
