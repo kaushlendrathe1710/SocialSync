@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { usePostViewTracking } from "@/hooks/use-post-view-tracking";
@@ -58,9 +59,9 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
     }
   };
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (open) {
+  const handleClick = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
       fetchReactions();
     }
   };
@@ -128,24 +129,26 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip open={isOpen} onOpenChange={handleOpenChange}>
-        <TooltipTrigger asChild>
-          <span 
-            className="cursor-pointer hover:underline transition-colors"
-            onMouseEnter={() => handleOpenChange(true)}
-            onMouseLeave={() => handleOpenChange(false)}
-          >
-            {children}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs p-3 bg-black text-white rounded-lg shadow-lg">
-          <div className="whitespace-pre-line text-sm">
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <span 
+          className="cursor-pointer hover:underline transition-colors"
+          onClick={handleClick}
+        >
+          {children}
+        </span>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+        <div className="space-y-2">
+          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 mb-2">
+            Who reacted
+          </h4>
+          <div className="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
             {getTooltipContent()}
           </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
