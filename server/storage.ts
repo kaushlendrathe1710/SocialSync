@@ -11,6 +11,25 @@ import {
   notifications,
   liveStreams,
   postViews,
+  friendRequests,
+  friendships,
+  privacySettings,
+  blockedUsers,
+  communityGroups,
+  groupMemberships,
+  groupPosts,
+  wellnessTracking,
+  habitTracking,
+  habitLogs,
+  beautyProducts,
+  productReviews,
+  wishlists,
+  wishlistItems,
+  shoppingPosts,
+  events,
+  eventAttendees,
+  mentorProfiles,
+  mentorshipRequests,
   type User,
   type InsertUser,
   type OtpCode,
@@ -35,9 +54,53 @@ import {
   type InsertLiveStream,
   type PostView,
   type InsertPostView,
+  type FriendRequest,
+  type InsertFriendRequest,
+  type Friendship,
+  type InsertFriendship,
+  type PrivacySettings,
+  type InsertPrivacySettings,
+  type BlockedUser,
+  type InsertBlockedUser,
+  type CommunityGroup,
+  type InsertCommunityGroup,
+  type GroupMembership,
+  type InsertGroupMembership,
+  type GroupPost,
+  type InsertGroupPost,
+  type WellnessTracking,
+  type InsertWellnessTracking,
+  type HabitTracking,
+  type InsertHabitTracking,
+  type HabitLog,
+  type InsertHabitLog,
+  type BeautyProduct,
+  type InsertBeautyProduct,
+  type ProductReview,
+  type InsertProductReview,
+  type Wishlist,
+  type InsertWishlist,
+  type WishlistItem,
+  type InsertWishlistItem,
+  type ShoppingPost,
+  type InsertShoppingPost,
+  type Event,
+  type InsertEvent,
+  type EventAttendee,
+  type InsertEventAttendee,
+  type MentorProfile,
+  type InsertMentorProfile,
+  type MentorshipRequest,
+  type InsertMentorshipRequest,
   type PostWithUser,
   type MessageWithUser,
   type NotificationWithUser,
+  type FriendRequestWithUser,
+  type GroupWithDetails,
+  type EventWithDetails,
+  type WishlistWithItems,
+  type ProductWithReviews,
+  type MentorWithProfile,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, or, gt, isNull, sql } from "drizzle-orm";
@@ -127,6 +190,71 @@ export interface IStorage {
   recordPostView(postView: InsertPostView): Promise<PostView>;
   getPostViews(postId: number): Promise<number>;
   incrementPostViewCount(postId: number): Promise<void>;
+
+  // Friend request methods
+  sendFriendRequest(senderId: number, receiverId: number, message?: string): Promise<FriendRequest>;
+  respondToFriendRequest(requestId: number, action: 'accept' | 'decline'): Promise<FriendRequest | undefined>;
+  getFriendRequests(userId: number, type: 'sent' | 'received'): Promise<FriendRequestWithUser[]>;
+  getFriendRequestStatus(senderId: number, receiverId: number): Promise<string | null>;
+  deleteFriendRequest(requestId: number): Promise<boolean>;
+
+  // Friendship methods
+  createFriendship(user1Id: number, user2Id: number): Promise<Friendship>;
+  deleteFriendship(user1Id: number, user2Id: number): Promise<boolean>;
+  getFriends(userId: number): Promise<User[]>;
+  getFriendSuggestions(userId: number, limit?: number): Promise<User[]>;
+  areFriends(user1Id: number, user2Id: number): Promise<boolean>;
+  getMutualFriends(user1Id: number, user2Id: number): Promise<User[]>;
+  toggleCloseFriend(userId: number, friendId: number): Promise<boolean>;
+
+  // Privacy & Safety methods
+  getPrivacySettings(userId: number): Promise<PrivacySettings | undefined>;
+  updatePrivacySettings(userId: number, settings: Partial<InsertPrivacySettings>): Promise<PrivacySettings>;
+  blockUser(blockerId: number, blockedId: number, reason?: string): Promise<BlockedUser>;
+  unblockUser(blockerId: number, blockedId: number): Promise<boolean>;
+  getBlockedUsers(userId: number): Promise<User[]>;
+  isUserBlocked(blockerId: number, blockedId: number): Promise<boolean>;
+
+  // Community methods
+  createCommunityGroup(group: InsertCommunityGroup): Promise<CommunityGroup>;
+  getCommunityGroups(category?: string, userId?: number): Promise<GroupWithDetails[]>;
+  joinGroup(groupId: number, userId: number): Promise<GroupMembership>;
+  leaveGroup(groupId: number, userId: number): Promise<boolean>;
+  getUserGroups(userId: number): Promise<CommunityGroup[]>;
+  getGroupPosts(groupId: number, userId?: number): Promise<(GroupPost & { user: User })[]>;
+  createGroupPost(post: InsertGroupPost): Promise<GroupPost>;
+
+  // Wellness methods
+  recordWellnessTracking(tracking: InsertWellnessTracking): Promise<WellnessTracking>;
+  getWellnessTracking(userId: number, days?: number): Promise<WellnessTracking[]>;
+  createHabit(habit: InsertHabitTracking): Promise<HabitTracking>;
+  getUserHabits(userId: number): Promise<HabitTracking[]>;
+  logHabit(log: InsertHabitLog): Promise<HabitLog>;
+  getHabitLogs(habitId: number, days?: number): Promise<HabitLog[]>;
+  updateHabitStreak(habitId: number, streak: number): Promise<void>;
+
+  // Beauty & Shopping methods
+  createBeautyProduct(product: InsertBeautyProduct): Promise<BeautyProduct>;
+  getBeautyProducts(category?: string, limit?: number): Promise<BeautyProduct[]>;
+  createProductReview(review: InsertProductReview): Promise<ProductReview>;
+  getProductReviews(productId: number): Promise<(ProductReview & { user: User })[]>;
+  createWishlist(wishlist: InsertWishlist): Promise<Wishlist>;
+  getUserWishlists(userId: number): Promise<WishlistWithItems[]>;
+  addToWishlist(item: InsertWishlistItem): Promise<WishlistItem>;
+  createShoppingPost(post: InsertShoppingPost): Promise<ShoppingPost>;
+  getShoppingPosts(userId?: number): Promise<(ShoppingPost & { user: User })[]>;
+
+  // Event methods
+  createEvent(event: InsertEvent): Promise<Event>;
+  getEvents(userId?: number): Promise<EventWithDetails[]>;
+  respondToEvent(eventId: number, userId: number, status: string): Promise<EventAttendee>;
+  getUserEvents(userId: number, type: 'created' | 'attending'): Promise<Event[]>;
+
+  // Mentorship methods
+  createMentorProfile(profile: InsertMentorProfile): Promise<MentorProfile>;
+  getMentors(expertise?: string[]): Promise<MentorWithProfile[]>;
+  requestMentorship(request: InsertMentorshipRequest): Promise<MentorshipRequest>;
+  getMentorshipRequests(userId: number, type: 'sent' | 'received'): Promise<(MentorshipRequest & { mentor: MentorProfile; mentee: User })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -783,6 +911,668 @@ export class DatabaseStorage implements IStorage {
         viewsCount: sql`${posts.viewsCount} + 1` 
       })
       .where(eq(posts.id, postId));
+  }
+
+  // Friend request methods
+  async sendFriendRequest(senderId: number, receiverId: number, message?: string): Promise<FriendRequest> {
+    const [request] = await db.insert(friendRequests).values({
+      senderId,
+      receiverId,
+      message,
+    }).returning();
+    return request;
+  }
+
+  async respondToFriendRequest(requestId: number, action: 'accept' | 'decline'): Promise<FriendRequest | undefined> {
+    const [request] = await db.update(friendRequests)
+      .set({ 
+        status: action === 'accept' ? 'accepted' : 'declined',
+        respondedAt: new Date()
+      })
+      .where(eq(friendRequests.id, requestId))
+      .returning();
+
+    if (request && action === 'accept') {
+      await this.createFriendship(request.senderId, request.receiverId);
+    }
+
+    return request;
+  }
+
+  async getFriendRequests(userId: number, type: 'sent' | 'received'): Promise<FriendRequestWithUser[]> {
+    const condition = type === 'sent' 
+      ? eq(friendRequests.senderId, userId)
+      : eq(friendRequests.receiverId, userId);
+
+    const result = await db
+      .select({
+        request: friendRequests,
+        sender: users,
+        receiver: users,
+      })
+      .from(friendRequests)
+      .innerJoin(users, type === 'sent' 
+        ? eq(friendRequests.receiverId, users.id)
+        : eq(friendRequests.senderId, users.id))
+      .where(and(condition, eq(friendRequests.status, 'pending')))
+      .orderBy(desc(friendRequests.createdAt));
+
+    return result.map(({ request, sender, receiver }) => ({
+      ...request,
+      sender: type === 'sent' ? { id: userId } as User : sender,
+      receiver: type === 'sent' ? sender : { id: userId } as User,
+    }));
+  }
+
+  async getFriendRequestStatus(senderId: number, receiverId: number): Promise<string | null> {
+    const [request] = await db
+      .select({ status: friendRequests.status })
+      .from(friendRequests)
+      .where(and(
+        eq(friendRequests.senderId, senderId),
+        eq(friendRequests.receiverId, receiverId)
+      ))
+      .orderBy(desc(friendRequests.createdAt))
+      .limit(1);
+
+    return request?.status || null;
+  }
+
+  async deleteFriendRequest(requestId: number): Promise<boolean> {
+    const result = await db.delete(friendRequests).where(eq(friendRequests.id, requestId));
+    return result.rowCount! > 0;
+  }
+
+  // Friendship methods
+  async createFriendship(user1Id: number, user2Id: number): Promise<Friendship> {
+    const [friendship] = await db.insert(friendships).values({
+      user1Id: Math.min(user1Id, user2Id),
+      user2Id: Math.max(user1Id, user2Id),
+    }).returning();
+    return friendship;
+  }
+
+  async deleteFriendship(user1Id: number, user2Id: number): Promise<boolean> {
+    const result = await db.delete(friendships).where(
+      and(
+        eq(friendships.user1Id, Math.min(user1Id, user2Id)),
+        eq(friendships.user2Id, Math.max(user1Id, user2Id))
+      )
+    );
+    return result.rowCount! > 0;
+  }
+
+  async getFriends(userId: number): Promise<User[]> {
+    const result = await db
+      .select({ user: users })
+      .from(friendships)
+      .innerJoin(users, or(
+        and(eq(friendships.user1Id, userId), eq(users.id, friendships.user2Id)),
+        and(eq(friendships.user2Id, userId), eq(users.id, friendships.user1Id))
+      ))
+      .where(or(
+        eq(friendships.user1Id, userId),
+        eq(friendships.user2Id, userId)
+      ));
+
+    return result.map(({ user }) => user);
+  }
+
+  async getFriendSuggestions(userId: number, limit = 10): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(and(
+        sql`${users.id} != ${userId}`,
+        sql`${users.id} NOT IN (
+          SELECT CASE 
+            WHEN user1_id = ${userId} THEN user2_id 
+            ELSE user1_id 
+          END 
+          FROM friendships 
+          WHERE user1_id = ${userId} OR user2_id = ${userId}
+        )`,
+        sql`${users.id} NOT IN (
+          SELECT receiver_id FROM friend_requests WHERE sender_id = ${userId}
+        )`,
+        sql`${users.id} NOT IN (
+          SELECT sender_id FROM friend_requests WHERE receiver_id = ${userId}
+        )`
+      ))
+      .limit(limit);
+  }
+
+  async areFriends(user1Id: number, user2Id: number): Promise<boolean> {
+    const [friendship] = await db
+      .select()
+      .from(friendships)
+      .where(and(
+        eq(friendships.user1Id, Math.min(user1Id, user2Id)),
+        eq(friendships.user2Id, Math.max(user1Id, user2Id))
+      ))
+      .limit(1);
+
+    return !!friendship;
+  }
+
+  async getMutualFriends(user1Id: number, user2Id: number): Promise<User[]> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(sql`
+        ${users.id} IN (
+          SELECT CASE 
+            WHEN f1.user1_id = ${user1Id} THEN f1.user2_id 
+            ELSE f1.user1_id 
+          END 
+          FROM friendships f1
+          WHERE (f1.user1_id = ${user1Id} OR f1.user2_id = ${user1Id})
+        ) AND ${users.id} IN (
+          SELECT CASE 
+            WHEN f2.user1_id = ${user2Id} THEN f2.user2_id 
+            ELSE f2.user1_id 
+          END 
+          FROM friendships f2
+          WHERE (f2.user1_id = ${user2Id} OR f2.user2_id = ${user2Id})
+        )
+      `);
+
+    return result;
+  }
+
+  async toggleCloseFriend(userId: number, friendId: number): Promise<boolean> {
+    const [friendship] = await db
+      .select()
+      .from(friendships)
+      .where(and(
+        eq(friendships.user1Id, Math.min(userId, friendId)),
+        eq(friendships.user2Id, Math.max(userId, friendId))
+      ));
+
+    if (!friendship) return false;
+
+    await db.update(friendships)
+      .set({ closeFriend: !friendship.closeFriend })
+      .where(eq(friendships.id, friendship.id));
+
+    return true;
+  }
+
+  // Privacy & Safety methods
+  async getPrivacySettings(userId: number): Promise<PrivacySettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(privacySettings)
+      .where(eq(privacySettings.userId, userId));
+
+    if (!settings) {
+      const [newSettings] = await db.insert(privacySettings)
+        .values({ userId })
+        .returning();
+      return newSettings;
+    }
+
+    return settings;
+  }
+
+  async updatePrivacySettings(userId: number, settings: Partial<InsertPrivacySettings>): Promise<PrivacySettings> {
+    const [updated] = await db.update(privacySettings)
+      .set({ ...settings, updatedAt: new Date() })
+      .where(eq(privacySettings.userId, userId))
+      .returning();
+
+    return updated;
+  }
+
+  async blockUser(blockerId: number, blockedId: number, reason?: string): Promise<BlockedUser> {
+    const [blocked] = await db.insert(blockedUsers).values({
+      blockerId,
+      blockedId,
+      reason,
+    }).returning();
+
+    await this.deleteFriendship(blockerId, blockedId);
+    return blocked;
+  }
+
+  async unblockUser(blockerId: number, blockedId: number): Promise<boolean> {
+    const result = await db.delete(blockedUsers).where(
+      and(
+        eq(blockedUsers.blockerId, blockerId),
+        eq(blockedUsers.blockedId, blockedId)
+      )
+    );
+    return result.rowCount! > 0;
+  }
+
+  async getBlockedUsers(userId: number): Promise<User[]> {
+    const result = await db
+      .select({ user: users })
+      .from(blockedUsers)
+      .innerJoin(users, eq(blockedUsers.blockedId, users.id))
+      .where(eq(blockedUsers.blockerId, userId));
+
+    return result.map(({ user }) => user);
+  }
+
+  async isUserBlocked(blockerId: number, blockedId: number): Promise<boolean> {
+    const [blocked] = await db
+      .select()
+      .from(blockedUsers)
+      .where(and(
+        eq(blockedUsers.blockerId, blockerId),
+        eq(blockedUsers.blockedId, blockedId)
+      ))
+      .limit(1);
+
+    return !!blocked;
+  }
+
+  // Community methods
+  async createCommunityGroup(group: InsertCommunityGroup): Promise<CommunityGroup> {
+    const [newGroup] = await db.insert(communityGroups).values(group).returning();
+    return newGroup;
+  }
+
+  async getCommunityGroups(category?: string, userId?: number): Promise<GroupWithDetails[]> {
+    let query = db
+      .select({
+        group: communityGroups,
+        creator: users,
+      })
+      .from(communityGroups)
+      .innerJoin(users, eq(communityGroups.creatorId, users.id));
+
+    if (category) {
+      query = query.where(eq(communityGroups.category, category));
+    }
+
+    const result = await query.orderBy(desc(communityGroups.createdAt));
+
+    return result.map(({ group, creator }) => ({
+      ...group,
+      creator,
+      membershipStatus: 'none',
+      isJoined: false,
+    }));
+  }
+
+  async joinGroup(groupId: number, userId: number): Promise<GroupMembership> {
+    const [membership] = await db.insert(groupMemberships).values({
+      groupId,
+      userId,
+    }).returning();
+
+    await db.update(communityGroups)
+      .set({ memberCount: sql`${communityGroups.memberCount} + 1` })
+      .where(eq(communityGroups.id, groupId));
+
+    return membership;
+  }
+
+  async leaveGroup(groupId: number, userId: number): Promise<boolean> {
+    const result = await db.delete(groupMemberships).where(
+      and(
+        eq(groupMemberships.groupId, groupId),
+        eq(groupMemberships.userId, userId)
+      )
+    );
+
+    if (result.rowCount! > 0) {
+      await db.update(communityGroups)
+        .set({ memberCount: sql`${communityGroups.memberCount} - 1` })
+        .where(eq(communityGroups.id, groupId));
+    }
+
+    return result.rowCount! > 0;
+  }
+
+  async getUserGroups(userId: number): Promise<CommunityGroup[]> {
+    const result = await db
+      .select({ group: communityGroups })
+      .from(groupMemberships)
+      .innerJoin(communityGroups, eq(groupMemberships.groupId, communityGroups.id))
+      .where(eq(groupMemberships.userId, userId));
+
+    return result.map(({ group }) => group);
+  }
+
+  async getGroupPosts(groupId: number, userId?: number): Promise<(GroupPost & { user: User })[]> {
+    const result = await db
+      .select({
+        post: groupPosts,
+        user: users,
+      })
+      .from(groupPosts)
+      .innerJoin(users, eq(groupPosts.userId, users.id))
+      .where(eq(groupPosts.groupId, groupId))
+      .orderBy(desc(groupPosts.createdAt));
+
+    return result.map(({ post, user }) => ({ ...post, user }));
+  }
+
+  async createGroupPost(post: InsertGroupPost): Promise<GroupPost> {
+    const [newPost] = await db.insert(groupPosts).values(post).returning();
+    return newPost;
+  }
+
+  // Wellness methods
+  async recordWellnessTracking(tracking: InsertWellnessTracking): Promise<WellnessTracking> {
+    const [record] = await db.insert(wellnessTracking).values(tracking).returning();
+    return record;
+  }
+
+  async getWellnessTracking(userId: number, days = 30): Promise<WellnessTracking[]> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    return await db
+      .select()
+      .from(wellnessTracking)
+      .where(and(
+        eq(wellnessTracking.userId, userId),
+        gt(wellnessTracking.date, startDate)
+      ))
+      .orderBy(desc(wellnessTracking.date));
+  }
+
+  async createHabit(habit: InsertHabitTracking): Promise<HabitTracking> {
+    const [newHabit] = await db.insert(habitTracking).values(habit).returning();
+    return newHabit;
+  }
+
+  async getUserHabits(userId: number): Promise<HabitTracking[]> {
+    return await db
+      .select()
+      .from(habitTracking)
+      .where(and(
+        eq(habitTracking.userId, userId),
+        eq(habitTracking.isActive, true)
+      ))
+      .orderBy(desc(habitTracking.createdAt));
+  }
+
+  async logHabit(log: InsertHabitLog): Promise<HabitLog> {
+    const [newLog] = await db.insert(habitLogs).values(log).returning();
+    return newLog;
+  }
+
+  async getHabitLogs(habitId: number, days = 30): Promise<HabitLog[]> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    return await db
+      .select()
+      .from(habitLogs)
+      .where(and(
+        eq(habitLogs.habitId, habitId),
+        gt(habitLogs.date, startDate)
+      ))
+      .orderBy(desc(habitLogs.date));
+  }
+
+  async updateHabitStreak(habitId: number, streak: number): Promise<void> {
+    await db.update(habitTracking)
+      .set({ streakCount: streak })
+      .where(eq(habitTracking.id, habitId));
+  }
+
+  // Beauty & Shopping methods
+  async createBeautyProduct(product: InsertBeautyProduct): Promise<BeautyProduct> {
+    const [newProduct] = await db.insert(beautyProducts).values(product).returning();
+    return newProduct;
+  }
+
+  async getBeautyProducts(category?: string, limit = 50): Promise<BeautyProduct[]> {
+    let query = db.select().from(beautyProducts);
+
+    if (category) {
+      query = query.where(eq(beautyProducts.category, category));
+    }
+
+    return await query
+      .orderBy(desc(beautyProducts.averageRating))
+      .limit(limit);
+  }
+
+  async createProductReview(review: InsertProductReview): Promise<ProductReview> {
+    const [newReview] = await db.insert(productReviews).values(review).returning();
+
+    const reviews = await db
+      .select({ rating: productReviews.rating })
+      .from(productReviews)
+      .where(eq(productReviews.productId, review.productId));
+
+    const avgRating = Math.round(
+      reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length * 100
+    );
+
+    await db.update(beautyProducts)
+      .set({ 
+        averageRating: avgRating,
+        reviewCount: reviews.length
+      })
+      .where(eq(beautyProducts.id, review.productId));
+
+    return newReview;
+  }
+
+  async getProductReviews(productId: number): Promise<(ProductReview & { user: User })[]> {
+    const result = await db
+      .select({
+        review: productReviews,
+        user: users,
+      })
+      .from(productReviews)
+      .innerJoin(users, eq(productReviews.userId, users.id))
+      .where(eq(productReviews.productId, productId))
+      .orderBy(desc(productReviews.createdAt));
+
+    return result.map(({ review, user }) => ({ ...review, user }));
+  }
+
+  async createWishlist(wishlist: InsertWishlist): Promise<Wishlist> {
+    const [newWishlist] = await db.insert(wishlists).values(wishlist).returning();
+    return newWishlist;
+  }
+
+  async getUserWishlists(userId: number): Promise<WishlistWithItems[]> {
+    const userWishlists = await db
+      .select()
+      .from(wishlists)
+      .where(eq(wishlists.userId, userId))
+      .orderBy(desc(wishlists.createdAt));
+
+    const result: WishlistWithItems[] = [];
+
+    for (const wishlist of userWishlists) {
+      const items = await db
+        .select({
+          item: wishlistItems,
+          product: beautyProducts,
+        })
+        .from(wishlistItems)
+        .leftJoin(beautyProducts, eq(wishlistItems.productId, beautyProducts.id))
+        .where(eq(wishlistItems.wishlistId, wishlist.id));
+
+      result.push({
+        ...wishlist,
+        items: items.map(({ item, product }) => ({ ...item, product: product || undefined })),
+        user: { id: userId } as User,
+      });
+    }
+
+    return result;
+  }
+
+  async addToWishlist(item: InsertWishlistItem): Promise<WishlistItem> {
+    const [newItem] = await db.insert(wishlistItems).values(item).returning();
+    return newItem;
+  }
+
+  async createShoppingPost(post: InsertShoppingPost): Promise<ShoppingPost> {
+    const [newPost] = await db.insert(shoppingPosts).values(post).returning();
+    return newPost;
+  }
+
+  async getShoppingPosts(userId?: number): Promise<(ShoppingPost & { user: User })[]> {
+    let query = db
+      .select({
+        post: shoppingPosts,
+        user: users,
+      })
+      .from(shoppingPosts)
+      .innerJoin(users, eq(shoppingPosts.userId, users.id));
+
+    if (userId) {
+      query = query.where(eq(shoppingPosts.userId, userId));
+    }
+
+    const result = await query.orderBy(desc(shoppingPosts.createdAt));
+
+    return result.map(({ post, user }) => ({ ...post, user }));
+  }
+
+  // Event methods
+  async createEvent(event: InsertEvent): Promise<Event> {
+    const [newEvent] = await db.insert(events).values(event).returning();
+    return newEvent;
+  }
+
+  async getEvents(userId?: number): Promise<EventWithDetails[]> {
+    let query = db
+      .select({
+        event: events,
+        creator: users,
+      })
+      .from(events)
+      .innerJoin(users, eq(events.creatorId, users.id));
+
+    if (userId) {
+      query = query.where(eq(events.creatorId, userId));
+    }
+
+    const result = await query.orderBy(asc(events.startDate));
+
+    return result.map(({ event, creator }) => ({
+      ...event,
+      creator,
+      attendeeStatus: 'none',
+      attendeeCount: event.currentAttendees,
+    }));
+  }
+
+  async respondToEvent(eventId: number, userId: number, status: string): Promise<EventAttendee> {
+    const [attendee] = await db.insert(eventAttendees).values({
+      eventId,
+      userId,
+      status,
+    }).returning();
+
+    if (status === 'going') {
+      await db.update(events)
+        .set({ currentAttendees: sql`${events.currentAttendees} + 1` })
+        .where(eq(events.id, eventId));
+    }
+
+    return attendee;
+  }
+
+  async getUserEvents(userId: number, type: 'created' | 'attending'): Promise<Event[]> {
+    if (type === 'created') {
+      return await db
+        .select()
+        .from(events)
+        .where(eq(events.creatorId, userId))
+        .orderBy(asc(events.startDate));
+    } else {
+      const result = await db
+        .select({ event: events })
+        .from(eventAttendees)
+        .innerJoin(events, eq(eventAttendees.eventId, events.id))
+        .where(and(
+          eq(eventAttendees.userId, userId),
+          eq(eventAttendees.status, 'going')
+        ))
+        .orderBy(asc(events.startDate));
+
+      return result.map(({ event }) => event);
+    }
+  }
+
+  // Mentorship methods
+  async createMentorProfile(profile: InsertMentorProfile): Promise<MentorProfile> {
+    const [newProfile] = await db.insert(mentorProfiles).values(profile).returning();
+    return newProfile;
+  }
+
+  async getMentors(expertise?: string[]): Promise<MentorWithProfile[]> {
+    const result = await db
+      .select({
+        user: users,
+        mentorProfile: mentorProfiles,
+      })
+      .from(mentorProfiles)
+      .innerJoin(users, eq(mentorProfiles.userId, users.id))
+      .where(eq(mentorProfiles.isActive, true))
+      .orderBy(desc(mentorProfiles.rating));
+
+    return result.map(({ user, mentorProfile }) => ({
+      ...user,
+      mentorProfile,
+    }));
+  }
+
+  async requestMentorship(request: InsertMentorshipRequest): Promise<MentorshipRequest> {
+    const [newRequest] = await db.insert(mentorshipRequests).values(request).returning();
+    return newRequest;
+  }
+
+  async getMentorshipRequests(userId: number, type: 'sent' | 'received'): Promise<(MentorshipRequest & { mentor: MentorProfile; mentee: User })[]> {
+    if (type === 'sent') {
+      const result = await db
+        .select({
+          request: mentorshipRequests,
+          mentor: mentorProfiles,
+          mentee: users,
+        })
+        .from(mentorshipRequests)
+        .innerJoin(mentorProfiles, eq(mentorshipRequests.mentorId, mentorProfiles.id))
+        .innerJoin(users, eq(mentorProfiles.userId, users.id))
+        .where(eq(mentorshipRequests.menteeId, userId))
+        .orderBy(desc(mentorshipRequests.createdAt));
+
+      return result.map(({ request, mentor, mentee }) => ({
+        ...request,
+        mentor,
+        mentee: { id: userId } as User,
+      }));
+    } else {
+      const [mentorProfile] = await db
+        .select()
+        .from(mentorProfiles)
+        .where(eq(mentorProfiles.userId, userId));
+
+      if (!mentorProfile) return [];
+
+      const result = await db
+        .select({
+          request: mentorshipRequests,
+          mentor: mentorProfiles,
+          mentee: users,
+        })
+        .from(mentorshipRequests)
+        .innerJoin(mentorProfiles, eq(mentorshipRequests.mentorId, mentorProfiles.id))
+        .innerJoin(users, eq(mentorshipRequests.menteeId, users.id))
+        .where(eq(mentorshipRequests.mentorId, mentorProfile.id))
+        .orderBy(desc(mentorshipRequests.createdAt));
+
+      return result.map(({ request, mentor, mentee }) => ({
+        ...request,
+        mentor,
+        mentee,
+      }));
+    }
   }
 }
 
