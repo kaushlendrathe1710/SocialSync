@@ -1669,6 +1669,416 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Friend Request API Routes
+  app.post("/api/friend-requests", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { receiverId, message } = req.body;
+      
+      if (session.userId === receiverId) {
+        return res.status(400).json({ message: "Cannot send friend request to yourself" });
+      }
+
+      const existingRequest = await storage.getFriendRequestStatus(session.userId, receiverId);
+      if (existingRequest) {
+        return res.status(400).json({ message: "Friend request already sent" });
+      }
+
+      const areFriends = await storage.areFriends(session.userId, receiverId);
+      if (areFriends) {
+        return res.status(400).json({ message: "Already friends" });
+      }
+
+      const friendRequest = await storage.sendFriendRequest(session.userId, receiverId, message);
+      
+      await storage.createNotification({
+        userId: receiverId,
+        type: "friend_request",
+        fromUserId: session.userId,
+      });
+
+      res.json(friendRequest);
+    } catch (error) {
+      console.error("Send friend request error:", error);
+      res.status(500).json({ message: "Failed to send friend request" });
+    }
+  });
+
+  app.put("/api/friend-requests/:id", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      const { action } = req.body;
+
+      const request = await storage.respondToFriendRequest(parseInt(id), action);
+      
+      if (request && action === 'accept') {
+        await storage.createNotification({
+          userId: request.senderId,
+          type: "friend_accept",
+          fromUserId: session.userId,
+        });
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Respond to friend request error:", error);
+      res.status(500).json({ message: "Failed to respond to friend request" });
+    }
+  });
+
+  app.get("/api/friend-requests/received", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const requests = await storage.getFriendRequests(session.userId, 'received');
+      res.json(requests);
+    } catch (error) {
+      console.error("Get received friend requests error:", error);
+      res.status(500).json({ message: "Failed to get friend requests" });
+    }
+  });
+
+  app.get("/api/friend-requests/sent", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const requests = await storage.getFriendRequests(session.userId, 'sent');
+      res.json(requests);
+    } catch (error) {
+      console.error("Get sent friend requests error:", error);
+      res.status(500).json({ message: "Failed to get friend requests" });
+    }
+  });
+
+  app.get("/api/friends", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const friends = await storage.getFriends(session.userId);
+      res.json(friends);
+    } catch (error) {
+      console.error("Get friends error:", error);
+      res.status(500).json({ message: "Failed to get friends" });
+    }
+  });
+
+  app.get("/api/friend-suggestions", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const suggestions = await storage.getFriendSuggestions(session.userId, 10);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Get friend suggestions error:", error);
+      res.status(500).json({ message: "Failed to get friend suggestions" });
+    }
+  });
+
+  app.delete("/api/friends/:id", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      const success = await storage.deleteFriendship(session.userId, parseInt(id));
+      
+      if (!success) {
+        return res.status(404).json({ message: "Friendship not found" });
+      }
+
+      res.json({ message: "Friendship ended" });
+    } catch (error) {
+      console.error("Delete friendship error:", error);
+      res.status(500).json({ message: "Failed to end friendship" });
+    }
+  });
+
+  // Privacy Settings API Routes
+  app.get("/api/privacy-settings", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const settings = await storage.getPrivacySettings(session.userId);
+      res.json(settings);
+    } catch (error) {
+      console.error("Get privacy settings error:", error);
+      res.status(500).json({ message: "Failed to get privacy settings" });
+    }
+  });
+
+  app.put("/api/privacy-settings", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const settings = await storage.updatePrivacySettings(session.userId, req.body);
+      res.json(settings);
+    } catch (error) {
+      console.error("Update privacy settings error:", error);
+      res.status(500).json({ message: "Failed to update privacy settings" });
+    }
+  });
+
+  // Community Groups API Routes
+  app.post("/api/community-groups", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const group = await storage.createCommunityGroup({
+        ...req.body,
+        creatorId: session.userId,
+      });
+      
+      await storage.joinGroup(group.id, session.userId);
+      res.json(group);
+    } catch (error) {
+      console.error("Create community group error:", error);
+      res.status(500).json({ message: "Failed to create community group" });
+    }
+  });
+
+  app.get("/api/community-groups", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      const { category } = req.query;
+      
+      const groups = await storage.getCommunityGroups(
+        category as string, 
+        session.userId
+      );
+      res.json(groups);
+    } catch (error) {
+      console.error("Get community groups error:", error);
+      res.status(500).json({ message: "Failed to get community groups" });
+    }
+  });
+
+  app.post("/api/community-groups/:id/join", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      const membership = await storage.joinGroup(parseInt(id), session.userId);
+      res.json(membership);
+    } catch (error) {
+      console.error("Join group error:", error);
+      res.status(500).json({ message: "Failed to join group" });
+    }
+  });
+
+  // Wellness Tracking API Routes
+  app.post("/api/wellness-tracking", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const tracking = await storage.recordWellnessTracking({
+        ...req.body,
+        userId: session.userId,
+      });
+      
+      res.json(tracking);
+    } catch (error) {
+      console.error("Record wellness tracking error:", error);
+      res.status(500).json({ message: "Failed to record wellness tracking" });
+    }
+  });
+
+  app.get("/api/wellness-tracking", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { days } = req.query;
+      const tracking = await storage.getWellnessTracking(
+        session.userId, 
+        days ? parseInt(days as string) : undefined
+      );
+      
+      res.json(tracking);
+    } catch (error) {
+      console.error("Get wellness tracking error:", error);
+      res.status(500).json({ message: "Failed to get wellness tracking" });
+    }
+  });
+
+  // Habit Tracking API Routes
+  app.post("/api/habits", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const habit = await storage.createHabit({
+        ...req.body,
+        userId: session.userId,
+      });
+      
+      res.json(habit);
+    } catch (error) {
+      console.error("Create habit error:", error);
+      res.status(500).json({ message: "Failed to create habit" });
+    }
+  });
+
+  app.get("/api/habits", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const habits = await storage.getUserHabits(session.userId);
+      res.json(habits);
+    } catch (error) {
+      console.error("Get habits error:", error);
+      res.status(500).json({ message: "Failed to get habits" });
+    }
+  });
+
+  // Beauty Products API Routes
+  app.get("/api/beauty-products", async (req: Request, res: Response) => {
+    try {
+      const { category, limit } = req.query;
+      
+      const products = await storage.getBeautyProducts(
+        category as string,
+        limit ? parseInt(limit as string) : undefined
+      );
+      
+      res.json(products);
+    } catch (error) {
+      console.error("Get beauty products error:", error);
+      res.status(500).json({ message: "Failed to get beauty products" });
+    }
+  });
+
+  app.post("/api/beauty-products/:id/reviews", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { id } = req.params;
+      const review = await storage.createProductReview({
+        ...req.body,
+        productId: parseInt(id),
+        userId: session.userId,
+      });
+      
+      res.json(review);
+    } catch (error) {
+      console.error("Create product review error:", error);
+      res.status(500).json({ message: "Failed to create product review" });
+    }
+  });
+
+  // Wishlist API Routes
+  app.post("/api/wishlists", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const wishlist = await storage.createWishlist({
+        ...req.body,
+        userId: session.userId,
+      });
+      
+      res.json(wishlist);
+    } catch (error) {
+      console.error("Create wishlist error:", error);
+      res.status(500).json({ message: "Failed to create wishlist" });
+    }
+  });
+
+  app.get("/api/wishlists", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const wishlists = await storage.getUserWishlists(session.userId);
+      res.json(wishlists);
+    } catch (error) {
+      console.error("Get wishlists error:", error);
+      res.status(500).json({ message: "Failed to get wishlists" });
+    }
+  });
+
+  // Events API Routes
+  app.post("/api/events", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      if (!session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const event = await storage.createEvent({
+        ...req.body,
+        creatorId: session.userId,
+      });
+      
+      res.json(event);
+    } catch (error) {
+      console.error("Create event error:", error);
+      res.status(500).json({ message: "Failed to create event" });
+    }
+  });
+
+  app.get("/api/events", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      const events = await storage.getEvents(session.userId);
+      res.json(events);
+    } catch (error) {
+      console.error("Get events error:", error);
+      res.status(500).json({ message: "Failed to get events" });
+    }
+  });
+
   // Live streams endpoints
   app.post("/api/live-streams", async (req: Request, res: Response) => {
     try {
