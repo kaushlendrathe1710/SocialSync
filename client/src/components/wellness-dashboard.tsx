@@ -544,10 +544,11 @@ export function WellnessDashboard() {
       </Tabs>
 
       {/* Wellness Logging Dialog */}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Log Wellness for {new Date(selectedDate).toLocaleDateString()}</DialogTitle>
-        </DialogHeader>
+      <Dialog open={showWellnessDialog} onOpenChange={setShowWellnessDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Log Wellness for {new Date(selectedDate).toLocaleDateString()}</DialogTitle>
+          </DialogHeader>
         <div className="space-y-6">
           <div className="space-y-4">
             <div>
@@ -661,7 +662,8 @@ export function WellnessDashboard() {
             </Button>
           </div>
         </div>
-      </DialogContent>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Habit Dialog */}
       <Dialog open={showHabitDialog} onOpenChange={setShowHabitDialog}>
