@@ -92,15 +92,12 @@ export function CommunityGroups() {
   // Mutations
   const createGroupMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/community-groups", {
-        method: "POST",
-        body: {
-          name: data.name,
-          description: data.description || null,
-          category: data.category,
-          privacy: data.privacy,
-          tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
-        },
+      return apiRequest("/api/community-groups", "POST", {
+        name: data.name,
+        description: data.description || null,
+        category: data.category,
+        privacy: data.privacy,
+        tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
       });
     },
     onSuccess: () => {
@@ -123,9 +120,7 @@ export function CommunityGroups() {
 
   const joinGroupMutation = useMutation({
     mutationFn: async (groupId: number) => {
-      return apiRequest(`/api/community-groups/${groupId}/join`, {
-        method: "POST",
-      });
+      return apiRequest(`/api/community-groups/${groupId}/join`, "POST");
     },
     onSuccess: () => {
       toast({
