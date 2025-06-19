@@ -420,37 +420,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Post data before creation:', postData);
 
-      // Handle file upload to S3
+      // Handle file upload with S3 fallback to local storage
       if (req.file) {
         try {
-          // Check if S3 is configured
-          if (!validateS3Config()) {
-            return res.status(500).json({ error: "AWS S3 not configured properly" });
-          }
-
           const fileExtension = path.extname(req.file.originalname);
           const isVideo = /\.(mp4|mov|avi|mkv)$/i.test(fileExtension);
-          const folder = isVideo ? 'videos' : 'images';
-          
-          // Upload to S3
-          const uploadResult = await uploadToS3(
-            req.file.buffer,
-            req.file.originalname,
-            req.file.mimetype,
-            folder
-          );
+          let fileUrl = null;
+
+          // Try S3 upload first if configured
+          if (validateS3Config()) {
+            try {
+              const folder = isVideo ? 'videos' : 'images';
+              const uploadResult = await uploadToS3(
+                req.file.buffer,
+                req.file.originalname,
+                req.file.mimetype,
+                folder
+              );
+              fileUrl = uploadResult.url;
+              console.log('File uploaded to S3:', fileUrl);
+            } catch (s3Error) {
+              console.warn("S3 upload failed, falling back to local storage:", s3Error);
+              fileUrl = null; // Will trigger local storage fallback
+            }
+          }
+
+          // Fallback to local storage if S3 failed or not configured
+          if (!fileUrl) {
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`;
+            const uploadsDir = path.join(process.cwd(), 'uploads');
+            
+            // Ensure uploads directory exists
+            if (!fs.existsSync(uploadsDir)) {
+              fs.mkdirSync(uploadsDir, { recursive: true });
+            }
+            
+            const filePath = path.join(uploadsDir, fileName);
+            fs.writeFileSync(filePath, req.file.buffer);
+            fileUrl = `/uploads/${fileName}`;
+            console.log('File saved locally:', fileUrl);
+          }
           
           // Set the appropriate URL based on file type
           if (isVideo) {
-            postData.videoUrl = uploadResult.url;
+            postData.videoUrl = fileUrl;
           } else {
-            postData.imageUrl = uploadResult.url;
+            postData.imageUrl = fileUrl;
           }
-          
-          console.log('File uploaded to S3:', uploadResult.url);
         } catch (uploadError) {
-          console.error("S3 upload error:", uploadError);
-          return res.status(500).json({ error: "Failed to upload file to cloud storage" });
+          console.error("File upload error:", uploadError);
+          return res.status(500).json({ error: "Failed to upload file" });
         }
       }
 
