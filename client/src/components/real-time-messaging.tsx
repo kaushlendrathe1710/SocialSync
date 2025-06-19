@@ -327,6 +327,25 @@ export default function RealTimeMessaging() {
     const otherUser = message.senderId === user?.id ? message.receiver : message.sender;
     setSelectedConversation(otherUser);
     setLocation(`/messages/${otherUser.id}`);
+    
+    // Mark messages as read when conversation is opened
+    if (message.receiverId === user?.id && !message.readAt) {
+      markMessageAsRead(message.id);
+    }
+  };
+
+  const markMessageAsRead = async (messageId: number) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}/read`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      }
+    } catch (error) {
+      console.error('Failed to mark message as read:', error);
+    }
   };
 
   const handleBackToList = () => {

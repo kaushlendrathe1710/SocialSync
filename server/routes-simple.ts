@@ -1031,6 +1031,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark message as read endpoint
+  app.post("/api/messages/:id/read", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const messageId = parseInt(req.params.id);
+      await storage.markMessageAsRead(messageId, req.session.userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark message read error:", error);
+      res.status(500).json({ message: "Failed to mark message as read" });
+    }
+  });
+
   app.post("/api/messages", async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {

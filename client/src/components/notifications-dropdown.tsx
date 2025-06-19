@@ -46,7 +46,9 @@ export default function NotificationsDropdown({
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate both notifications and navigation queries to update badges
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.refetchQueries({ queryKey: ['/api/notifications'] });
     },
   });
 
@@ -60,7 +62,9 @@ export default function NotificationsDropdown({
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate both notifications and navigation queries to update badges
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.refetchQueries({ queryKey: ['/api/notifications'] });
     },
   });
 
