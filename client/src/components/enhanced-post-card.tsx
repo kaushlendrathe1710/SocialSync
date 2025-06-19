@@ -117,10 +117,16 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
         <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Reactions</AlertDialogTitle>
+            <AlertDialogDescription>
+              See who reacted to this post
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
             {renderReactionsContent()}
           </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsOpen(false)}>Close</AlertDialogCancel>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
