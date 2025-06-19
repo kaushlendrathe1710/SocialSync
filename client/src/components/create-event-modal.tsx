@@ -23,6 +23,9 @@ export default function CreateEventModal({ isOpen, onClose }: CreateEventModalPr
     maxAttendees: ''
   });
 
+  // Get today's date in YYYY-MM-DD format for minimum date validation
+  const today = new Date().toISOString().split('T')[0];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -117,8 +120,10 @@ export default function CreateEventModal({ isOpen, onClose }: CreateEventModalPr
               <Input
                 id="event-date"
                 type="date"
+                min={today}
                 value={eventData.date}
                 onChange={(e) => setEventData({...eventData, date: e.target.value})}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -152,12 +157,19 @@ export default function CreateEventModal({ isOpen, onClose }: CreateEventModalPr
               <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 id="max-attendees"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Enter maximum number of attendees..."
                 value={eventData.maxAttendees}
-                onChange={(e) => setEventData({...eventData, maxAttendees: e.target.value})}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Only allow numbers
+                  if (value === '' || /^\d+$/.test(value)) {
+                    setEventData({...eventData, maxAttendees: value});
+                  }
+                }}
                 className="pl-10"
-                min="1"
               />
             </div>
           </div>
