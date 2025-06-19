@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
@@ -19,7 +20,11 @@ import {
   Upload,
   Clock,
   Plus,
-  Search
+  Search,
+  Edit3,
+  RotateCcw,
+  ZoomIn,
+  Sliders
 } from 'lucide-react';
 
 interface CreatePostModalProps {
@@ -154,6 +159,12 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [location, setLocation] = useState('');
   const [taggedPeople, setTaggedPeople] = useState<string[]>([]);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageScale, setImageScale] = useState(1);
+  const [imageFilter, setImageFilter] = useState('none');
+  const [imageBrightness, setImageBrightness] = useState(100);
+  const [imageContrast, setImageContrast] = useState(100);
+  const [imageSaturation, setImageSaturation] = useState(100);
 
 
 
@@ -198,6 +209,13 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     setShowLocationPicker(false);
     setLocation('');
     setTaggedPeople([]);
+    // Reset image editor state
+    setShowImageEditor(false);
+    setImageScale(1);
+    setImageFilter('none');
+    setImageBrightness(100);
+    setImageContrast(100);
+    setImageSaturation(100);
     onClose();
   };
 
@@ -228,6 +246,13 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const handleRemoveMedia = () => {
     setMediaFile(null);
     setMediaPreview(null);
+    // Reset image editor state
+    setShowImageEditor(false);
+    setImageScale(1);
+    setImageFilter('none');
+    setImageBrightness(100);
+    setImageContrast(100);
+    setImageSaturation(100);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -343,11 +368,36 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
           {mediaPreview && (
             <div className="relative">
               {mediaFile?.type.startsWith('image/') ? (
-                <img 
-                  src={mediaPreview} 
-                  alt="Preview" 
-                  className="w-full h-64 object-cover rounded-lg"
-                />
+                <div className="relative">
+                  <img 
+                    src={mediaPreview} 
+                    alt="Preview" 
+                    className="w-full h-64 object-cover rounded-lg"
+                    style={{
+                      transform: `scale(${imageScale})`,
+                      filter: `
+                        ${imageFilter === 'none' ? '' : imageFilter === 'grayscale' ? 'grayscale(100%)' : 
+                          imageFilter === 'sepia' ? 'sepia(100%)' : 
+                          imageFilter === 'blur' ? 'blur(2px)' : 
+                          imageFilter === 'vintage' ? 'sepia(50%) contrast(1.2) brightness(1.1)' : ''}
+                        brightness(${imageBrightness}%) 
+                        contrast(${imageContrast}%) 
+                        saturate(${imageSaturation}%)
+                      `
+                    }}
+                  />
+                  <div className="absolute top-2 left-2 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowImageEditor(!showImageEditor)}
+                      className="bg-white/80 backdrop-blur-sm"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <video 
                   src={mediaPreview} 
@@ -359,11 +409,135 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 type="button"
                 variant="outline"
                 size="sm"
-                className="absolute top-2 right-2"
+                className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm"
                 onClick={handleRemoveMedia}
               >
                 <X className="w-4 h-4" />
               </Button>
+            </div>
+          )}
+
+          {/* Image Editor Panel */}
+          {showImageEditor && mediaPreview && mediaFile?.type.startsWith('image/') && (
+            <div className="border rounded-lg p-4 bg-muted/50">
+              <div className="flex items-center gap-2 mb-4">
+                <Sliders className="w-4 h-4" />
+                <h3 className="font-medium">Edit Image</h3>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Resize Slider */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <ZoomIn className="w-4 h-4" />
+                      Size
+                    </label>
+                    <span className="text-sm text-muted-foreground">{Math.round(imageScale * 100)}%</span>
+                  </div>
+                  <Slider
+                    value={[imageScale]}
+                    onValueChange={(value) => setImageScale(value[0])}
+                    min={0.5}
+                    max={2}
+                    step={0.1}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Filter Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Filters</label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[
+                      { name: 'None', value: 'none' },
+                      { name: 'B&W', value: 'grayscale' },
+                      { name: 'Sepia', value: 'sepia' },
+                      { name: 'Blur', value: 'blur' },
+                      { name: 'Vintage', value: 'vintage' }
+                    ].map((filter) => (
+                      <Button
+                        key={filter.value}
+                        type="button"
+                        variant={imageFilter === filter.value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setImageFilter(filter.value)}
+                        className="text-xs"
+                      >
+                        {filter.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Brightness Slider */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Brightness</label>
+                    <span className="text-sm text-muted-foreground">{imageBrightness}%</span>
+                  </div>
+                  <Slider
+                    value={[imageBrightness]}
+                    onValueChange={(value) => setImageBrightness(value[0])}
+                    min={50}
+                    max={150}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Contrast Slider */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Contrast</label>
+                    <span className="text-sm text-muted-foreground">{imageContrast}%</span>
+                  </div>
+                  <Slider
+                    value={[imageContrast]}
+                    onValueChange={(value) => setImageContrast(value[0])}
+                    min={50}
+                    max={150}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Saturation Slider */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Saturation</label>
+                    <span className="text-sm text-muted-foreground">{imageSaturation}%</span>
+                  </div>
+                  <Slider
+                    value={[imageSaturation]}
+                    onValueChange={(value) => setImageSaturation(value[0])}
+                    min={0}
+                    max={200}
+                    step={10}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Reset Button */}
+                <div className="flex justify-end pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setImageScale(1);
+                      setImageFilter('none');
+                      setImageBrightness(100);
+                      setImageContrast(100);
+                      setImageSaturation(100);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Reset
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
           
