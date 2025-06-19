@@ -54,6 +54,10 @@ const transporter = nodemailer.createTransport({
 // Live stream viewer tracking
 const liveStreamViewers = new Map<number, Set<string>>(); // streamId -> Set of viewer socket IDs
 
+// Real-time messaging tracking
+const connectedUsers = new Map<number, WebSocket[]>(); // userId -> WebSocket connections
+const userSockets = new Map<WebSocket, number>(); // WebSocket -> userId
+
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -1685,31 +1689,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
   wss.on('connection', (ws: WebSocket, req) => {
     let currentStreamId: number | null = null;
     let socketId: string = Math.random().toString(36).substring(7);
+    let currentUserId: number | null = null;
 
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message.toString());
         
+        // Handle user joining for messaging
+        if (data.type === 'join' && data.userId) {
+          currentUserId = data.userId;
+          userSockets.set(ws, currentUserId);
+          
+          if (!connectedUsers.has(currentUserId)) {
+            connectedUsers.set(currentUserId, []);
+          }
+          connectedUsers.get(currentUserId)!.push(ws);
+          
+          // Broadcast user online status
+          broadcastToAllUsers({
+            type: 'online',
+            data: { userId: currentUserId }
+          });
+        }
+        
+        // Handle new message broadcasting
+        if (data.type === 'message' && currentUserId) {
+          const messageData = data.data;
+          
+          // Broadcast to the receiver if they're online
+          if (messageData.receiverId && connectedUsers.has(messageData.receiverId)) {
+            const receiverSockets = connectedUsers.get(messageData.receiverId)!;
+            receiverSockets.forEach(socket => {
+              if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                  type: 'message',
+                  data: messageData
+                }));
+              }
+            });
+          }
+          
+          // Also send back to sender for confirmation
+          ws.send(JSON.stringify({
+            type: 'message_sent',
+            data: messageData
+          }));
+        }
+        
+        // Handle typing indicators
+        if (data.type === 'typing' && currentUserId) {
+          const { conversationId, userId } = data;
+          // Broadcast typing to other participants in the conversation
+          broadcastToAllUsers({
+            type: 'typing',
+            data: { userId: currentUserId, conversationId }
+          });
+        }
+        
+        // Live stream functionality (keeping existing)
         if (data.type === 'join_stream') {
           const streamId = parseInt(data.streamId);
           
-          // Leave previous stream if any
           if (currentStreamId && liveStreamViewers.has(currentStreamId)) {
             const viewers = liveStreamViewers.get(currentStreamId)!;
             viewers.delete(socketId);
-            
-            // Broadcast updated viewer count to all viewers of previous stream
             broadcastViewerCount(currentStreamId);
           }
           
-          // Join new stream
           currentStreamId = streamId;
           if (!liveStreamViewers.has(streamId)) {
             liveStreamViewers.set(streamId, new Set());
           }
           liveStreamViewers.get(streamId)!.add(socketId);
-          
-          // Broadcast updated viewer count
           broadcastViewerCount(streamId);
         }
         
@@ -1727,7 +1778,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on('close', () => {
-      // Remove viewer when connection closes
+      // Clean up messaging connections
+      if (currentUserId) {
+        userSockets.delete(ws);
+        
+        if (connectedUsers.has(currentUserId)) {
+          const userSocketList = connectedUsers.get(currentUserId)!;
+          const index = userSocketList.indexOf(ws);
+          if (index > -1) {
+            userSocketList.splice(index, 1);
+          }
+          
+          // If no more sockets for this user, remove from connected users
+          if (userSocketList.length === 0) {
+            connectedUsers.delete(currentUserId);
+            
+            // Broadcast user offline status
+            broadcastToAllUsers({
+              type: 'offline',
+              data: { userId: currentUserId }
+            });
+          }
+        }
+      }
+      
+      // Clean up live stream connections
       if (currentStreamId && liveStreamViewers.has(currentStreamId)) {
         const viewers = liveStreamViewers.get(currentStreamId)!;
         viewers.delete(socketId);
@@ -1748,6 +1823,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           streamId,
           viewerCount
         }));
+      }
+    });
+  }
+
+  function broadcastToAllUsers(message: any) {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(message));
       }
     });
   }

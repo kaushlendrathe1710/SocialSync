@@ -45,8 +45,8 @@ const EMOJI_REACTIONS = [
   { emoji: '👍', icon: ThumbsUp, name: 'like' },
   { emoji: '❤️', icon: Heart, name: 'love' },
   { emoji: '😂', icon: Laugh, name: 'laugh' },
-  { emoji: '😮', icon: Wow, name: 'wow' },
-  { emoji: '😢', icon: Sad, name: 'sad' },
+  { emoji: '😮', icon: Circle, name: 'wow' },
+  { emoji: '😢', icon: Frown, name: 'sad' },
   { emoji: '😡', icon: Angry, name: 'angry' }
 ];
 
