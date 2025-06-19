@@ -36,34 +36,15 @@ interface ReactionsTooltipProps {
 }
 
 function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
-  const [reactions, setReactions] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const fetchReactions = async () => {
-    if (reactions.length > 0) return; // Already loaded
-    
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/posts/${postId}/reactions`, { 
-        credentials: 'include' 
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setReactions(data);
-      }
-    } catch (error) {
-      console.error('Error fetching reactions:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: reactions, isLoading } = useQuery({
+    queryKey: [`/api/posts/${postId}/reactions`],
+    enabled: isOpen,
+  });
 
-  const handleClick = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) {
-      fetchReactions();
-    }
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
   };
 
   const renderReactionsContent = () => {
@@ -71,13 +52,15 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
       return <div className="text-gray-500">Loading reactions...</div>;
     }
 
-    if (!reactions || reactions.length === 0) {
+    const reactionsArray = (reactions as any[]) || [];
+    
+    if (reactionsArray.length === 0) {
       return <div className="text-gray-500">No reactions yet</div>;
     }
 
     // Group reactions by type
     const reactionGroups: { [key: string]: string[] } = {};
-    reactions.forEach((reaction: any) => {
+    reactionsArray.forEach((reaction: any) => {
       const type = reaction.reactionType || 'like';
       const username = reaction.user?.username || reaction.user?.name || reaction.user?.email?.split('@')[0] || 'Unknown User';
       if (!reactionGroups[type]) {
@@ -111,11 +94,10 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <span 
           className="cursor-pointer hover:underline transition-colors"
-          onClick={handleClick}
         >
           {children}
         </span>
