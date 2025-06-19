@@ -1311,13 +1311,16 @@ export class DatabaseStorage implements IStorage {
 
   async logHabit(log: InsertHabitLog): Promise<HabitLog> {
     // Check if a log already exists for this habit and date
+    const logDate = log.date instanceof Date ? log.date : new Date(log.date);
+    const dateString = logDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
     const existingLog = await db
       .select()
       .from(habitLogs)
       .where(and(
         eq(habitLogs.habitId, log.habitId),
         eq(habitLogs.userId, log.userId),
-        sql`DATE(${habitLogs.date}) = DATE(${log.date})`
+        sql`DATE(${habitLogs.date}) = ${dateString}`
       ))
       .limit(1);
 
@@ -1331,7 +1334,10 @@ export class DatabaseStorage implements IStorage {
       return updatedLog;
     } else {
       // Create new log
-      const [newLog] = await db.insert(habitLogs).values(log).returning();
+      const [newLog] = await db.insert(habitLogs).values({
+        ...log,
+        date: logDate
+      }).returning();
       return newLog;
     }
   }

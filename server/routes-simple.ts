@@ -2114,9 +2114,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
+      const { habitId, date, completed, value, notes } = req.body;
       const log = await storage.logHabit({
-        ...req.body,
+        habitId,
         userId: req.session.userId,
+        date: new Date(date),
+        completed,
+        value,
+        notes,
       });
       
       res.json(log);
