@@ -568,6 +568,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userLikes = await storage.getUserLikes(userId);
       const existingReaction = userLikes.find(like => like.postId === postId);
 
+      // Get the post to find the author for notifications
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
       if (existingReaction) {
         if (existingReaction.reactionType === reactionType) {
           // Same reaction - remove it (toggle off)
@@ -581,6 +587,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // New reaction
         await storage.createLike({ userId, postId, reactionType });
+        
+        // Create notification for post author (if not reacting to own post)
+        if (post.userId !== userId) {
+          await storage.createNotification({
+            userId: post.userId,
+            type: 'like',
+            fromUserId: userId,
+            postId: postId,
+            isRead: false,
+          });
+        }
+        
         res.json({ reacted: true, reactionType });
       }
     } catch (error) {
@@ -721,12 +739,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = parseInt(req.params.id);
       const { content, parentCommentId } = req.body;
 
+      // Get the post to find the author for notifications
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
       const comment = await storage.createComment({
         userId: req.session.userId,
         postId,
         content,
         parentCommentId: parentCommentId || null,
       });
+
+      // Create notification for post author (if not commenting on own post)
+      if (post.userId !== req.session.userId) {
+        await storage.createNotification({
+          userId: post.userId,
+          type: 'comment',
+          fromUserId: req.session.userId,
+          postId: postId,
+          isRead: false,
+        });
+      }
 
       res.json(comment);
     } catch (error) {
