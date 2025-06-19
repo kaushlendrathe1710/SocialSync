@@ -604,6 +604,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get post reactions with user names
+  app.get("/api/posts/:id/reactions", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const reactions = await storage.getPostReactions(postId);
+      res.json(reactions);
+    } catch (error) {
+      console.error("Get post reactions error:", error);
+      res.status(500).json({ message: "Failed to get post reactions" });
+    }
+  });
+
   // Comments endpoints
   app.get("/api/posts/:id/comments", async (req: Request, res: Response) => {
     try {

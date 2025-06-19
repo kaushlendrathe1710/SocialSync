@@ -10,11 +10,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { usePostViewTracking } from "@/hooks/use-post-view-tracking";
 import { formatDistanceToNow } from "date-fns";
-import type { PostWithUser, CommentWithUser } from "@shared/schema";
+import type { PostWithUser, CommentWithUser, Like, User } from "@shared/schema";
 import ShareDropdown from "@/components/share-dropdown";
 
 interface EnhancedPostCardProps {
@@ -26,6 +27,94 @@ interface CommentItemProps {
   postId: number;
   level?: number;
   onReply?: (commentId: number) => void;
+}
+
+interface ReactionsTooltipProps {
+  postId: number;
+  children: React.ReactNode;
+}
+
+function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
+  const { data: reactions, isLoading } = useQuery({
+    queryKey: [`/api/posts/${postId}/reactions`],
+    enabled: false, // Only fetch when tooltip opens
+  });
+
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && !reactions) {
+      // Manually trigger the query when tooltip opens
+      window.fetch(`/api/posts/${postId}/reactions`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          // Update query cache
+          const queryClient = useQueryClient();
+          queryClient.setQueryData([`/api/posts/${postId}/reactions`], data);
+        })
+        .catch(console.error);
+    }
+  };
+
+  const getTooltipContent = () => {
+    if (isLoading || !reactions || !Array.isArray(reactions)) {
+      return "Loading reactions...";
+    }
+
+    if (reactions.length === 0) {
+      return "No reactions yet";
+    }
+
+    // Group reactions by type
+    const reactionGroups: { [key: string]: string[] } = {};
+    reactions.forEach((reaction: any) => {
+      const type = reaction.reactionType || 'like';
+      const username = reaction.user?.username || reaction.user?.email || 'Unknown';
+      if (!reactionGroups[type]) {
+        reactionGroups[type] = [];
+      }
+      reactionGroups[type].push(username);
+    });
+
+    // Format the tooltip content
+    const lines = Object.entries(reactionGroups).map(([type, users]) => {
+      const reactionInfo = reactions.find((r: any) => r.type === type);
+      let emoji = '👍';
+      
+      // Map reaction types to emojis
+      switch(type) {
+        case 'like': emoji = '👍'; break;
+        case 'love': emoji = '❤️'; break;
+        case 'laugh': emoji = '😂'; break;
+        case 'wow': emoji = '😮'; break;
+        case 'sad': emoji = '😢'; break;
+        case 'angry': emoji = '😠'; break;
+        default: emoji = '👍';
+      }
+      
+      return `${emoji} ${users.join(', ')}`;
+    });
+
+    return lines.join('\n');
+  };
+
+  return (
+    <TooltipProvider>
+      <Tooltip open={isOpen} onOpenChange={handleOpenChange}>
+        <TooltipTrigger asChild>
+          <span className="cursor-pointer hover:underline">
+            {children}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="whitespace-pre-line text-sm">
+            {getTooltipContent()}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) {
@@ -507,14 +596,18 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                     <span className="text-lg">
                       {reactions.find(r => r.type === post.userReaction)?.emoji || '👍'}
                     </span>
-                    <span className={reactions.find(r => r.type === post.userReaction)?.color || 'text-gray-600'}>
-                      {post.likesCount || 0}
-                    </span>
+                    <ReactionsTooltip postId={post.id}>
+                      <span className={reactions.find(r => r.type === post.userReaction)?.color || 'text-gray-600'}>
+                        {post.likesCount || 0}
+                      </span>
+                    </ReactionsTooltip>
                   </>
                 ) : (
                   <>
                     <Heart className="h-5 w-5" />
-                    <span>{post.likesCount || 0}</span>
+                    <ReactionsTooltip postId={post.id}>
+                      <span>{post.likesCount || 0}</span>
+                    </ReactionsTooltip>
                   </>
                 )}
               </div>
