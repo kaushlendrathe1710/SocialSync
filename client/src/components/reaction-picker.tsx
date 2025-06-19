@@ -140,4 +140,4 @@ export default function ReactionPicker({ onReaction, currentReaction, disabled, 
   );
 }
 
-export { reactions };
+export { reactions, extendedReactions };

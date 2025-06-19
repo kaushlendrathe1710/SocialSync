@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye, Clock, Smile } from "lucide-react";
-import ReactionPicker, { reactions } from "@/components/reaction-picker";
+import ReactionPicker, { reactions, extendedReactions } from "@/components/reaction-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -89,39 +89,10 @@ function ReactionsTooltip({ postId, children }: ReactionsTooltipProps) {
     return (
       <div className="space-y-2">
         {Object.entries(reactionGroups).map(([type, users]) => {
-          let emoji = '👍';
-          let label = 'Like';
-          
-          // Map reaction types to emojis and labels
-          switch(type) {
-            case 'like': 
-              emoji = '👍'; 
-              label = 'Like';
-              break;
-            case 'love': 
-              emoji = '❤️'; 
-              label = 'Love';
-              break;
-            case 'laugh': 
-              emoji = '😂'; 
-              label = 'Haha';
-              break;
-            case 'wow': 
-              emoji = '😮'; 
-              label = 'Wow';
-              break;
-            case 'sad': 
-              emoji = '😢'; 
-              label = 'Sad';
-              break;
-            case 'angry': 
-              emoji = '😠'; 
-              label = 'Angry';
-              break;
-            default: 
-              emoji = '👍';
-              label = 'Like';
-          }
+          // Find reaction data from extended reactions
+          const reactionData = extendedReactions.find(r => r.type === type);
+          const emoji = reactionData?.emoji || '👍';
+          const label = reactionData?.label || 'Like';
           
           return (
             <div key={type} className="flex items-start space-x-2">
@@ -639,10 +610,10 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                 {post.userReaction ? (
                   <>
                     <span className="text-lg">
-                      {reactions.find(r => r.type === post.userReaction)?.emoji || '👍'}
+                      {extendedReactions.find(r => r.type === post.userReaction)?.emoji || '👍'}
                     </span>
                     <ReactionsTooltip postId={post.id}>
-                      <span className={reactions.find(r => r.type === post.userReaction)?.color || 'text-gray-600'}>
+                      <span className={extendedReactions.find(r => r.type === post.userReaction)?.color || 'text-gray-600'}>
                         {post.likesCount || 0}
                       </span>
                     </ReactionsTooltip>
