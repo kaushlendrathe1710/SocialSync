@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye, Clock } from "lucide-react";
 import ReactionPicker, { reactions } from "@/components/reaction-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -344,9 +344,30 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-gray-500">
-                {formatDistanceToNow(new Date(post.createdAt!), { addSuffix: true })}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500">
+                  {formatDistanceToNow(new Date(post.createdAt!), { addSuffix: true })}
+                </p>
+                {post.expiresAt && (() => {
+                  const expiresDate = new Date(post.expiresAt);
+                  const timeLeft = expiresDate.getTime() - Date.now();
+                  const hoursLeft = timeLeft / (1000 * 60 * 60);
+                  
+                  const isUrgent = hoursLeft < 24;
+                  const textColor = isUrgent 
+                    ? "text-red-600 dark:text-red-400" 
+                    : "text-orange-600 dark:text-orange-400";
+                  
+                  return (
+                    <div className={`flex items-center space-x-1 text-xs ${textColor}`}>
+                      <Clock className="w-3 h-3" />
+                      <span>
+                        {isUrgent ? "⚠️ " : ""}Expires {formatDistanceToNow(expiresDate, { addSuffix: true })}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </div>
           
