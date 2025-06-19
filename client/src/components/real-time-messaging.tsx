@@ -356,10 +356,18 @@ export default function RealTimeMessaging() {
   // Process conversations
   const uniqueConversations = conversations
     ?.reduce((acc, message) => {
-      const otherUserId = message.senderId === user?.id ? message.receiverId : message.senderId;
+      // Handle self-messaging case
+      const isSelfMessage = message.senderId === message.receiverId;
+      const otherUserId = isSelfMessage ? user?.id : (message.senderId === user?.id ? message.receiverId : message.senderId);
+      
       const existing = acc.find(m => {
-        const uid = m.senderId === user?.id ? m.receiverId : m.senderId;
-        return uid === otherUserId;
+        const isExistingSelfMessage = m.senderId === m.receiverId;
+        const existingOtherUserId = isExistingSelfMessage ? user?.id : (m.senderId === user?.id ? m.receiverId : m.senderId);
+        
+        if (isSelfMessage && isExistingSelfMessage) {
+          return true; // Both are self-messages, they belong to the same conversation
+        }
+        return existingOtherUserId === otherUserId;
       });
       
       if (!existing || new Date(message.createdAt!) > new Date(existing.createdAt!)) {
@@ -375,7 +383,10 @@ export default function RealTimeMessaging() {
     ?.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()) || [];
 
   const filteredConversations = uniqueConversations.filter(message => {
-    const otherUser = message.senderId === user?.id ? message.receiver : message.sender;
+    // Handle self-messaging case for filtering
+    const isSelfMessage = message.senderId === message.receiverId;
+    const otherUser = isSelfMessage ? message.sender : (message.senderId === user?.id ? message.receiver : message.sender);
+    
     return otherUser.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
            otherUser.username.toLowerCase().includes(searchQuery.toLowerCase());
   });
@@ -422,7 +433,9 @@ export default function RealTimeMessaging() {
               ) : filteredConversations.length > 0 ? (
                 <div>
                   {filteredConversations.map((message) => {
-                    const otherUser = message.senderId === user?.id ? message.receiver : message.sender;
+                    // Handle self-messaging case for display
+                    const isSelfMessage = message.senderId === message.receiverId;
+                    const otherUser = isSelfMessage ? message.sender : (message.senderId === user?.id ? message.receiver : message.sender);
                     const isSelected = selectedConversation?.id === otherUser.id;
                     const isUnread = !message.readAt && message.receiverId === user?.id;
                     const isOnline = onlineUsers.includes(otherUser.id);
@@ -492,7 +505,6 @@ export default function RealTimeMessaging() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="md:hidden"
                       onClick={handleBackToList}
                     >
                       <ArrowLeft className="w-4 h-4" />

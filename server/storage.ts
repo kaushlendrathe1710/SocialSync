@@ -655,7 +655,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(messages.createdAt));
 
     // Get receiver data and deduplicate conversations
-    const conversationMap = new Map<number, MessageWithUser>();
+    const conversationMap = new Map<string, MessageWithUser>();
     
     for (const { message, sender } of result) {
       const [receiver] = await db
@@ -663,10 +663,17 @@ export class DatabaseStorage implements IStorage {
         .from(users)
         .where(eq(users.id, message.receiverId));
       
+      // Handle self-messaging case
       const otherUserId = message.senderId === userId ? message.receiverId : message.senderId;
       
-      if (!conversationMap.has(otherUserId)) {
-        conversationMap.set(otherUserId, {
+      // For self-messages, use a special key to ensure they appear
+      const conversationKey = message.senderId === message.receiverId 
+        ? `self-${userId}` 
+        : `${Math.min(userId, otherUserId)}-${Math.max(userId, otherUserId)}`;
+      
+      if (!conversationMap.has(conversationKey) || 
+          new Date(message.createdAt!) > new Date(conversationMap.get(conversationKey)!.createdAt!)) {
+        conversationMap.set(conversationKey, {
           ...message,
           sender,
           receiver,
