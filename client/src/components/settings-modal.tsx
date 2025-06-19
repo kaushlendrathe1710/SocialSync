@@ -394,7 +394,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
   if (type === 'display') {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Monitor className="w-5 h-5" />
@@ -403,7 +403,7 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
             <DialogDescription>{modalContent.description}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto space-y-6">
             {/* Theme */}
             <Card>
               <CardHeader>
@@ -533,8 +533,8 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
             </Card>
           </div>
           
-          {/* Apply and Cancel Buttons */}
-          <div className="flex justify-end space-x-2 pt-4 border-t">
+          {/* Apply and Cancel Buttons - Fixed at bottom */}
+          <div className="flex justify-end space-x-2 pt-4 border-t mt-4 bg-background">
             <Button variant="outline" onClick={() => {
               cancelDisplaySettings();
               onClose();
