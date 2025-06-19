@@ -38,13 +38,12 @@ export async function uploadToS3(
     Key: key,
     Body: buffer,
     ContentType: contentType,
-    ACL: 'public-read',
   });
 
   try {
     await s3Client.send(command);
     
-    // Return the public URL
+    // Return the public URL (works with bucket policy for public read access)
     const url = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
     
     return { url, key };
