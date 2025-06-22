@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,7 +34,9 @@ import {
   PartyPopper,
   Sun,
   Moon,
-  Search
+  Search,
+  X,
+  Plus
 } from 'lucide-react';
 
 interface FeelingActivityModalProps {
@@ -81,10 +83,33 @@ export default function FeelingActivityModal({ isOpen, onClose }: FeelingActivit
   const [selectedFeeling, setSelectedFeeling] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [location, setLocation] = useState('');
-  const [withPeople, setWithPeople] = useState<string[]>([]);
-  const [newPerson, setNewPerson] = useState('');
+  const [withPeople, setWithPeople] = useState<Array<{id: number, name: string}>>([]);
+  const [personSearchQuery, setPersonSearchQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'feeling' | 'activity'>('feeling');
+
+  // Search for users to tag
+  const { data: searchResults } = useQuery({
+    queryKey: ['/api/search', personSearchQuery],
+    queryFn: async () => {
+      if (!personSearchQuery.trim()) return { users: [], posts: [] };
+      const response = await fetch(`/api/search?q=${encodeURIComponent(personSearchQuery)}`);
+      if (!response.ok) throw new Error('Search failed');
+      return response.json();
+    },
+    enabled: personSearchQuery.length > 0,
+  });
+
+  const addPerson = (user: any) => {
+    if (!withPeople.some(p => p.id === user.id)) {
+      setWithPeople([...withPeople, { id: user.id, name: user.name || user.username }]);
+    }
+    setPersonSearchQuery('');
+  };
+
+  const removePerson = (userId: number) => {
+    setWithPeople(withPeople.filter(p => p.id !== userId));
+  };
 
   const createPostMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -115,22 +140,13 @@ export default function FeelingActivityModal({ isOpen, onClose }: FeelingActivit
     setSelectedActivity(null);
     setLocation('');
     setWithPeople([]);
-    setNewPerson('');
+    setPersonSearchQuery('');
     setSearchQuery('');
     setActiveTab('feeling');
     onClose();
   };
 
-  const addPerson = () => {
-    if (newPerson.trim() && !withPeople.includes(newPerson.trim())) {
-      setWithPeople(prev => [...prev, newPerson.trim()]);
-      setNewPerson('');
-    }
-  };
 
-  const removePerson = (person: string) => {
-    setWithPeople(prev => prev.filter(p => p !== person));
-  };
 
   const generatePostContent = () => {
     let generatedContent = '';
@@ -151,7 +167,7 @@ export default function FeelingActivityModal({ isOpen, onClose }: FeelingActivit
     }
     
     if (withPeople.length > 0) {
-      generatedContent += ` with ${withPeople.join(', ')}`;
+      generatedContent += ` with ${withPeople.map(p => p.name).join(', ')}`;
     }
     
     return generatedContent;
@@ -175,6 +191,14 @@ export default function FeelingActivityModal({ isOpen, onClose }: FeelingActivit
     const formData = new FormData();
     formData.append('content', finalContent);
     formData.append('privacy', privacy);
+    
+    // Add location and tagged people as metadata
+    if (location) {
+      formData.append('location', location);
+    }
+    if (withPeople.length > 0) {
+      formData.append('taggedPeople', JSON.stringify(withPeople));
+    }
 
     createPostMutation.mutate(formData);
   };
@@ -338,6 +362,95 @@ export default function FeelingActivityModal({ isOpen, onClose }: FeelingActivit
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Where are you? */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <MapPin className="w-4 h-4" />
+              <span>Where are you?</span>
+            </div>
+            <Input
+              placeholder="Add location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+          {/* Who are you with? */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Users className="w-4 h-4" />
+              <span>Who are you with?</span>
+            </div>
+            
+            {/* Tagged people */}
+            {withPeople.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {withPeople.map((person) => (
+                  <Badge key={person.id} variant="secondary" className="flex items-center space-x-1">
+                    <span>{person.name}</span>
+                    <X 
+                      className="w-3 h-3 cursor-pointer hover:text-red-500" 
+                      onClick={() => removePerson(person.id)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <div className="flex space-x-2">
+              <div className="flex-1 relative">
+                <Input
+                  placeholder="Search people..."
+                  value={personSearchQuery}
+                  onChange={(e) => setPersonSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+                
+                {/* Search results dropdown */}
+                {personSearchQuery && searchResults?.users?.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-40 overflow-y-auto">
+                    {searchResults.users.map((user: any) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center p-2 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => addPerson(user)}
+                      >
+                        <Avatar className="w-6 h-6 mr-2">
+                          <AvatarImage src={user.avatar || ""} />
+                          <AvatarFallback className="text-xs">
+                            {user.name?.charAt(0) || user.username?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="text-sm font-medium">{user.name || user.username}</div>
+                          <div className="text-xs text-gray-500">@{user.username}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (personSearchQuery.trim()) {
+                    // Add as custom person (not a registered user)
+                    const customPerson = { id: Date.now(), name: personSearchQuery.trim() };
+                    setWithPeople([...withPeople, customPerson]);
+                    setPersonSearchQuery('');
+                  }
+                }}
+                disabled={!personSearchQuery.trim()}
+              >
+                Add
+              </Button>
+            </div>
           </div>
 
           {/* Additional message */}
