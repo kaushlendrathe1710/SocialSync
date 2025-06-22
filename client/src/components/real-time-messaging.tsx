@@ -745,7 +745,7 @@ export default function RealTimeMessaging() {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      {messageText.trim() ? (
+                      {messageText.trim() || selectedFile ? (
                         <Button 
                           type="submit" 
                           size="sm" 
@@ -762,20 +762,21 @@ export default function RealTimeMessaging() {
                             size="sm"
                             onClick={handleMicClick}
                             title="Send voice message"
+                            className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full p-2"
                           >
-                            <Mic className="w-4 h-4" />
+                            <Mic className="w-5 h-5" />
                           </Button>
                           <Button 
                             type="button" 
                             size="sm"
-                            className="rounded-full w-10 h-10 p-0"
+                            className="rounded-full w-12 h-12 p-0 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg transition-all duration-200 hover:scale-105"
                             onClick={() => {
                               setMessageText('👍');
                               setTimeout(() => handleSendMessage(new Event('submit') as any), 100);
                             }}
                             title="Send thumbs up"
                           >
-                            <ThumbsUp className="w-4 h-4" />
+                            <ThumbsUp className="w-5 h-5 text-white" />
                           </Button>
                         </>
                       )}
