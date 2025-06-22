@@ -702,6 +702,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                       setImageBrightness(100);
                       setImageContrast(100);
                       setImageSaturation(100);
+                      setCropMode(false);
+                      setCropArea({ x: 0, y: 0, width: 100, height: 100 });
                     }}
                     className="flex items-center gap-2"
                   >
