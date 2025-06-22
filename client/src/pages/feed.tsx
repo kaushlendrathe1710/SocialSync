@@ -145,7 +145,7 @@ export default function FeedPage() {
         )}
 
         {/* Create Post - Sticky */}
-        <div className="sticky top-4 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="sticky top-20 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <Card className="shadow-lg border-2">
             <CardContent className="p-4">
               <div className="flex items-center space-x-3 mb-4">
