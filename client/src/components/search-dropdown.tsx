@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getUserInitials } from "@/lib/auth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { 
   Search, 
   Clock, 
@@ -31,6 +31,7 @@ export default function SearchDropdown({
   onSearchChange 
 }: SearchDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [, setLocation] = useLocation();
   const [recentSearches, setRecentSearches] = useState<string[]>([
     "john doe", "react tutorial", "nature photography"
   ]);
@@ -186,8 +187,7 @@ export default function SearchDropdown({
                       onClick={() => {
                         addToRecentSearches(user.name || user.username);
                         onClose();
-                        // Use window.location for navigation to ensure proper routing
-                        window.location.href = `/profile/${user.id}`;
+                        setLocation(`/profile/${user.id}`);
                       }}
                     >
                       <div className="flex items-center p-2 hover:bg-gray-50 rounded-lg">
