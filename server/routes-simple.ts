@@ -1211,25 +1211,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/messages", async (req: Request, res: Response) => {
+  app.post("/api/messages", upload.single('file'), async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const { receiverId, content } = req.body;
+      let imageUrl = null;
 
-      if (!receiverId || !content) {
-        console.log("Missing fields:", { receiverId, content, body: req.body });
-        return res.status(400).json({ message: "receiverId and content are required" });
+      // Handle file upload if present
+      if (req.file) {
+        // Check if S3 is configured
+        if (!validateS3Config()) {
+          return res.status(500).json({ error: "AWS S3 not configured properly" });
+        }
+
+        // Upload to S3
+        const uploadResult = await uploadToS3(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype,
+          'message-attachments'
+        );
+        imageUrl = uploadResult.url;
       }
 
-      console.log("Creating message:", { senderId: req.session.userId, receiverId, content });
+      // Require either content or file
+      if (!receiverId || (!content && !req.file)) {
+        console.log("Missing fields:", { receiverId, content, hasFile: !!req.file, body: req.body });
+        return res.status(400).json({ message: "receiverId and either content or file are required" });
+      }
+
+      console.log("Creating message:", { senderId: req.session.userId, receiverId, content, imageUrl });
       
       const message = await storage.createMessage({
         senderId: req.session.userId,
         receiverId,
-        content,
+        content: content || (imageUrl ? 'Image' : ''),
+        imageUrl,
       });
 
       // Get sender info for WebSocket broadcast

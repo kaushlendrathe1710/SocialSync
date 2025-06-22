@@ -185,14 +185,38 @@ export default function RealTimeMessaging() {
   }, [paramUserId, conversations, user?.id]);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const response = await api.sendMessage(selectedConversation!.id, content);
-      return response.json();
+    mutationFn: async (data: { content?: string; file?: File }) => {
+      if (data.file) {
+        // Handle file upload
+        const formData = new FormData();
+        formData.append('receiverId', selectedConversation!.id.toString());
+        formData.append('content', data.content || '');
+        formData.append('file', data.file);
+        
+        const response = await fetch('/api/messages', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to send message');
+        }
+        
+        return response.json();
+      } else {
+        // Handle text message
+        const response = await api.sendMessage(selectedConversation!.id, data.content!);
+        return response.json();
+      }
     },
     onSuccess: () => {
       setMessageText('');
+      setSelectedFile(null);
+      setFilePreview(null);
       messageInputRef.current?.focus();
-      // The WebSocket will handle real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversation?.id] });
     },
     onError: (error: any) => {
       toast({
@@ -206,9 +230,11 @@ export default function RealTimeMessaging() {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     const content = messageText.trim();
-    if (!content || !selectedConversation || sendMessageMutation.isPending) return;
     
-    sendMessageMutation.mutate(content);
+    // Check if we have either content or a file
+    if ((!content && !selectedFile) || !selectedConversation || sendMessageMutation.isPending) return;
+    
+    sendMessageMutation.mutate({ content, file: selectedFile || undefined });
   };
 
   const handleEmojiSelect = (emoji: string) => {
@@ -604,7 +630,21 @@ export default function RealTimeMessaging() {
                                       : 'bg-white dark:bg-gray-800 text-foreground rounded-bl-md border border-gray-200 dark:border-gray-700'
                                   }`}
                                 >
-                                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                  {message.imageUrl ? (
+                                    <div className="space-y-2">
+                                      <img 
+                                        src={message.imageUrl} 
+                                        alt="Shared image" 
+                                        className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => window.open(message.imageUrl, '_blank')}
+                                      />
+                                      {message.content && message.content !== 'Image' && (
+                                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                  )}
                                 </div>
                                 <div className={`flex items-center mt-1 space-x-1 px-1 ${isFromCurrentUser ? 'justify-end' : 'justify-start'}`}>
                                   {!showTimestamp && (
