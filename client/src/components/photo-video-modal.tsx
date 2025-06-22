@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
+import ImageEditor from './image-editor';
 import { 
   Image, 
   Video, 
@@ -22,7 +23,8 @@ import {
   Maximize,
   Square,
   RotateCcw,
-  FlipHorizontal
+  FlipHorizontal,
+  Edit3
 } from 'lucide-react';
 
 interface PhotoVideoModalProps {
@@ -52,6 +54,10 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
   const [isRecording, setIsRecording] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  
+  // Image editing states
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
+  const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
 
   const createPostMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -83,6 +89,8 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
     setActiveTab('upload');
     setIsPlaying([]);
     setIsMuted([]);
+    setEditingImageIndex(null);
+    setIsImageEditorOpen(false);
     stopCamera();
     onClose();
   };
@@ -324,6 +332,40 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
     setIsMuted(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleEditImage = (index: number) => {
+    setEditingImageIndex(index);
+    setIsImageEditorOpen(true);
+  };
+
+  const handleImageEditorSave = (editedFile: File) => {
+    if (editingImageIndex !== null) {
+      // Update the file and preview
+      setMediaFiles(prev => prev.map((file, i) => i === editingImageIndex ? editedFile : file));
+      
+      // Generate new preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setMediaPreviews(prev => prev.map((preview, i) => 
+          i === editingImageIndex ? (e.target?.result as string) : preview
+        ));
+      };
+      reader.readAsDataURL(editedFile);
+    }
+    
+    setIsImageEditorOpen(false);
+    setEditingImageIndex(null);
+    
+    toast({
+      title: "Image edited successfully",
+      description: "Your changes have been applied",
+    });
+  };
+
+  const handleImageEditorCancel = () => {
+    setIsImageEditorOpen(false);
+    setEditingImageIndex(null);
+  };
+
   const toggleVideoPlay = (index: number) => {
     const video = document.getElementById(`video-${index}`) as HTMLVideoElement;
     if (video) {
@@ -465,6 +507,16 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
                             alt={`Preview ${index + 1}`} 
                             className="w-full h-48 object-cover rounded-lg"
                           />
+                          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              className="bg-blue-500 hover:bg-blue-600 text-white"
+                              onClick={() => handleEditImage(index)}
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                          </div>
                           <Button
                             variant="destructive"
                             size="icon"
@@ -635,6 +687,19 @@ export default function PhotoVideoModal({ isOpen, onClose }: PhotoVideoModalProp
           </div>
         </div>
       </DialogContent>
+
+      {/* Image Editor Dialog */}
+      {isImageEditorOpen && editingImageIndex !== null && (
+        <Dialog open={isImageEditorOpen} onOpenChange={() => setIsImageEditorOpen(false)}>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
+            <ImageEditor
+              imageFile={mediaFiles[editingImageIndex]}
+              onSave={handleImageEditorSave}
+              onCancel={handleImageEditorCancel}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }
