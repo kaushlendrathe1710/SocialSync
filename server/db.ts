@@ -1,10 +1,6 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from "@shared/schema";
-
-// Configure WebSocket for Neon serverless
-neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -12,9 +8,23 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create pool with minimal configuration to avoid connection issues
-export const pool = new Pool({ 
+// Use HTTP connection instead of WebSocket to avoid connection issues
+const sql = neon(process.env.DATABASE_URL);
+export const db = drizzle(sql, { schema });
+
+// Create a simpler pool for session storage
+import { Pool } from 'pg';
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 5,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 15000,
+});
+
+// Add graceful error handling
+pool.on('error', (err) => {
+  console.error('Database pool error:', err);
 });
 
 // Add process-level unhandled rejection handler to prevent crashes
@@ -22,5 +32,3 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // Don't exit the process, just log the error
 });
-
-export const db = drizzle({ client: pool, schema });
