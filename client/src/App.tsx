@@ -21,6 +21,7 @@ import AdminDashboard from "@/pages/admin";
 import Navigation from "@/components/navigation";
 import Sidebar from "@/components/sidebar";
 import NotFound from "@/pages/not-found";
+import PublicPostPage from "@/pages/public-post";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -35,6 +36,11 @@ function AppContent() {
         </div>
       </div>
     );
+  }
+
+  // Allow public post viewing without authentication
+  if (!user && window.location.pathname.startsWith('/posts/')) {
+    return <PublicPostPage />;
   }
 
   if (!user) {
@@ -100,6 +106,7 @@ function AppContent() {
         <main className="flex-1 ml-64 min-h-screen">
           <Switch>
             <Route path="/" component={FeedPage} />
+            <Route path="/posts/:id" component={PublicPostPage} />
             <Route path="/profile/:id?" component={ProfilePage} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/explore" component={ExplorePage} />

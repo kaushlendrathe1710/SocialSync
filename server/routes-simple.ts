@@ -488,6 +488,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public post endpoint (no authentication required)
+  app.get("/api/posts/:id/public", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPost(postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      // Get likes count and views count using SQL queries
+      const likesResult = await db.select({ count: sql`count(*)` }).from(likes).where(eq(likes.postId, postId));
+      const likesCount = Number(likesResult[0]?.count || 0);
+      
+      const viewsResult = await db.select({ count: sql`count(*)` }).from(postViews).where(eq(postViews.postId, postId));
+      const viewsCount = Number(viewsResult[0]?.count || 0);
+
+      // Return post with counts but without sensitive user data
+      res.json({
+        ...post,
+        likesCount,
+        viewsCount,
+        user: {
+          id: post.user.id,
+          name: post.user.name,
+          username: post.user.username,
+          avatar: post.user.avatar
+        }
+      });
+    } catch (error) {
+      console.error("Get public post error:", error);
+      res.status(500).json({ message: "Failed to get post" });
+    }
+  });
+
+  // Public comments endpoint (no authentication required)
+  app.get("/api/posts/:id/comments/public", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const comments = await storage.getPostComments(postId);
+      
+      // Return comments with limited user data
+      const publicComments = comments.map(comment => ({
+        ...comment,
+        user: {
+          id: comment.user.id,
+          name: comment.user.name,
+          username: comment.user.username,
+          avatar: comment.user.avatar
+        }
+      }));
+
+      res.json(publicComments);
+    } catch (error) {
+      console.error("Get public comments error:", error);
+      res.status(500).json({ message: "Failed to get comments" });
+    }
+  });
+
   app.post("/api/posts", uploadSingle, async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
