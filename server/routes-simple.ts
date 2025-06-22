@@ -15,6 +15,7 @@ import {
   insertNotificationSchema,
   insertPostViewSchema 
 } from "@shared/schema";
+import { db } from "./db";
 import nodemailer from "nodemailer";
 import multer from "multer";
 import path from "path";
@@ -824,7 +825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/comments/:id/replies", async (req: Request, res: Response) => {
     try {
       const commentId = parseInt(req.params.id);
-      const replies = await storage.getCommentReplies(commentId);
+      const replies = await storage.getCommentReplies(commentId, req.session.userId);
       res.json(replies);
     } catch (error) {
       console.error("Get replies error:", error);
@@ -906,6 +907,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Like comment error:", error);
       res.status(500).json({ message: "Failed to like comment" });
+    }
+  });
+
+  // React to comment endpoint (supports multiple emoji reactions)
+  app.post("/api/comments/:id/react", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const commentId = parseInt(req.params.id);
+      const userId = req.session.userId;
+      const { reactionType } = req.body;
+
+      // Validate reaction type
+      const validReactions = ['like', 'love', 'laugh', 'wow', 'sad', 'angry'];
+      if (!validReactions.includes(reactionType)) {
+        return res.status(400).json({ message: "Invalid reaction type" });
+      }
+
+      // Check if user already reacted to this comment
+      const existingReaction = await db.query(`
+        SELECT * FROM comment_reactions 
+        WHERE user_id = $1 AND comment_id = $2
+      `, [userId, commentId]);
+
+      if (existingReaction.rows.length > 0) {
+        const current = existingReaction.rows[0];
+        if (current.reaction_type === reactionType) {
+          // Remove reaction if clicking same reaction
+          await db.query(`
+            DELETE FROM comment_reactions 
+            WHERE user_id = $1 AND comment_id = $2
+          `, [userId, commentId]);
+          
+          // Update comment likes count
+          await db.query(`
+            UPDATE comments 
+            SET likes_count = likes_count - 1 
+            WHERE id = $1 AND likes_count > 0
+          `, [commentId]);
+          
+          res.json({ reacted: false, reactionType: null });
+        } else {
+          // Update existing reaction
+          await db.query(`
+            UPDATE comment_reactions 
+            SET reaction_type = $1 
+            WHERE user_id = $2 AND comment_id = $3
+          `, [reactionType, userId, commentId]);
+          
+          res.json({ reacted: true, reactionType });
+        }
+      } else {
+        // Create new reaction
+        await db.query(`
+          INSERT INTO comment_reactions (user_id, comment_id, reaction_type) 
+          VALUES ($1, $2, $3)
+        `, [userId, commentId, reactionType]);
+        
+        // Update comment likes count
+        await db.query(`
+          UPDATE comments 
+          SET likes_count = likes_count + 1 
+          WHERE id = $1
+        `, [commentId]);
+        
+        res.json({ reacted: true, reactionType });
+      }
+    } catch (error) {
+      console.error("Comment reaction error:", error);
+      res.status(500).json({ message: "Failed to react to comment" });
     }
   });
 
