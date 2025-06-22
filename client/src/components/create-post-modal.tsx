@@ -25,7 +25,9 @@ import {
   Edit3,
   RotateCcw,
   ZoomIn,
-  Sliders
+  Sliders,
+  Crop,
+  Move
 } from 'lucide-react';
 
 interface CreatePostModalProps {
@@ -166,6 +168,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [imageBrightness, setImageBrightness] = useState(100);
   const [imageContrast, setImageContrast] = useState(100);
   const [imageSaturation, setImageSaturation] = useState(100);
+  const [cropMode, setCropMode] = useState(false);
+  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 100, height: 100 });
 
 
 
@@ -217,6 +221,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     setImageBrightness(100);
     setImageContrast(100);
     setImageSaturation(100);
+    setCropMode(false);
+    setCropArea({ x: 0, y: 0, width: 100, height: 100 });
     onClose();
   };
 
@@ -259,6 +265,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     setImageBrightness(100);
     setImageContrast(100);
     setImageSaturation(100);
+    setCropMode(false);
+    setCropArea({ x: 0, y: 0, width: 100, height: 100 });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -399,6 +407,25 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                             `
                           }}
                         />
+                        
+                        {/* Crop Overlay */}
+                        {cropMode && (
+                          <div 
+                            className="absolute inset-0 border-2 border-blue-500 rounded-lg pointer-events-none"
+                            style={{
+                              left: `${cropArea.x}%`,
+                              top: `${cropArea.y}%`,
+                              width: `${cropArea.width}%`,
+                              height: `${cropArea.height}%`,
+                              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            }}
+                          >
+                            <div className="absolute -top-6 left-0 bg-blue-500 text-white px-2 py-1 rounded text-xs">
+                              Crop Area
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="absolute top-2 left-2 flex gap-2">
                           <Button
                             type="button"
@@ -442,6 +469,135 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
               </div>
               
               <div className="space-y-4">
+                {/* Crop Mode Toggle */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Crop className="w-4 h-4" />
+                      Crop
+                    </label>
+                    <Button
+                      type="button"
+                      variant={cropMode ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCropMode(!cropMode)}
+                      className="h-8"
+                    >
+                      {cropMode ? 'Exit Crop' : 'Crop Image'}
+                    </Button>
+                  </div>
+                  
+                  {cropMode && (
+                    <div className="space-y-3 p-3 bg-background rounded border">
+                      <p className="text-xs text-muted-foreground">Adjust crop area:</p>
+                      
+                      {/* Crop Controls */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-medium">X Position</label>
+                          <Slider
+                            value={[cropArea.x]}
+                            onValueChange={(value) => setCropArea(prev => ({ ...prev, x: value[0] }))}
+                            min={0}
+                            max={50}
+                            step={1}
+                            className="w-full"
+                          />
+                          <span className="text-xs text-muted-foreground">{cropArea.x}%</span>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs font-medium">Y Position</label>
+                          <Slider
+                            value={[cropArea.y]}
+                            onValueChange={(value) => setCropArea(prev => ({ ...prev, y: value[0] }))}
+                            min={0}
+                            max={50}
+                            step={1}
+                            className="w-full"
+                          />
+                          <span className="text-xs text-muted-foreground">{cropArea.y}%</span>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs font-medium">Width</label>
+                          <Slider
+                            value={[cropArea.width]}
+                            onValueChange={(value) => setCropArea(prev => ({ ...prev, width: value[0] }))}
+                            min={20}
+                            max={100}
+                            step={1}
+                            className="w-full"
+                          />
+                          <span className="text-xs text-muted-foreground">{cropArea.width}%</span>
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs font-medium">Height</label>
+                          <Slider
+                            value={[cropArea.height]}
+                            onValueChange={(value) => setCropArea(prev => ({ ...prev, height: value[0] }))}
+                            min={20}
+                            max={100}
+                            step={1}
+                            className="w-full"
+                          />
+                          <span className="text-xs text-muted-foreground">{cropArea.height}%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Preset Crop Ratios */}
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCropArea({ x: 0, y: 0, width: 100, height: 100 })}
+                          className="text-xs"
+                        >
+                          Original
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCropArea({ x: 0, y: 12.5, width: 100, height: 75 })}
+                          className="text-xs"
+                        >
+                          4:3
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCropArea({ x: 12.5, y: 0, width: 75, height: 100 })}
+                          className="text-xs"
+                        >
+                          3:4
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCropArea({ x: 0, y: 25, width: 100, height: 50 })}
+                          className="text-xs"
+                        >
+                          16:9
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCropArea({ x: 12.5, y: 12.5, width: 75, height: 75 })}
+                          className="text-xs"
+                        >
+                          1:1
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Resize Slider */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
