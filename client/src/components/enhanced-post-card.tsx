@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye, Clock, Smile } from "lucide-react";
 import ReactionPicker, { reactions, extendedReactions } from "@/components/reaction-picker";
+import EmojiPicker from "@/components/emoji-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -180,6 +181,10 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
     }
   };
 
+  const handleEmojiSelectEdit = (emoji: string) => {
+    setEditContent(prev => prev + emoji);
+  };
+
   return (
     <div className={`${level > 0 ? 'ml-8 mt-2' : 'mt-4'}`}>
       <div className="flex space-x-3">
@@ -228,18 +233,32 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
             
             {isEditing ? (
               <div className="mt-2 space-y-2">
-                <Textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="min-h-[60px] text-sm"
-                />
-                <div className="flex space-x-2">
-                  <Button size="sm" onClick={handleUpdate} disabled={updateMutation.isPending}>
-                    Save
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
-                    Cancel
-                  </Button>
+                <div className="relative">
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[60px] text-sm pr-10"
+                  />
+                  <div className="absolute right-2 bottom-2">
+                    <EmojiPicker onEmojiSelect={handleEmojiSelectEdit}>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <Smile className="w-3 h-3 text-gray-500" />
+                      </Button>
+                    </EmojiPicker>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-xs text-gray-500">
+                    {editContent.length}/1000
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button size="sm" onClick={handleUpdate} disabled={updateMutation.isPending}>
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -415,6 +434,10 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
         parentCommentId: replyToComment || undefined,
       });
     }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setNewComment(prev => prev + emoji);
   };
 
   const handleReply = (commentId: number) => {
@@ -680,19 +703,33 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                     </Button>
                   </Badge>
                 )}
-                <Textarea
-                  placeholder={replyToComment ? "Write a reply..." : "Write a comment..."}
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[60px]"
-                />
-                <Button
-                  onClick={handleComment}
-                  disabled={!newComment.trim() || commentMutation.isPending}
-                  size="sm"
-                >
-                  {replyToComment ? 'Reply' : 'Comment'}
-                </Button>
+                <div className="relative">
+                  <Textarea
+                    placeholder={replyToComment ? "Write a reply..." : "Write a comment..."}
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="min-h-[60px] pr-12"
+                  />
+                  <div className="absolute right-2 bottom-2">
+                    <EmojiPicker onEmojiSelect={handleEmojiSelect}>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Smile className="w-4 h-4 text-gray-500" />
+                      </Button>
+                    </EmojiPicker>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="text-xs text-gray-500">
+                    {newComment.length}/1000
+                  </div>
+                  <Button
+                    onClick={handleComment}
+                    disabled={!newComment.trim() || commentMutation.isPending}
+                    size="sm"
+                  >
+                    {replyToComment ? 'Reply' : 'Comment'}
+                  </Button>
+                </div>
               </div>
             </div>
 
