@@ -604,8 +604,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 <UserRound className="w-5 h-5 text-blue-500" />
               </Button>
               
-              {/* Emoji Picker with Proper Popover */}
-              <Popover>
+              {/* Emoji Picker with Controlled State */}
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
@@ -613,6 +613,11 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                     size="sm"
                     className="p-2 hover:bg-muted"
                     title="Add emoji"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowEmojiPicker(!showEmojiPicker);
+                    }}
                   >
                     <Smile className="w-5 h-5 text-yellow-500" />
                   </Button>
@@ -623,7 +628,12 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                       <button
                         key={item.emoji}
                         type="button"
-                        onClick={() => addEmoji(item.emoji)}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          addEmoji(item.emoji);
+                          setShowEmojiPicker(false);
+                        }}
                         className="text-lg hover:bg-muted rounded p-2 transition-colors relative group"
                         title={item.name}
                       >
