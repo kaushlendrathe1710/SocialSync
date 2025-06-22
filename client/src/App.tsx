@@ -46,8 +46,9 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-gray-100">
         <Navigation />
-        <div className="pt-14">
-          <main className="min-h-screen">
+        <div className="flex pt-14">
+          <Sidebar />
+          <main className="flex-1 ml-64 min-h-screen">
             <Switch>
               <Route path="/" component={FeedPage} />
               <Route path="/profile/:id?" component={ProfilePage} />
@@ -94,8 +95,9 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navigation />
-      <div className="pt-14">
-        <main className="min-h-screen">
+      <div className="flex pt-14">
+        <Sidebar />
+        <main className="flex-1 ml-64 min-h-screen">
           <Switch>
             <Route path="/" component={FeedPage} />
             <Route path="/profile/:id?" component={ProfilePage} />
