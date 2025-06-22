@@ -64,10 +64,18 @@ export default function NotificationsDropdown({
       if (!response.ok) throw new Error('Failed to mark as read');
       return response.json();
     },
+    onMutate: async (notificationId: number) => {
+      // Optimistically update the notification to read
+      queryClient.setQueryData(['/api/notifications'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((n: any) => 
+          n.id === notificationId ? { ...n, isRead: true } : n
+        );
+      });
+    },
     onSuccess: () => {
-      // Invalidate both notifications and navigation queries to update badges
+      // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-      queryClient.refetchQueries({ queryKey: ['/api/notifications'] });
     },
   });
 
@@ -80,10 +88,16 @@ export default function NotificationsDropdown({
       if (!response.ok) throw new Error('Failed to mark all as read');
       return response.json();
     },
+    onMutate: async () => {
+      // Optimistically mark all notifications as read
+      queryClient.setQueryData(['/api/notifications'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((n: any) => ({ ...n, isRead: true }));
+      });
+    },
     onSuccess: () => {
-      // Invalidate both notifications and navigation queries to update badges
+      // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-      queryClient.refetchQueries({ queryKey: ['/api/notifications'] });
     },
   });
 

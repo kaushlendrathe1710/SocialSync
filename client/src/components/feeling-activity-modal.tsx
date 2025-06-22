@@ -343,21 +343,31 @@ export default function FeelingActivityModal({ isOpen, onClose }: FeelingActivit
             </label>
             <div className="flex space-x-2 mb-2">
               <Input
-                placeholder="Add person"
-                value={newPerson}
-                onChange={(e) => setNewPerson(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addPerson()}
+                placeholder="Search people..."
+                value={personSearchQuery}
+                onChange={(e) => setPersonSearchQuery(e.target.value)}
                 className="flex-1"
               />
-              <Button onClick={addPerson} variant="outline" size="sm">
+              <Button 
+                onClick={() => {
+                  if (personSearchQuery.trim()) {
+                    const customPerson = { id: Date.now(), name: personSearchQuery.trim() };
+                    setWithPeople([...withPeople, customPerson]);
+                    setPersonSearchQuery('');
+                  }
+                }}
+                variant="outline" 
+                size="sm"
+                disabled={!personSearchQuery.trim()}
+              >
                 Add
               </Button>
             </div>
             {withPeople.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {withPeople.map((person) => (
-                  <Badge key={person} variant="secondary" className="cursor-pointer" onClick={() => removePerson(person)}>
-                    {person} ×
+                  <Badge key={person.id} variant="secondary" className="cursor-pointer" onClick={() => removePerson(person.id)}>
+                    {person.name} ×
                   </Badge>
                 ))}
               </div>

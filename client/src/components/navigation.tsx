@@ -46,7 +46,7 @@ export default function Navigation() {
   // Get real-time counts for notifications and messages
   const { data: notifications = [] } = useQuery({
     queryKey: ['/api/notifications'],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds for faster updates
   });
 
   const { data: conversations = [] } = useQuery({
