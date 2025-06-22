@@ -604,35 +604,54 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 <UserRound className="w-5 h-5 text-blue-500" />
               </Button>
               
-              {/* Emoji Picker */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="p-2 hover:bg-muted"
-                    title="Add emoji"
-                  >
-                    <Smile className="w-5 h-5 text-yellow-500" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4" side="top" align="start" sideOffset={8}>
-                  <div className="grid grid-cols-8 gap-1 max-h-60 overflow-y-auto">
-                    {emojiData.map((item) => (
-                      <button
-                        key={item.emoji}
-                        type="button"
-                        onClick={() => addEmoji(item.emoji)}
-                        className="text-lg hover:bg-muted rounded p-2 transition-colors"
-                        title={item.name}
-                      >
-                        {item.emoji}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              {/* Emoji Picker with Custom Implementation */}
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="p-2 hover:bg-muted"
+                  title="Add emoji"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowEmojiPicker(!showEmojiPicker);
+                  }}
+                >
+                  <Smile className="w-5 h-5 text-yellow-500" />
+                </Button>
+                
+                {showEmojiPicker && (
+                  <>
+                    {/* Backdrop to close picker */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowEmojiPicker(false)}
+                    />
+                    {/* Emoji Picker Dropdown */}
+                    <div className="absolute top-full left-0 mt-2 bg-background border border-border rounded-lg shadow-lg p-4 z-50 w-80 max-h-60 overflow-y-auto">
+                      <div className="grid grid-cols-8 gap-1">
+                        {emojiData.map((item) => (
+                          <button
+                            key={item.emoji}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              addEmoji(item.emoji);
+                              setShowEmojiPicker(false);
+                            }}
+                            className="text-lg hover:bg-muted rounded p-2 transition-colors"
+                            title={item.name}
+                          >
+                            {item.emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
               
               <Button
                 type="button"
