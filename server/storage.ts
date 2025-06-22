@@ -5,6 +5,7 @@ import {
   likes,
   comments,
   commentLikes,
+  commentReactions,
   follows,
   stories,
   messages,
@@ -538,7 +539,7 @@ export class DatabaseStorage implements IStorage {
     return comment;
   }
 
-  async getPostComments(postId: number): Promise<(Comment & { user: User })[]> {
+  async getPostComments(postId: number, currentUserId?: number): Promise<(Comment & { user: User; userReaction?: string })[]> {
     const result = await db
       .select({
         comment: comments,
@@ -549,10 +550,30 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(comments.postId, postId), isNull(comments.parentCommentId)))
       .orderBy(asc(comments.createdAt));
 
-    return result.map(({ comment, user }) => ({ ...comment, user }));
+    // Get user reactions for comments if currentUserId is provided
+    let userReactions: { [commentId: number]: string } = {};
+    if (currentUserId && result.length > 0) {
+      const reactions = await db
+        .select()
+        .from(commentReactions)
+        .where(and(
+          eq(commentReactions.userId, currentUserId),
+          inArray(commentReactions.commentId, result.map(r => r.comment.id))
+        ));
+      
+      reactions.forEach((reaction) => {
+        userReactions[reaction.commentId] = reaction.reactionType;
+      });
+    }
+
+    return result.map(({ comment, user }) => ({
+      ...comment,
+      user,
+      userReaction: userReactions[comment.id] || null,
+    }));
   }
 
-  async getCommentReplies(commentId: number): Promise<(Comment & { user: User })[]> {
+  async getCommentReplies(commentId: number, currentUserId?: number): Promise<(Comment & { user: User; userReaction?: string })[]> {
     const result = await db
       .select({
         comment: comments,
@@ -563,7 +584,27 @@ export class DatabaseStorage implements IStorage {
       .where(eq(comments.parentCommentId, commentId))
       .orderBy(asc(comments.createdAt));
 
-    return result.map(({ comment, user }) => ({ ...comment, user }));
+    // Get user reactions for replies if currentUserId is provided
+    let userReactions: { [commentId: number]: string } = {};
+    if (currentUserId && result.length > 0) {
+      const reactions = await db
+        .select()
+        .from(commentReactions)
+        .where(and(
+          eq(commentReactions.userId, currentUserId),
+          inArray(commentReactions.commentId, result.map(r => r.comment.id))
+        ));
+      
+      reactions.forEach((reaction) => {
+        userReactions[reaction.commentId] = reaction.reactionType;
+      });
+    }
+
+    return result.map(({ comment, user }) => ({
+      ...comment,
+      user,
+      userReaction: userReactions[comment.id] || null,
+    }));
   }
 
   async deleteComment(id: number): Promise<boolean> {

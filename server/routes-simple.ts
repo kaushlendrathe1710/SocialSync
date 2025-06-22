@@ -13,9 +13,12 @@ import {
   insertStorySchema,
   insertMessageSchema,
   insertNotificationSchema,
-  insertPostViewSchema 
+  insertPostViewSchema,
+  commentReactions,
+  comments 
 } from "@shared/schema";
 import { db } from "./db";
+import { eq, and, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import multer from "multer";
 import path from "path";
@@ -928,51 +931,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user already reacted to this comment
-      const existingReaction = await db.query(`
-        SELECT * FROM comment_reactions 
-        WHERE user_id = $1 AND comment_id = $2
-      `, [userId, commentId]);
+      const existingReaction = await db.select()
+        .from(commentReactions)
+        .where(and(
+          eq(commentReactions.userId, userId),
+          eq(commentReactions.commentId, commentId)
+        ))
+        .limit(1);
 
-      if (existingReaction.rows.length > 0) {
-        const current = existingReaction.rows[0];
-        if (current.reaction_type === reactionType) {
+      if (existingReaction.length > 0) {
+        const current = existingReaction[0];
+        if (current.reactionType === reactionType) {
           // Remove reaction if clicking same reaction
-          await db.query(`
-            DELETE FROM comment_reactions 
-            WHERE user_id = $1 AND comment_id = $2
-          `, [userId, commentId]);
+          await db.delete(commentReactions)
+            .where(and(
+              eq(commentReactions.userId, userId),
+              eq(commentReactions.commentId, commentId)
+            ));
           
           // Update comment likes count
-          await db.query(`
-            UPDATE comments 
-            SET likes_count = likes_count - 1 
-            WHERE id = $1 AND likes_count > 0
-          `, [commentId]);
+          await db.update(comments)
+            .set({ likesCount: sql`${comments.likesCount} - 1` })
+            .where(eq(comments.id, commentId));
           
           res.json({ reacted: false, reactionType: null });
         } else {
           // Update existing reaction
-          await db.query(`
-            UPDATE comment_reactions 
-            SET reaction_type = $1 
-            WHERE user_id = $2 AND comment_id = $3
-          `, [reactionType, userId, commentId]);
+          await db.update(commentReactions)
+            .set({ reactionType })
+            .where(and(
+              eq(commentReactions.userId, userId),
+              eq(commentReactions.commentId, commentId)
+            ));
           
           res.json({ reacted: true, reactionType });
         }
       } else {
         // Create new reaction
-        await db.query(`
-          INSERT INTO comment_reactions (user_id, comment_id, reaction_type) 
-          VALUES ($1, $2, $3)
-        `, [userId, commentId, reactionType]);
+        await db.insert(commentReactions)
+          .values({
+            userId,
+            commentId,
+            reactionType
+          });
         
         // Update comment likes count
-        await db.query(`
-          UPDATE comments 
-          SET likes_count = likes_count + 1 
-          WHERE id = $1
-        `, [commentId]);
+        await db.update(comments)
+          .set({ likesCount: sql`${comments.likesCount} + 1` })
+          .where(eq(comments.id, commentId));
         
         res.json({ reacted: true, reactionType });
       }
