@@ -95,7 +95,7 @@ export default function Navigation() {
         </div>
       )}
 
-      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-40">
+      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-[60]">
           <div className="flex items-center justify-between h-14 px-4">
             {/* Left: Logo */}
         <div className="flex items-center space-x-4">

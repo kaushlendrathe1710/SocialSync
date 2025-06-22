@@ -38,7 +38,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="fixed left-0 top-14 h-full w-64 bg-white border-r border-gray-200 shadow-sm z-40">
+    <div className="fixed left-0 top-14 h-full w-64 bg-white border-r border-gray-200 shadow-sm z-30">
       <div className="flex flex-col h-full">
         {/* User Profile Section */}
         <div className="p-4 border-b border-gray-100">
