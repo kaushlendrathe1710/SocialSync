@@ -104,7 +104,7 @@ import {
   type MentorWithProfile,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, like, or, gt, isNull, sql } from "drizzle-orm";
+import { eq, and, desc, asc, like, or, gt, isNull, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -540,71 +540,89 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPostComments(postId: number, currentUserId?: number): Promise<(Comment & { user: User; userReaction?: string })[]> {
-    const result = await db
-      .select({
-        comment: comments,
-        user: users,
-      })
-      .from(comments)
-      .innerJoin(users, eq(comments.userId, users.id))
-      .where(and(eq(comments.postId, postId), isNull(comments.parentCommentId)))
-      .orderBy(asc(comments.createdAt));
+    if (currentUserId) {
+      // Use LEFT JOIN to get user reactions in single query
+      const result = await db
+        .select({
+          comment: comments,
+          user: users,
+          userReaction: commentReactions.reactionType,
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .leftJoin(commentReactions, and(
+          eq(commentReactions.commentId, comments.id),
+          eq(commentReactions.userId, currentUserId)
+        ))
+        .where(and(eq(comments.postId, postId), isNull(comments.parentCommentId)))
+        .orderBy(asc(comments.createdAt));
 
-    // Get user reactions for comments if currentUserId is provided
-    let userReactions: { [commentId: number]: string } = {};
-    if (currentUserId && result.length > 0) {
-      const reactions = await db
-        .select()
-        .from(commentReactions)
-        .where(and(
-          eq(commentReactions.userId, currentUserId),
-          inArray(commentReactions.commentId, result.map(r => r.comment.id))
-        ));
-      
-      reactions.forEach((reaction) => {
-        userReactions[reaction.commentId] = reaction.reactionType;
-      });
+      return result.map(({ comment, user, userReaction }) => ({
+        ...comment,
+        user,
+        userReaction: userReaction || null,
+      }));
+    } else {
+      // No user context, just get comments without reactions
+      const result = await db
+        .select({
+          comment: comments,
+          user: users,
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .where(and(eq(comments.postId, postId), isNull(comments.parentCommentId)))
+        .orderBy(asc(comments.createdAt));
+
+      return result.map(({ comment, user }) => ({
+        ...comment,
+        user,
+        userReaction: null,
+      }));
     }
-
-    return result.map(({ comment, user }) => ({
-      ...comment,
-      user,
-      userReaction: userReactions[comment.id] || null,
-    }));
   }
 
   async getCommentReplies(commentId: number, currentUserId?: number): Promise<(Comment & { user: User; userReaction?: string })[]> {
-    const result = await db
-      .select({
-        comment: comments,
-        user: users,
-      })
-      .from(comments)
-      .innerJoin(users, eq(comments.userId, users.id))
-      .where(eq(comments.parentCommentId, commentId))
-      .orderBy(asc(comments.createdAt));
+    if (currentUserId) {
+      // Use LEFT JOIN to get user reactions in single query
+      const result = await db
+        .select({
+          comment: comments,
+          user: users,
+          userReaction: commentReactions.reactionType,
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .leftJoin(commentReactions, and(
+          eq(commentReactions.commentId, comments.id),
+          eq(commentReactions.userId, currentUserId)
+        ))
+        .where(eq(comments.parentCommentId, commentId))
+        .orderBy(asc(comments.createdAt));
 
-    // Get user reactions for replies if currentUserId is provided
-    let userReactions: { [commentId: number]: string } = {};
-    if (currentUserId && result.length > 0) {
-      const reactions = await db
-        .select()
-        .from(commentReactions)
-        .where(and(
-          eq(commentReactions.userId, currentUserId),
-          inArray(commentReactions.commentId, result.map(r => r.comment.id))
-        ));
-      
-      reactions.forEach((reaction) => {
-        userReactions[reaction.commentId] = reaction.reactionType;
-      });
+      return result.map(({ comment, user, userReaction }) => ({
+        ...comment,
+        user,
+        userReaction: userReaction || null,
+      }));
+    } else {
+      // No user context, just get comments without reactions
+      const result = await db
+        .select({
+          comment: comments,
+          user: users,
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .where(eq(comments.parentCommentId, commentId))
+        .orderBy(asc(comments.createdAt));
+
+      return result.map(({ comment, user }) => ({
+        ...comment,
+        user,
+        userReaction: null,
+      }));
     }
-
-    return result.map(({ comment, user }) => ({
-      ...comment,
-      user,
-      userReaction: userReactions[comment.id] || null,
-    }));
   }
 
   async deleteComment(id: number): Promise<boolean> {

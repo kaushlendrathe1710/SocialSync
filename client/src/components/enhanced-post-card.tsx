@@ -290,17 +290,17 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
               >
                 {comment.userReaction ? (
                   <>
-                    <span className="mr-1">
+                    <span className="mr-1 text-sm">
                       {commentReactions.find(r => r.type === comment.userReaction)?.emoji || '👍'}
                     </span>
-                    <span className={commentReactions.find(r => r.type === comment.userReaction)?.color || 'text-gray-600'}>
+                    <span className={`font-medium ${commentReactions.find(r => r.type === comment.userReaction)?.color || 'text-gray-600'}`}>
                       {comment.likesCount || 0}
                     </span>
                   </>
                 ) : (
                   <>
-                    <Heart className="h-3 w-3 mr-1" />
-                    {comment.likesCount || 0}
+                    <Heart className="h-3 w-3 mr-1 text-gray-400" />
+                    <span className="text-gray-600">{comment.likesCount || 0}</span>
                   </>
                 )}
               </Button>
