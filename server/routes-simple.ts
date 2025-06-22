@@ -776,7 +776,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/posts/:id/comments", async (req: Request, res: Response) => {
     try {
       const postId = parseInt(req.params.id);
-      const comments = await storage.getPostComments(postId);
+      console.log("Getting comments for post", postId, "with userId", req.session.userId);
+      const comments = await storage.getPostComments(postId, req.session.userId);
+      console.log("Comments retrieved:", comments.map(c => ({ id: c.id, userReaction: c.userReaction })));
       res.json(comments);
     } catch (error) {
       console.error("Get comments error:", error);
