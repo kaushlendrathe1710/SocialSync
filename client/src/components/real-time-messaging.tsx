@@ -396,7 +396,7 @@ export default function RealTimeMessaging() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <Card className="overflow-hidden h-[calc(100vh-120px)]">
-        <div className="flex h-full">
+        <div className="flex h-full bg-white dark:bg-gray-900">
           
           {/* Conversations Sidebar */}
           <div className={`w-full md:w-80 border-r border-border ${selectedConversation ? 'hidden md:block' : ''}`}>
@@ -501,48 +501,53 @@ export default function RealTimeMessaging() {
           <div className={`flex-col flex-1 ${selectedConversation ? 'flex' : 'hidden md:flex'}`}>
             {selectedConversation ? (
               <>
-                {/* Enhanced Chat Header */}
-                <div className="px-6 py-4 border-b border-border bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-between shadow-sm">
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleBackToList}
-                      className="md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2"
-                    >
-                      <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                    <div className="relative">
-                      <Avatar className="w-12 h-12 ring-2 ring-blue-100 dark:ring-blue-900">
-                        <AvatarImage src={selectedConversation.avatar || undefined} />
-                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold text-lg">
-                          {selectedConversation.name?.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {onlineUsers.includes(selectedConversation.id) && (
-                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-3 border-white dark:border-gray-900 rounded-full ring-2 ring-green-200"></div>
-                      )}
-                    </div>
-                    <div className="flex flex-col">
-                      <h3 className="font-bold text-lg text-gray-900 dark:text-white">{selectedConversation.name}</h3>
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${onlineUsers.includes(selectedConversation.id) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                          {onlineUsers.includes(selectedConversation.id) ? 'Active now' : 'Last seen recently'}
+                {/* Chat Header - Always Visible */}
+                <div className="sticky top-0 z-10 px-4 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBackToList}
+                        className="md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                      </Button>
+                      <div className="relative">
+                        <Avatar className="w-11 h-11 ring-2 ring-blue-200 dark:ring-blue-800">
+                          <AvatarImage src={selectedConversation.avatar || undefined} />
+                          <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold text-base">
+                            {selectedConversation.name?.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {onlineUsers.includes(selectedConversation.id) && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <h1 className="font-bold text-xl text-gray-900 dark:text-white truncate">
+                          {selectedConversation.name}
+                        </h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {onlineUsers.includes(selectedConversation.id) ? (
+                            <span className="text-green-600 dark:text-green-400 font-medium">Active now</span>
+                          ) : (
+                            'Offline'
+                          )}
                         </p>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Button variant="ghost" size="sm" className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2">
-                      <Phone className="w-5 h-5" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2">
-                      <Video className="w-5 h-5" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setShowUserInfo(true)} className="hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2">
-                      <Info className="w-5 h-5" />
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm" className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2">
+                        <Phone className="w-5 h-5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2">
+                        <Video className="w-5 h-5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowUserInfo(true)} className="hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2">
+                        <Info className="w-5 h-5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
