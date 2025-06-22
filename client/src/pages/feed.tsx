@@ -70,6 +70,31 @@ export default function FeedPage() {
     queryKey: ['/api/stories'],
   });
 
+  const { data: friendSuggestions = [] } = useQuery({
+    queryKey: ['/api/friend-suggestions'],
+    enabled: !!user,
+  });
+
+  const sendRequestMutation = useMutation({
+    mutationFn: async (receiverId: number) => {
+      return apiRequest("POST", "/api/friend-requests", { receiverId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Friend request sent",
+        description: "Your friend request has been sent successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/friend-suggestions"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send friend request",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleStoryClick = (story: Story & { user: User }, index: number) => {
     setSelectedStory(story);
     setSelectedStoryIndex(index);
