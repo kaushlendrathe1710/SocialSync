@@ -125,6 +125,12 @@ export default function NotificationsPage() {
     return true;
   }) || [];
 
+  // Debug logging
+  console.log('All notifications:', notifications);
+  console.log('Filter:', filter);
+  console.log('Filtered notifications:', filteredNotifications);
+  console.log('Notification types:', notifications?.map(n => n.type));
+
   const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
 
   const filterOptions: { key: NotificationFilter; label: string; count?: number }[] = [
