@@ -604,8 +604,8 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 <UserRound className="w-5 h-5 text-blue-500" />
               </Button>
               
-              {/* Emoji Picker with Controlled State */}
-              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+              {/* Emoji Picker */}
+              <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
@@ -613,28 +613,18 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                     size="sm"
                     className="p-2 hover:bg-muted"
                     title="Add emoji"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowEmojiPicker(!showEmojiPicker);
-                    }}
                   >
                     <Smile className="w-5 h-5 text-yellow-500" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-4" side="top" align="start">
+                <PopoverContent className="w-80 p-4" side="top" align="start" sideOffset={8}>
                   <div className="grid grid-cols-8 gap-1 max-h-60 overflow-y-auto">
                     {emojiData.map((item) => (
                       <button
                         key={item.emoji}
                         type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addEmoji(item.emoji);
-                          setShowEmojiPicker(false);
-                        }}
-                        className="text-lg hover:bg-muted rounded p-2 transition-colors relative group"
+                        onClick={() => addEmoji(item.emoji)}
+                        className="text-lg hover:bg-muted rounded p-2 transition-colors"
                         title={item.name}
                       >
                         {item.emoji}
