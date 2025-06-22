@@ -628,8 +628,11 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                       className="fixed inset-0 z-40" 
                       onClick={() => setShowEmojiPicker(false)}
                     />
-                    {/* Emoji Picker Dropdown */}
-                    <div className="absolute top-full left-0 mt-2 bg-background border border-border rounded-lg shadow-lg p-4 z-50 w-80 max-h-60 overflow-y-auto">
+                    {/* Emoji Picker Dropdown - Positioned Above */}
+                    <div className="absolute bottom-full left-0 mb-2 bg-background border border-border rounded-lg shadow-xl p-3 z-50 w-72 max-h-48 overflow-y-auto">
+                      <div className="mb-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">Choose an emoji</h4>
+                      </div>
                       <div className="grid grid-cols-8 gap-1">
                         {emojiData.map((item) => (
                           <button
@@ -641,7 +644,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                               addEmoji(item.emoji);
                               setShowEmojiPicker(false);
                             }}
-                            className="text-lg hover:bg-muted rounded p-2 transition-colors"
+                            className="text-xl hover:bg-muted rounded-md p-2 transition-colors hover:scale-110 transform"
                             title={item.name}
                           >
                             {item.emoji}
