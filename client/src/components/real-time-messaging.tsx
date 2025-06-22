@@ -26,7 +26,9 @@ import {
   Image as ImageIcon,
   Camera,
   Mic,
-  ThumbsUp
+  ThumbsUp,
+  MessageCircle,
+  Check
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
@@ -499,99 +501,122 @@ export default function RealTimeMessaging() {
           <div className={`flex-col flex-1 ${selectedConversation ? 'flex' : 'hidden md:flex'}`}>
             {selectedConversation ? (
               <>
-                {/* Chat Header */}
-                <div className="p-4 border-b border-border bg-white dark:bg-gray-900 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                {/* Enhanced Chat Header */}
+                <div className="px-6 py-4 border-b border-border bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center space-x-4">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleBackToList}
+                      className="md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2"
                     >
-                      <ArrowLeft className="w-4 h-4" />
+                      <ArrowLeft className="w-5 h-5" />
                     </Button>
                     <div className="relative">
-                      <Avatar className="w-10 h-10">
+                      <Avatar className="w-12 h-12 ring-2 ring-blue-100 dark:ring-blue-900">
                         <AvatarImage src={selectedConversation.avatar || undefined} />
-                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold text-lg">
                           {selectedConversation.name?.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       {onlineUsers.includes(selectedConversation.id) && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-3 border-white dark:border-gray-900 rounded-full ring-2 ring-green-200"></div>
                       )}
                     </div>
-                    <div>
-                      <h3 className="font-semibold">{selectedConversation.name}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {onlineUsers.includes(selectedConversation.id) ? 'Active now' : 'Offline'}
-                      </p>
+                    <div className="flex flex-col">
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white">{selectedConversation.name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${onlineUsers.includes(selectedConversation.id) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          {onlineUsers.includes(selectedConversation.id) ? 'Active now' : 'Last seen recently'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm">
-                      <Phone className="w-4 h-4" />
+                  <div className="flex items-center space-x-1">
+                    <Button variant="ghost" size="sm" className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2">
+                      <Phone className="w-5 h-5" />
                     </Button>
-                    <Button variant="ghost" size="sm">
-                      <Video className="w-4 h-4" />
+                    <Button variant="ghost" size="sm" className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2">
+                      <Video className="w-5 h-5" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setShowUserInfo(true)}>
-                      <Info className="w-4 h-4" />
+                    <Button variant="ghost" size="sm" onClick={() => setShowUserInfo(true)} className="hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2">
+                      <Info className="w-5 h-5" />
                     </Button>
                   </div>
                 </div>
 
-                {/* Messages Area */}
-                <ScrollArea className="flex-1 p-4">
+                {/* Enhanced Messages Area */}
+                <ScrollArea className="flex-1 px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
                   {messagesLoading ? (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       {[...Array(5)].map((_, i) => (
                         <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                          <Skeleton className="h-12 w-48 rounded-2xl" />
+                          <div className="flex items-end space-x-2">
+                            {i % 2 !== 0 && <Skeleton className="w-8 h-8 rounded-full" />}
+                            <div className="space-y-1">
+                              <Skeleton className="h-10 w-48 rounded-2xl" />
+                              <Skeleton className="h-3 w-16" />
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : messages && messages.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {messages.map((message, index) => {
                         const isFromCurrentUser = message.senderId === user?.id;
                         const showAvatar = !isFromCurrentUser && (
                           index === 0 || 
                           messages[index - 1]?.senderId !== message.senderId
                         );
+                        const showTimestamp = index === 0 || 
+                          new Date(message.createdAt!).getTime() - new Date(messages[index - 1]?.createdAt!).getTime() > 300000; // 5 minutes
                         
                         return (
-                          <div
-                            key={message.id}
-                            className={`flex items-end space-x-2 ${isFromCurrentUser ? 'justify-end' : 'justify-start'}`}
-                          >
-                            {!isFromCurrentUser && (
-                              <Avatar className={`w-6 h-6 ${showAvatar ? 'visible' : 'invisible'}`}>
-                                <AvatarImage src={message.sender.avatar || undefined} />
-                                <AvatarFallback className="text-xs bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                                  {message.sender.name?.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
-                            <div className={`max-w-xs lg:max-w-md ${isFromCurrentUser ? 'order-1' : ''}`}>
-                              <div
-                                className={`px-4 py-2 rounded-2xl ${
-                                  isFromCurrentUser
-                                    ? 'bg-blue-600 text-white rounded-br-md'
-                                    : 'bg-gray-100 dark:bg-gray-800 text-foreground rounded-bl-md'
-                                }`}
-                              >
-                                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                              </div>
-                              <div className={`flex items-center mt-1 space-x-1 ${isFromCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                                <span className="text-xs text-muted-foreground">
+                          <div key={message.id} className="space-y-1">
+                            {showTimestamp && (
+                              <div className="flex justify-center">
+                                <span className="text-xs text-gray-500 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm">
                                   {formatMessageTime(new Date(message.createdAt!))}
                                 </span>
-                                {isFromCurrentUser && message.readAt && (
-                                  <span className="text-xs text-blue-600">✓✓</span>
-                                )}
-                                {isFromCurrentUser && !message.readAt && (
-                                  <span className="text-xs text-gray-400">✓</span>
-                                )}
+                              </div>
+                            )}
+                            <div className={`flex items-end space-x-3 ${isFromCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                              {!isFromCurrentUser && (
+                                <Avatar className={`w-8 h-8 ${showAvatar ? 'visible' : 'invisible'}`}>
+                                  <AvatarImage src={message.sender.avatar || undefined} />
+                                  <AvatarFallback className="text-xs bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                                    {message.sender.name?.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              <div className={`max-w-xs lg:max-w-md ${isFromCurrentUser ? 'order-1' : ''}`}>
+                                <div
+                                  className={`px-4 py-3 rounded-2xl shadow-sm ${
+                                    isFromCurrentUser
+                                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-md'
+                                      : 'bg-white dark:bg-gray-800 text-foreground rounded-bl-md border border-gray-200 dark:border-gray-700'
+                                  }`}
+                                >
+                                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                </div>
+                                <div className={`flex items-center mt-1 space-x-1 px-1 ${isFromCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                                  {!showTimestamp && (
+                                    <span className="text-xs text-gray-400">
+                                      {format(new Date(message.createdAt!), 'HH:mm')}
+                                    </span>
+                                  )}
+                                  {isFromCurrentUser && (
+                                    <div className="flex items-center space-x-1">
+                                      {message.readAt ? (
+                                        <span className="text-xs text-blue-400">✓✓</span>
+                                      ) : (
+                                        <span className="text-xs text-gray-400">✓</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -600,18 +625,20 @@ export default function RealTimeMessaging() {
                       <div ref={messagesEndRef} />
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-                        <Send className="w-8 h-8 text-muted-foreground" />
+                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                      <div className="w-20 h-20 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                        <MessageCircle className="w-10 h-10 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <p className="text-lg font-medium mb-1">Start the conversation</p>
-                      <p className="text-muted-foreground">Send a message to get started</p>
+                      <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">No messages yet</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+                        Start the conversation with <span className="font-semibold text-blue-600 dark:text-blue-400">{selectedConversation.name}</span>
+                      </p>
                     </div>
                   )}
                 </ScrollArea>
 
-                {/* Message Input */}
-                <div className="p-4 border-t border-border bg-white dark:bg-gray-900">
+                {/* Enhanced Message Input */}
+                <div className="px-6 py-4 border-t border-border bg-white dark:bg-gray-900 shadow-lg">
                   {/* Hidden file input */}
                   <input
                     type="file"
@@ -627,13 +654,13 @@ export default function RealTimeMessaging() {
                       <img 
                         src={filePreview} 
                         alt="Preview" 
-                        className="max-w-xs max-h-32 rounded-lg border"
+                        className="max-w-xs max-h-32 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-md"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute top-1 right-1 h-6 w-6 p-0 bg-red-500 hover:bg-red-600 text-white"
+                        className="absolute -top-2 -right-2 h-7 w-7 p-0 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg"
                         onClick={removeSelectedFile}
                       >
                         ×
@@ -641,7 +668,7 @@ export default function RealTimeMessaging() {
                     </div>
                   )}
                   
-                  <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
+                  <form onSubmit={handleSendMessage} className="flex items-end space-x-3">
                     <div className="flex items-center space-x-1">
                       <Button 
                         type="button" 
@@ -649,8 +676,9 @@ export default function RealTimeMessaging() {
                         size="sm"
                         onClick={handleAttachmentClick}
                         title="Attach file"
+                        className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full p-2"
                       >
-                        <Paperclip className="w-4 h-4" />
+                        <Paperclip className="w-5 h-5" />
                       </Button>
                       <Button 
                         type="button" 
@@ -658,8 +686,9 @@ export default function RealTimeMessaging() {
                         size="sm"
                         onClick={triggerFileInput}
                         title="Select image or video"
+                        className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full p-2"
                       >
-                        <ImageIcon className="w-4 h-4" />
+                        <ImageIcon className="w-5 h-5" />
                       </Button>
                       <Button 
                         type="button" 
@@ -667,29 +696,30 @@ export default function RealTimeMessaging() {
                         size="sm"
                         onClick={handleCameraClick}
                         title="Take photo"
+                        className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full p-2"
                       >
-                        <Camera className="w-4 h-4" />
+                        <Camera className="w-5 h-5" />
                       </Button>
                     </div>
                     
                     <div className="flex-1 relative">
                       <Textarea
                         ref={messageInputRef}
-                        placeholder="Type a message..."
+                        placeholder={`Message ${selectedConversation.name}...`}
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="resize-none rounded-full border-2 pr-12 min-h-[44px] max-h-32"
+                        className="resize-none rounded-3xl border-2 border-gray-200 dark:border-gray-700 pr-14 min-h-[48px] max-h-32 focus:border-blue-500 dark:focus:border-blue-400 bg-gray-50 dark:bg-gray-800 shadow-inner transition-colors"
                         rows={1}
                       />
-                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                         <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                           <PopoverTrigger asChild>
-                            <Button type="button" variant="ghost" size="sm">
-                              <Smile className="w-4 h-4" />
+                            <Button type="button" variant="ghost" size="sm" className="text-gray-500 hover:text-yellow-500 rounded-full p-1">
+                              <Smile className="w-5 h-5" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-80 p-2">
+                          <PopoverContent className="w-80 p-3 border-2 border-gray-200 dark:border-gray-700 shadow-xl">
                             <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
                               {EMOJI_PICKER.map((emoji) => (
                                 <Button
@@ -697,7 +727,7 @@ export default function RealTimeMessaging() {
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0 text-lg hover:bg-muted"
+                                  className="h-9 w-9 p-0 text-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                   onClick={() => handleEmojiSelect(emoji)}
                                 >
                                   {emoji}
@@ -709,15 +739,15 @@ export default function RealTimeMessaging() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-2">
                       {messageText.trim() ? (
                         <Button 
                           type="submit" 
                           size="sm" 
                           disabled={sendMessageMutation.isPending}
-                          className="rounded-full w-10 h-10 p-0"
+                          className="rounded-full w-12 h-12 p-0 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg transition-all duration-200 hover:scale-105"
                         >
-                          <Send className="w-4 h-4" />
+                          <Send className="w-5 h-5" />
                         </Button>
                       ) : (
                         <>
