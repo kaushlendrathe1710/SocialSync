@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 import { User, PostWithUser } from '@shared/schema';
-import PostCard from '@/components/post-card';
+import EnhancedPostCard from '@/components/enhanced-post-card';
 import CreatePostModal from '@/components/create-post-modal';
 import { 
   Camera, 
