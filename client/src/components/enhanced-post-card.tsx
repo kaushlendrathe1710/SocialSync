@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, MessageCircle, MoreHorizontal, Edit3, Trash2, Reply, Video, Radio, Eye, Clock, Smile } from "lucide-react";
 import ReactionPicker, { reactions, extendedReactions } from "@/components/reaction-picker";
+import CommentReactionPicker, { commentReactions } from "@/components/comment-reaction-picker";
 import EmojiPicker from "@/components/emoji-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -146,8 +147,17 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
     enabled: showReplies && level < 2, // Limit nesting to 2 levels
   });
 
-  const likeMutation = useMutation({
-    mutationFn: () => fetch(`/api/comments/${comment.id}/like`, { method: 'POST' }),
+  const commentReactionMutation = useMutation({
+    mutationFn: async (reactionType: string) => {
+      const response = await fetch(`/api/comments/${comment.id}/react`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reactionType })
+      });
+      if (!response.ok) throw new Error('Failed to react to comment');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
@@ -267,16 +277,34 @@ function CommentItem({ comment, postId, level = 0, onReply }: CommentItemProps) 
           </div>
           
           <div className="flex items-center space-x-4 mt-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={() => likeMutation.mutate()}
-              disabled={likeMutation.isPending}
+            <CommentReactionPicker
+              onReaction={(reactionType) => commentReactionMutation.mutate(reactionType)}
+              currentReaction={comment.userReaction || null}
+              disabled={commentReactionMutation.isPending}
             >
-              <Heart className={`h-3 w-3 mr-1 ${comment.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-              {comment.likesCount || 0}
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
+                disabled={commentReactionMutation.isPending}
+              >
+                {comment.userReaction ? (
+                  <>
+                    <span className="mr-1">
+                      {commentReactions.find(r => r.type === comment.userReaction)?.emoji || '👍'}
+                    </span>
+                    <span className={commentReactions.find(r => r.type === comment.userReaction)?.color || 'text-gray-600'}>
+                      {comment.likesCount || 0}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Heart className="h-3 w-3 mr-1" />
+                    {comment.likesCount || 0}
+                  </>
+                )}
+              </Button>
+            </CommentReactionPicker>
             
             {level < 2 && (
               <Button

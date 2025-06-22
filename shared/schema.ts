@@ -64,6 +64,14 @@ export const comments = pgTable("comments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const commentReactions = pgTable("comment_reactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  commentId: integer("comment_id").notNull(),
+  reactionType: text("reaction_type").default("like"), // like, love, laugh, wow, sad, angry
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const commentLikes = pgTable("comment_likes", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -413,6 +421,11 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
   repliesCount: true,
 });
 
+export const insertCommentReactionSchema = createInsertSchema(commentReactions).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertCommentLikeSchema = createInsertSchema(commentLikes).omit({
   id: true,
   createdAt: true,
@@ -577,6 +590,9 @@ export type InsertLike = z.infer<typeof insertLikeSchema>;
 
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
+
+export type CommentReaction = typeof commentReactions.$inferSelect;
+export type InsertCommentReaction = z.infer<typeof insertCommentReactionSchema>;
 
 export type CommentLike = typeof commentLikes.$inferSelect;
 export type InsertCommentLike = z.infer<typeof insertCommentLikeSchema>;
@@ -746,7 +762,7 @@ export const likesRelations = relations(likes, ({ one }) => ({
   }),
 }));
 
-export const commentsRelations = relations(comments, ({ one }) => ({
+export const commentsRelations = relations(comments, ({ one, many }) => ({
   user: one(users, {
     fields: [comments.userId],
     references: [users.id],
@@ -754,6 +770,18 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   post: one(posts, {
     fields: [comments.postId],
     references: [posts.id],
+  }),
+  reactions: many(commentReactions),
+}));
+
+export const commentReactionsRelations = relations(commentReactions, ({ one }) => ({
+  user: one(users, {
+    fields: [commentReactions.userId],
+    references: [users.id],
+  }),
+  comment: one(comments, {
+    fields: [commentReactions.commentId],
+    references: [comments.id],
   }),
 }));
 
