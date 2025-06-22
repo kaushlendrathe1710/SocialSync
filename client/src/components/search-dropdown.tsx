@@ -180,13 +180,14 @@ export default function SearchDropdown({
                     People
                   </h4>
                   {(searchResults as any)?.users?.map((user: UserType) => (
-                    <Link 
+                    <div 
                       key={user.id} 
-                      href={`/profile/${user.id}`}
-                      className="block"
+                      className="block cursor-pointer"
                       onClick={() => {
                         addToRecentSearches(user.name || user.username);
                         onClose();
+                        // Use window.location for navigation to ensure proper routing
+                        window.location.href = `/profile/${user.id}`;
                       }}
                     >
                       <div className="flex items-center p-2 hover:bg-gray-50 rounded-lg">
@@ -204,7 +205,7 @@ export default function SearchDropdown({
                         </div>
                         <UserIcon className="h-4 w-4 text-gray-400" />
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               )}

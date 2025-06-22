@@ -905,19 +905,21 @@ export class DatabaseStorage implements IStorage {
 
   // Search methods
   async searchUsers(query: string): Promise<User[]> {
+    const searchTerm = query.toLowerCase();
     return await db
       .select()
       .from(users)
       .where(
         or(
-          like(users.name, `%${query}%`),
-          like(users.username, `%${query}%`)
+          sql`LOWER(name) LIKE ${'%' + searchTerm + '%'}`,
+          sql`LOWER(username) LIKE ${'%' + searchTerm + '%'}`
         )
       )
       .limit(20);
   }
 
   async searchPosts(query: string): Promise<PostWithUser[]> {
+    const searchTerm = query.toLowerCase();
     const result = await db
       .select({
         post: posts,
@@ -925,7 +927,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(posts)
       .innerJoin(users, eq(posts.userId, users.id))
-      .where(like(posts.content, `%${query}%`))
+      .where(sql`LOWER(content) LIKE ${'%' + searchTerm + '%'}`)
       .orderBy(desc(posts.createdAt))
       .limit(20);
 
