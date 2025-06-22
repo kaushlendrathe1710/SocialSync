@@ -32,20 +32,43 @@ export default function NotificationsPage() {
   const { data: notifications, isLoading } = useQuery({
     queryKey: ['/api/notifications'],
     queryFn: async () => {
-      const response = await api.getNotifications();
+      const response = await fetch('/api/notifications', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch notifications');
+      }
       return response.json() as Promise<NotificationWithUser[]>;
     },
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (id: number) => api.markNotificationRead(id),
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/notifications/${id}/read`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to mark notification as read');
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
     },
   });
 
   const markAllReadMutation = useMutation({
-    mutationFn: () => api.markAllNotificationsRead(),
+    mutationFn: async () => {
+      const response = await fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to mark all notifications as read');
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       toast({
