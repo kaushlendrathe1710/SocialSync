@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserInitials } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import EnhancedPostCard from "@/components/enhanced-post-card";
 import StoryViewer from "@/components/story-viewer";
 import CreatePostModal from "@/components/create-post-modal";
@@ -18,12 +20,16 @@ import {
   ImageIcon, 
   Video, 
   Smile,
-  Users
+  Users,
+  UserPlus
 } from "lucide-react";
+import { Link } from "wouter";
 import type { PostWithUser, Story, User } from "@shared/schema";
 
 export default function FeedPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
   const [isLiveVideoModalOpen, setIsLiveVideoModalOpen] = useState(false);
   const [isPhotoVideoModalOpen, setIsPhotoVideoModalOpen] = useState(false);
@@ -219,35 +225,52 @@ export default function FeedPage() {
           )}
         </div>
 
-        {/* Suggested Content Section */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-gray-900">People You May Know</h4>
-              <Button variant="ghost" size="sm" className="text-blue-600">
-                See All
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="grid grid-cols-2 gap-4">
-              {[1, 2].map((i) => (
-                <div key={i} className="text-center p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
-                  <Avatar className="h-16 w-16 mx-auto mb-3">
-                    <AvatarFallback className="bg-gray-200 text-gray-600">
-                      U{i}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h5 className="font-medium text-sm mb-1">User {i}</h5>
-                  <p className="text-xs text-muted-foreground mb-3">2 mutual friends</p>
-                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    Add Friend
+        {/* People You May Know Section */}
+        {friendSuggestions.length > 0 && (
+          <Card className="shadow-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-gray-900">People You May Know</h4>
+                <Link href="/friends">
+                  <Button variant="ghost" size="sm" className="text-blue-600">
+                    See All
                   </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="grid grid-cols-2 gap-4">
+                {friendSuggestions.slice(0, 2).map((suggestion: User) => (
+                  <div key={suggestion.id} className="text-center p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                    <Link href={`/profile/${suggestion.id}`}>
+                      <Avatar className="h-16 w-16 mx-auto mb-3 cursor-pointer hover:opacity-80">
+                        <AvatarImage src={suggestion.avatar || undefined} />
+                        <AvatarFallback className="bg-gray-200 text-gray-600">
+                          {suggestion.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                    <Link href={`/profile/${suggestion.id}`}>
+                      <h5 className="font-medium text-sm mb-1 cursor-pointer hover:text-blue-600">
+                        {suggestion.name}
+                      </h5>
+                    </Link>
+                    <p className="text-xs text-muted-foreground mb-3">@{suggestion.username}</p>
+                    <Button 
+                      size="sm" 
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      onClick={() => sendRequestMutation.mutate(suggestion.id)}
+                      disabled={sendRequestMutation.isPending}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Add Friend
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Modals */}
