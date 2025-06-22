@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
@@ -603,44 +604,38 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 <UserRound className="w-5 h-5 text-blue-500" />
               </Button>
               
-              {/* Single Emoji Icon */}
-              <div className="relative">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="p-2 hover:bg-muted"
-                  title="Add emoji"
-                >
-                  <Smile className="w-5 h-5 text-yellow-500" />
-                </Button>
-                
-                {/* Emoji Picker Dropdown */}
-                {showEmojiPicker && (
-                  <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 w-80 max-h-60 overflow-y-auto">
-                    <div className="grid grid-cols-8 gap-1">
-                      {emojiData.map((item) => (
-                        <button
-                          key={item.emoji}
-                          type="button"
-                          onClick={() => {
-                            addEmoji(item.emoji);
-                            setShowEmojiPicker(false);
-                          }}
-                          className="text-lg hover:bg-gray-100 rounded p-2 transition-colors relative group"
-                          title={item.name}
-                        >
-                          {item.emoji}
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                            {item.name}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+              {/* Emoji Picker with Proper Popover */}
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="p-2 hover:bg-muted"
+                    title="Add emoji"
+                  >
+                    <Smile className="w-5 h-5 text-yellow-500" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" side="top" align="start">
+                  <div className="grid grid-cols-8 gap-1 max-h-60 overflow-y-auto">
+                    {emojiData.map((item) => (
+                      <button
+                        key={item.emoji}
+                        type="button"
+                        onClick={() => {
+                          addEmoji(item.emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                        className="text-lg hover:bg-muted rounded p-2 transition-colors relative group"
+                        title={item.name}
+                      >
+                        {item.emoji}
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
+                </PopoverContent>
+              </Popover>
               
               <Button
                 type="button"
