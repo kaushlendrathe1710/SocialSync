@@ -227,26 +227,40 @@ export default function NotificationsDropdown({
                     markAsReadMutation.mutate(notification.id);
                   }
                   
-                  // Navigate to the related post or user profile
+                  // Close the dropdown first
+                  onClose();
+                  
+                  // Navigate based on notification type
                   if (notification.postId) {
-                    // Navigate to feed page and scroll to the post
+                    // For post-related notifications (like, comment, share), navigate to the specific post
+                    // First try to navigate to home page with post focus
                     navigate('/');
-                    // Use setTimeout to ensure navigation completes before closing
+                    
+                    // Use a longer timeout to ensure page loads, then try to scroll to post
                     setTimeout(() => {
-                      onClose();
-                      // Scroll to post if it exists
                       const postElement = document.getElementById(`post-${notification.postId}`);
                       if (postElement) {
                         postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Highlight the post briefly
+                        postElement.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                        setTimeout(() => {
+                          postElement.style.backgroundColor = '';
+                        }, 2000);
+                      } else {
+                        // If post not found on feed, try to load it directly
+                        // This could happen if the post is not in the current feed view
+                        console.log(`Post ${notification.postId} not found in current feed`);
                       }
-                    }, 100);
+                    }, 500);
                   } else if (notification.type === 'follow') {
-                    // Navigate to user profile
+                    // Navigate to user profile for follow notifications
                     navigate(`/profile/${notification.fromUserId}`);
-                    onClose();
+                  } else if (notification.type === 'message') {
+                    // Navigate to messages for message notifications
+                    navigate(`/messages/${notification.fromUserId}`);
                   } else {
-                    // For other notifications, just close the dropdown
-                    onClose();
+                    // For other notification types, navigate to full notifications page
+                    navigate('/notifications');
                   }
                 }}
               >

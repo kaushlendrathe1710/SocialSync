@@ -200,9 +200,38 @@ export default function NotificationsPage() {
           {filteredNotifications.map((notification) => (
             <Card 
               key={notification.id} 
-              className={`transition-colors hover:bg-muted/50 ${
+              className={`transition-colors hover:bg-muted/50 cursor-pointer ${
                 !notification.isRead ? 'bg-blue-50 border-l-4 border-[hsl(221,44%,41%)]' : ''
               }`}
+              onClick={() => {
+                // Mark as read if unread
+                if (!notification.isRead) {
+                  handleMarkRead(notification.id);
+                }
+                
+                // Navigate based on notification type
+                if (notification.postId) {
+                  // For post-related notifications, navigate to home page
+                  navigate('/');
+                  setTimeout(() => {
+                    const postElement = document.getElementById(`post-${notification.postId}`);
+                    if (postElement) {
+                      postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // Highlight the post briefly
+                      postElement.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                      setTimeout(() => {
+                        postElement.style.backgroundColor = '';
+                      }, 2000);
+                    }
+                  }, 500);
+                } else if (notification.type === 'follow') {
+                  // Navigate to user profile for follow notifications
+                  navigate(`/profile/${notification.fromUserId}`);
+                } else if (notification.type === 'message') {
+                  // Navigate to messages for message notifications
+                  navigate(`/messages/${notification.fromUserId}`);
+                }
+              }}
             >
               <CardContent className="p-4">
                 <div className="flex items-start space-x-3">
@@ -250,7 +279,10 @@ export default function NotificationsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleMarkRead(notification.id)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent card click
+                          handleMarkRead(notification.id);
+                        }}
                         disabled={markReadMutation.isPending}
                       >
                         <Check className="w-4 h-4" />
