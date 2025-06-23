@@ -51,7 +51,11 @@ export default function MessagesDropdown({
   const [messageSettings, setMessageSettings] = useState({
     readReceipts: true,
     onlineStatus: true,
-    messageNotifications: true
+    messageNotifications: true,
+    lastSeenVisibility: 'everyone', // everyone, contacts, selected, nobody
+    profilePhotoVisibility: 'everyone',
+    statusVisibility: 'contacts',
+    whoCanAddToGroups: 'everyone'
   });
 
   const { data: conversations = [], isLoading } = useQuery<MessageWithUser[]>({
@@ -468,7 +472,7 @@ export default function MessagesDropdown({
 
       {/* Settings Modal */}
       <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Message Settings</DialogTitle>
           </DialogHeader>
@@ -515,6 +519,114 @@ export default function MessagesDropdown({
                 }}
               />
             </div>
+            
+            <Separator />
+            
+            {/* Privacy Settings */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-sm">Privacy Settings</h4>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Last seen</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Who can see when you were last online
+                  </p>
+                </div>
+                <Select
+                  value={messageSettings.lastSeenVisibility}
+                  onValueChange={(value) => 
+                    setMessageSettings({...messageSettings, lastSeenVisibility: value})
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="everyone">Everyone</SelectItem>
+                    <SelectItem value="contacts">My contacts</SelectItem>
+                    <SelectItem value="selected">Selected contacts</SelectItem>
+                    <SelectItem value="nobody">Nobody</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Profile photo</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Who can see your profile photo
+                  </p>
+                </div>
+                <Select
+                  value={messageSettings.profilePhotoVisibility}
+                  onValueChange={(value) => 
+                    setMessageSettings({...messageSettings, profilePhotoVisibility: value})
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="everyone">Everyone</SelectItem>
+                    <SelectItem value="contacts">My contacts</SelectItem>
+                    <SelectItem value="selected">Selected contacts</SelectItem>
+                    <SelectItem value="nobody">Nobody</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Status</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Who can see your status updates
+                  </p>
+                </div>
+                <Select
+                  value={messageSettings.statusVisibility}
+                  onValueChange={(value) => 
+                    setMessageSettings({...messageSettings, statusVisibility: value})
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="everyone">Everyone</SelectItem>
+                    <SelectItem value="contacts">My contacts</SelectItem>
+                    <SelectItem value="selected">Selected contacts</SelectItem>
+                    <SelectItem value="nobody">Nobody</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Groups</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Who can add you to groups
+                  </p>
+                </div>
+                <Select
+                  value={messageSettings.whoCanAddToGroups}
+                  onValueChange={(value) => 
+                    setMessageSettings({...messageSettings, whoCanAddToGroups: value})
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="everyone">Everyone</SelectItem>
+                    <SelectItem value="contacts">My contacts</SelectItem>
+                    <SelectItem value="admins">Group admins</SelectItem>
+                    <SelectItem value="nobody">Nobody</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
             <div className="flex justify-end">
               <Button 
                 type="button"
