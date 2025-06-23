@@ -54,6 +54,7 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [activeTab, setActiveTab] = useState('posts');
   const [editForm, setEditForm] = useState({
     name: '',
     bio: '',
@@ -572,7 +573,7 @@ export default function ProfilePage() {
         
         {/* Right Column - Posts */}
         <div className="lg:col-span-2">
-          <Tabs defaultValue="posts" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="posts">Posts</TabsTrigger>
               <TabsTrigger value="about">About</TabsTrigger>
