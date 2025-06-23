@@ -276,8 +276,16 @@ export default function ProfilePage() {
                           title: "Success",
                           description: "Cover photo updated successfully",
                         });
-                        // Refresh the profile data
-                        queryClient.invalidateQueries({ queryKey: ['/api/users', profileUser.id.toString()] });
+                        // Refresh the profile data with multiple invalidations
+                        await Promise.all([
+                          queryClient.invalidateQueries({ queryKey: ['/api/users', profileUser.id.toString()] }),
+                          queryClient.invalidateQueries({ queryKey: ['/api/users', profileUser.id] }),
+                          queryClient.refetchQueries({ queryKey: ['/api/users', profileUser.id.toString()] }),
+                        ]);
+                        // Force a page refresh after a short delay to ensure data updates
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 1000);
                       } else {
                         const error = await response.json();
                         toast({
