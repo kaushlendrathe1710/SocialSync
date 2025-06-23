@@ -482,9 +482,9 @@ export default function MessagesDropdown({
               </div>
               <Switch
                 checked={messageSettings.readReceipts}
-                onCheckedChange={(checked) => 
-                  setMessageSettings({...messageSettings, readReceipts: checked})
-                }
+                onCheckedChange={(checked) => {
+                  setMessageSettings({...messageSettings, readReceipts: checked});
+                }}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -496,9 +496,9 @@ export default function MessagesDropdown({
               </div>
               <Switch
                 checked={messageSettings.onlineStatus}
-                onCheckedChange={(checked) => 
-                  setMessageSettings({...messageSettings, onlineStatus: checked})
-                }
+                onCheckedChange={(checked) => {
+                  setMessageSettings({...messageSettings, onlineStatus: checked});
+                }}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -510,13 +510,24 @@ export default function MessagesDropdown({
               </div>
               <Switch
                 checked={messageSettings.messageNotifications}
-                onCheckedChange={(checked) => 
-                  setMessageSettings({...messageSettings, messageNotifications: checked})
-                }
+                onCheckedChange={(checked) => {
+                  setMessageSettings({...messageSettings, messageNotifications: checked});
+                }}
               />
             </div>
             <div className="flex justify-end">
-              <Button onClick={() => setShowSettingsModal(false)}>
+              <Button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowSettingsModal(false);
+                  toast({
+                    title: "Settings saved",
+                    description: "Your message preferences have been updated.",
+                  });
+                }}
+              >
                 Done
               </Button>
             </div>
