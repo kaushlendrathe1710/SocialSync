@@ -60,8 +60,8 @@ export default function RealTimeMessaging() {
   const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
   const [userPrivacySettings, setUserPrivacySettings] = useState<{[key: number]: {onlineStatus: boolean}}>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [showMessagesMenu, setShowMessagesMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -220,13 +220,17 @@ export default function RealTimeMessaging() {
   }, [paramUserId, conversations, user?.id]);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (data: { content?: string; file?: File }) => {
-      if (data.file) {
-        // Handle file upload
+    mutationFn: async (data: { content?: string; files?: File[] }) => {
+      if (data.files && data.files.length > 0) {
+        // Handle multiple file uploads
         const formData = new FormData();
         formData.append('receiverId', selectedConversation!.id.toString());
         formData.append('content', data.content || '');
-        formData.append('file', data.file);
+        
+        // Append all selected files
+        data.files.forEach((file) => {
+          formData.append('files', file);
+        });
         
         const response = await fetch('/api/messages', {
           method: 'POST',
@@ -235,7 +239,7 @@ export default function RealTimeMessaging() {
         });
         
         if (!response.ok) {
-          throw new Error('Failed to send message');
+          throw new Error('Failed to send message with files');
         }
         
         return response.json();
@@ -247,8 +251,8 @@ export default function RealTimeMessaging() {
     },
     onSuccess: () => {
       setMessageText('');
-      setSelectedFile(null);
-      setFilePreview(null);
+      setSelectedFiles([]);
+      setFilePreviews([]);
       messageInputRef.current?.focus();
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversation?.id] });
@@ -266,10 +270,10 @@ export default function RealTimeMessaging() {
     e.preventDefault();
     const content = messageText.trim();
     
-    // Check if we have either content or a file
-    if ((!content && !selectedFile) || !selectedConversation || sendMessageMutation.isPending) return;
+    // Check if we have either content or files
+    if ((!content && selectedFiles.length === 0) || !selectedConversation || sendMessageMutation.isPending) return;
     
-    sendMessageMutation.mutate({ content, file: selectedFile || undefined });
+    sendMessageMutation.mutate({ content, files: selectedFiles.length > 0 ? selectedFiles : undefined });
   };
 
   const handleEmojiSelect = (emoji: string) => {
@@ -279,14 +283,22 @@ export default function RealTimeMessaging() {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFilePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setSelectedFiles(files);
+      
+      // Generate previews for all selected files
+      const previews: string[] = [];
+      files.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previews[index] = e.target?.result as string;
+          if (previews.length === files.length) {
+            setFilePreviews([...previews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
@@ -364,9 +376,16 @@ export default function RealTimeMessaging() {
     }
   };
 
-  const removeSelectedFile = () => {
-    setSelectedFile(null);
-    setFilePreview(null);
+  const removeSelectedFile = (index: number) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    const newPreviews = filePreviews.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
+    setFilePreviews(newPreviews);
+  };
+
+  const removeAllFiles = () => {
+    setSelectedFiles([]);
+    setFilePreviews([]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -778,27 +797,48 @@ export default function RealTimeMessaging() {
                     type="file"
                     accept="image/*,video/*"
                     onChange={handleFileSelect}
+                    multiple
                     className="hidden"
                     id="chat-file-input"
                   />
                   
-                  {/* File preview */}
-                  {filePreview && (
-                    <div className="mb-4 relative">
-                      <img 
-                        src={filePreview} 
-                        alt="Preview" 
-                        className="max-w-xs max-h-32 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-md"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute -top-2 -right-2 h-7 w-7 p-0 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg"
-                        onClick={removeSelectedFile}
-                      >
-                        ×
-                      </Button>
+                  {/* File previews */}
+                  {filePreviews.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {filePreviews.length} file{filePreviews.length > 1 ? 's' : ''} selected
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={removeAllFiles}
+                          className="text-red-500 hover:text-red-600 text-xs"
+                        >
+                          Remove all
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto">
+                        {filePreviews.map((preview, index) => (
+                          <div key={index} className="relative flex-shrink-0">
+                            <img 
+                              src={preview} 
+                              alt={`Preview ${index + 1}`} 
+                              className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg text-xs"
+                              onClick={() => removeSelectedFile(index)}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                   
