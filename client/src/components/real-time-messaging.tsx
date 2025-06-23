@@ -58,6 +58,7 @@ export default function RealTimeMessaging() {
   const [messageText, setMessageText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
+  const [userPrivacySettings, setUserPrivacySettings] = useState<{[key: number]: {onlineStatus: boolean}}>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -518,7 +519,8 @@ export default function RealTimeMessaging() {
                     const otherUser = isSelfMessage ? message.sender : (message.senderId === user?.id ? message.receiver : message.sender);
                     const isSelected = selectedConversation?.id === otherUser.id;
                     const isUnread = !message.readAt && message.receiverId === user?.id;
-                    const isOnline = onlineUsers.includes(otherUser.id);
+                    const isOnline = onlineUsers.includes(otherUser.id) && 
+                      (userPrivacySettings[otherUser.id]?.onlineStatus !== false);
                     
                     return (
                       <div
@@ -598,7 +600,8 @@ export default function RealTimeMessaging() {
                             {selectedConversation.name?.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        {onlineUsers.includes(selectedConversation.id) && (
+                        {onlineUsers.includes(selectedConversation.id) && 
+                         (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) && (
                           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                         )}
                       </div>
@@ -607,7 +610,8 @@ export default function RealTimeMessaging() {
                           {selectedConversation.name}
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {onlineUsers.includes(selectedConversation.id) ? (
+                          {onlineUsers.includes(selectedConversation.id) && 
+                           (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? (
                             <span className="text-green-600 dark:text-green-400 font-medium">Active now</span>
                           ) : (
                             'Offline'
@@ -912,9 +916,11 @@ export default function RealTimeMessaging() {
                   <h3 className="text-lg font-semibold">{selectedConversation.name}</h3>
                   <p className="text-sm text-muted-foreground">@{selectedConversation.username}</p>
                   <div className="flex items-center mt-1">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${onlineUsers.includes(selectedConversation.id) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div className={`w-2 h-2 rounded-full mr-2 ${onlineUsers.includes(selectedConversation.id) && 
+                      (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
                     <span className="text-xs text-muted-foreground">
-                      {onlineUsers.includes(selectedConversation.id) ? 'Active now' : 'Offline'}
+                      {onlineUsers.includes(selectedConversation.id) && 
+                       (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? 'Active now' : 'Offline'}
                     </span>
                   </div>
                 </div>
