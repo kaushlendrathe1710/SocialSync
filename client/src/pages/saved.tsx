@@ -21,7 +21,10 @@ export default function SavedPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<{id: number, name: string} | null>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
+  const [editCollectionName, setEditCollectionName] = useState('');
   const [collections, setCollections] = useState([
     { id: 1, name: "All Saved", count: 0, color: "bg-blue-500" },
     { id: 2, name: "Travel", count: 0, color: "bg-green-500" },
@@ -104,6 +107,38 @@ export default function SavedPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditCollection = (collection: {id: number, name: string}) => {
+    setEditingCollection(collection);
+    setEditCollectionName(collection.name);
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEditCollection = () => {
+    if (!editingCollection || !editCollectionName.trim()) {
+      toast({
+        title: "Error",
+        description: "Collection name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCollections(collections.map(collection => 
+      collection.id === editingCollection.id 
+        ? { ...collection, name: editCollectionName.trim() }
+        : collection
+    ));
+
+    toast({
+      title: "Success",
+      description: `Collection renamed to "${editCollectionName.trim()}"`,
+    });
+
+    setShowEditDialog(false);
+    setEditingCollection(null);
+    setEditCollectionName('');
   };
 
   const handleDeleteCollection = async (collectionId: number, collectionName: string) => {
@@ -304,6 +339,7 @@ export default function SavedPage() {
                               size="sm"
                               className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600"
                               title="Edit Collection"
+                              onClick={() => handleEditCollection({id: collection.id, name: collection.name})}
                             >
                               <Edit className="w-3 h-3" />
                             </Button>
@@ -445,6 +481,46 @@ export default function SavedPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Collection Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editCollectionName">Collection Name</Label>
+              <Input
+                id="editCollectionName"
+                placeholder="Enter collection name"
+                value={editCollectionName}
+                onChange={(e) => setEditCollectionName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveEditCollection();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowEditDialog(false);
+                setEditingCollection(null);
+                setEditCollectionName('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEditCollection}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
