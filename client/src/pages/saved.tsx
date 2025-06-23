@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -22,9 +23,15 @@ export default function SavedPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [editingCollection, setEditingCollection] = useState<{id: number, name: string} | null>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [editCollectionName, setEditCollectionName] = useState('');
+  const [filterOptions, setFilterOptions] = useState({
+    dateRange: 'all', // all, week, month, year
+    postType: 'all', // all, text, image, video
+    sortBy: 'newest' // newest, oldest, most-liked
+  });
   const [collections, setCollections] = useState([
     { id: 1, name: "All Saved", count: 0, color: "bg-blue-500" },
     { id: 2, name: "Travel", count: 0, color: "bg-green-500" },
@@ -42,10 +49,61 @@ export default function SavedPage() {
   // Filter posts that user has liked (simulating saved posts)
   const savedPosts = likedPosts.filter((post: PostWithUser) => post.isLiked);
 
-  const filteredSavedPosts = savedPosts.filter((post: PostWithUser) =>
-    post.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.user.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSavedPosts = savedPosts.filter((post: PostWithUser) => {
+    // Search filter
+    const matchesSearch = post.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.user.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (searchQuery && !matchesSearch) return false;
+    
+    // Date range filter
+    if (filterOptions.dateRange !== 'all') {
+      const postDate = new Date(post.createdAt);
+      const now = new Date();
+      const timeDiff = now.getTime() - postDate.getTime();
+      const daysDiff = timeDiff / (1000 * 3600 * 24);
+      
+      switch (filterOptions.dateRange) {
+        case 'week':
+          if (daysDiff > 7) return false;
+          break;
+        case 'month':
+          if (daysDiff > 30) return false;
+          break;
+        case 'year':
+          if (daysDiff > 365) return false;
+          break;
+      }
+    }
+    
+    // Post type filter
+    if (filterOptions.postType !== 'all') {
+      switch (filterOptions.postType) {
+        case 'text':
+          if (post.imageUrl || post.videoUrl) return false;
+          break;
+        case 'image':
+          if (!post.imageUrl) return false;
+          break;
+        case 'video':
+          if (!post.videoUrl) return false;
+          break;
+      }
+    }
+    
+    return true;
+  }).sort((a, b) => {
+    // Sort filter
+    switch (filterOptions.sortBy) {
+      case 'oldest':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'most-liked':
+        return (b.likesCount || 0) - (a.likesCount || 0);
+      case 'newest':
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
 
   const handleUnsavePost = async (postId: number) => {
     try {
@@ -213,7 +271,11 @@ export default function SavedPage() {
                 List
               </Button>
             </div>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowFilterDialog(true)}
+            >
               <Filter className="w-4 h-4 mr-2" />
               Filter
             </Button>
@@ -518,6 +580,107 @@ export default function SavedPage() {
             <Button onClick={handleSaveEditCollection}>
               Save Changes
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Filter Dialog */}
+      <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Filter Saved Posts</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div>
+              <Label>Date Range</Label>
+              <Select 
+                value={filterOptions.dateRange} 
+                onValueChange={(value) => setFilterOptions(prev => ({ ...prev, dateRange: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="week">Past Week</SelectItem>
+                  <SelectItem value="month">Past Month</SelectItem>
+                  <SelectItem value="year">Past Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Post Type</Label>
+              <Select 
+                value={filterOptions.postType} 
+                onValueChange={(value) => setFilterOptions(prev => ({ ...prev, postType: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Posts</SelectItem>
+                  <SelectItem value="text">Text Only</SelectItem>
+                  <SelectItem value="image">With Images</SelectItem>
+                  <SelectItem value="video">With Videos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Sort By</Label>
+              <Select 
+                value={filterOptions.sortBy} 
+                onValueChange={(value) => setFilterOptions(prev => ({ ...prev, sortBy: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="most-liked">Most Liked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-between mt-6">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setFilterOptions({
+                  dateRange: 'all',
+                  postType: 'all',
+                  sortBy: 'newest'
+                });
+                toast({
+                  title: "Filters cleared",
+                  description: "All filters have been reset to default",
+                });
+              }}
+            >
+              Clear Filters
+            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFilterDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowFilterDialog(false);
+                  toast({
+                    title: "Filters applied",
+                    description: "Your saved posts have been filtered",
+                  });
+                }}
+              >
+                Apply Filters
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
