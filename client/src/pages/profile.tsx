@@ -33,6 +33,7 @@ import {
   UserMinus
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'wouter';
 
 // Helper function to safely format dates
 const safeFormatDate = (dateValue: any): string => {
@@ -621,7 +622,7 @@ export default function ProfilePage() {
               ) : posts && posts.length > 0 ? (
                 <div className="space-y-6">
                   {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
+                    <EnhancedPostCard key={post.id} post={post} />
                   ))}
                 </div>
               ) : (
@@ -693,9 +694,11 @@ export default function ProfilePage() {
                           {follower.bio || 'No bio'}
                         </p>
                       </div>
-                      <Button size="sm" variant="outline">
-                        View
-                      </Button>
+                      <Link href={`/profile/${follower.id}`}>
+                        <Button size="sm" variant="outline">
+                          View
+                        </Button>
+                      </Link>
                     </div>
                   </Card>
                 ))}
