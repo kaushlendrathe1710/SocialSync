@@ -740,13 +740,37 @@ export default function RealTimeMessaging() {
                                 >
                                   {message.imageUrl ? (
                                     <div className="space-y-2">
-                                      <img 
-                                        src={message.imageUrl} 
-                                        alt="Shared image" 
-                                        className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                        onClick={() => window.open(message.imageUrl, '_blank')}
-                                      />
-                                      {message.content && message.content !== 'Image' && (
+                                      {(() => {
+                                        // Check if imageUrl contains multiple images (JSON array)
+                                        let imageUrls: string[] = [];
+                                        try {
+                                          const parsed = JSON.parse(message.imageUrl);
+                                          if (Array.isArray(parsed)) {
+                                            imageUrls = parsed;
+                                          } else {
+                                            imageUrls = [message.imageUrl];
+                                          }
+                                        } catch {
+                                          imageUrls = [message.imageUrl];
+                                        }
+
+                                        return (
+                                          <div className={`${imageUrls.length > 1 ? 'grid grid-cols-2 gap-2' : ''}`}>
+                                            {imageUrls.map((url, index) => (
+                                              <img 
+                                                key={index}
+                                                src={url} 
+                                                alt={`Shared image ${index + 1}`} 
+                                                className={`rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${
+                                                  imageUrls.length === 1 ? 'max-w-xs' : 'w-full h-32 object-cover'
+                                                }`}
+                                                onClick={() => window.open(url, '_blank')}
+                                              />
+                                            ))}
+                                          </div>
+                                        );
+                                      })()}
+                                      {message.content && !message.content.includes('images') && message.content !== 'Image' && (
                                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                                       )}
                                     </div>

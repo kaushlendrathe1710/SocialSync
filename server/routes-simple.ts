@@ -1351,45 +1351,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/messages", upload.single('file'), async (req: Request, res: Response) => {
+  app.post("/api/messages", upload.array('files', 10), async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
       const { receiverId, content } = req.body;
-      let imageUrl = null;
+      const files = req.files as Express.Multer.File[];
+      let imageUrls: string[] = [];
 
-      // Handle file upload if present
-      if (req.file) {
+      // Handle multiple file uploads if present
+      if (files && files.length > 0) {
         // Check if S3 is configured
         if (!validateS3Config()) {
           return res.status(500).json({ error: "AWS S3 not configured properly" });
         }
 
-        // Upload to S3
-        const uploadResult = await uploadToS3(
-          req.file.buffer,
-          req.file.originalname,
-          req.file.mimetype,
-          'message-attachments'
-        );
-        imageUrl = uploadResult.url;
+        // Upload all files to S3
+        for (const file of files) {
+          const uploadResult = await uploadToS3(
+            file.buffer,
+            file.originalname,
+            file.mimetype,
+            'message-attachments'
+          );
+          imageUrls.push(uploadResult.url);
+        }
       }
 
-      // Require either content or file
-      if (!receiverId || (!content && !req.file)) {
-        console.log("Missing fields:", { receiverId, content, hasFile: !!req.file, body: req.body });
-        return res.status(400).json({ message: "receiverId and either content or file are required" });
+      // Require either content or files
+      if (!receiverId || (!content && (!files || files.length === 0))) {
+        console.log("Missing fields:", { receiverId, content, hasFiles: files?.length, body: req.body });
+        return res.status(400).json({ message: "receiverId and either content or files are required" });
       }
 
-      console.log("Creating message:", { senderId: req.session.userId, receiverId, content, imageUrl });
+      // If multiple images, create separate messages for each or store as JSON array
+      if (imageUrls.length > 1) {
+        // Store as JSON array in a single message
+        const message = await storage.createMessage({
+          senderId: req.session.userId,
+          receiverId,
+          content: content || `${imageUrls.length} images`,
+          imageUrl: JSON.stringify(imageUrls), // Store multiple URLs as JSON
+        });
+
+        console.log("Creating message with multiple images:", { senderId: req.session.userId, receiverId, content, imageCount: imageUrls.length });
+        
+        // Get sender info for WebSocket broadcast
+        const sender = await storage.getUser(req.session.userId);
+        
+        // Create message with sender info for broadcast
+        const messageWithSender = {
+          ...message,
+          sender: sender,
+          senderName: sender?.name || 'Unknown',
+          imageUrls: imageUrls // Send as array for frontend
+        };
+        
+        // Broadcast message
+        if (connectedUsers.has(receiverId)) {
+          const receiverSockets = connectedUsers.get(receiverId)!;
+          receiverSockets.forEach(socket => {
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({
+                type: 'new_message',
+                data: messageWithSender
+              }));
+            }
+          });
+        }
+        
+        if (connectedUsers.has(req.session.userId)) {
+          const senderSockets = connectedUsers.get(req.session.userId)!;
+          senderSockets.forEach(socket => {
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({
+                type: 'new_message',
+                data: messageWithSender
+              }));
+            }
+          });
+        }
+
+        res.json(messageWithSender);
+        return;
+      }
+
+      console.log("Creating message:", { senderId: req.session.userId, receiverId, content, imageUrl: imageUrls[0] || null });
       
       const message = await storage.createMessage({
         senderId: req.session.userId,
         receiverId,
-        content: content || (imageUrl ? 'Image' : ''),
-        imageUrl,
+        content: content || (imageUrls.length > 0 ? 'Image' : ''),
+        imageUrl: imageUrls[0] || null,
       });
 
       // Get sender info for WebSocket broadcast
