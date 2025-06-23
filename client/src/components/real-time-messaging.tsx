@@ -165,6 +165,39 @@ export default function RealTimeMessaging() {
     refetchInterval: 1000, // Refresh every second for active conversation
   });
 
+  // Fetch privacy settings for users in conversations
+  useEffect(() => {
+    if (conversations && conversations.length > 0) {
+      const userIds = new Set<number>();
+      conversations.forEach((conv: any) => {
+        const otherUser = conv.senderId === user?.id ? conv.receiver : conv.sender;
+        userIds.add(otherUser.id);
+      });
+
+      // Fetch privacy settings for all users
+      userIds.forEach(async (userId) => {
+        try {
+          const response = await fetch(`/api/privacy-settings?userId=${userId}`, {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const settings = await response.json();
+            setUserPrivacySettings(prev => ({
+              ...prev,
+              [userId]: settings
+            }));
+          }
+        } catch (error) {
+          // If privacy settings fetch fails, default to hiding online status for privacy
+          setUserPrivacySettings(prev => ({
+            ...prev,
+            [userId]: { onlineStatus: false }
+          }));
+        }
+      });
+    }
+  }, [conversations, user?.id]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

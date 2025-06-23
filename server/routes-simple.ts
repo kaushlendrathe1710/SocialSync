@@ -2167,7 +2167,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const settings = await storage.getPrivacySettings(req.session.userId);
+      const { userId } = req.query;
+      const targetUserId = userId ? parseInt(userId as string) : req.session.userId;
+      
+      const settings = await storage.getPrivacySettings(targetUserId);
       res.json(settings);
     } catch (error) {
       console.error("Get privacy settings error:", error);
