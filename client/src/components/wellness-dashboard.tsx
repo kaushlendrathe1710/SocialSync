@@ -131,8 +131,8 @@ export function WellnessDashboard() {
   // Mutations
   const recordWellnessMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("POST", "/api/wellness-tracking", {
-        date: new Date(selectedDate),
+      const payload = {
+        date: selectedDate,
         moodRating: data.moodRating[0],
         energyLevel: data.energyLevel[0],
         stressLevel: data.stressLevel[0],
@@ -141,18 +141,37 @@ export function WellnessDashboard() {
         exerciseMinutes: data.exerciseMinutes ? parseInt(data.exerciseMinutes) : null,
         notes: data.notes || null,
         isPrivate: true,
+      };
+      
+      console.log("Sending wellness data:", payload);
+      
+      const response = await fetch("/api/wellness-tracking", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to record wellness data");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
         title: "Wellness logged",
-        description: "Your wellness data has been recorded for today.",
+        description: "Your wellness data has been recorded successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/wellness-tracking"] });
       setShowWellnessDialog(false);
       resetWellnessForm();
     },
     onError: (error: any) => {
+      console.error("Wellness tracking error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to record wellness data",
