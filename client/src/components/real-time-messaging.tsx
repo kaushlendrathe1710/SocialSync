@@ -62,6 +62,7 @@ export default function RealTimeMessaging() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [showUserInfo, setShowUserInfo] = useState(false);
+  const [showMessagesMenu, setShowMessagesMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
@@ -429,9 +430,60 @@ export default function RealTimeMessaging() {
             <div className="p-4 border-b border-border bg-white dark:bg-gray-900">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Messages</h2>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
+                <Popover open={showMessagesMenu} onOpenChange={setShowMessagesMenu}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56" align="end">
+                    <div className="space-y-1">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setShowMessagesMenu(false);
+                          toast({
+                            title: "Mark all as read",
+                            description: "All conversations marked as read",
+                          });
+                        }}
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Mark all as read
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setShowMessagesMenu(false);
+                          setSearchQuery('');
+                          toast({
+                            title: "Refresh",
+                            description: "Messages refreshed",
+                          });
+                        }}
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Refresh messages
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setShowMessagesMenu(false);
+                          toast({
+                            title: "Settings",
+                            description: "Message settings will open in the next update",
+                          });
+                        }}
+                      >
+                        <Info className="w-4 h-4 mr-2" />
+                        Message settings
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
