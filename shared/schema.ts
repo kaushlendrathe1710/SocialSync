@@ -104,6 +104,144 @@ export const stories = pgTable("stories", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Reels table for short video content
+export const reels = pgTable("reels", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  videoUrl: text("video_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  caption: text("caption"),
+  musicId: integer("music_id"), // Reference to background music
+  effects: text("effects").array(), // Applied video effects
+  duration: integer("duration").notNull(), // Video duration in seconds
+  privacy: text("privacy").default("public"), // public, friends, private
+  likesCount: integer("likes_count").default(0),
+  commentsCount: integer("comments_count").default(0),
+  sharesCount: integer("shares_count").default(0),
+  viewsCount: integer("views_count").default(0),
+  trending: boolean("trending").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Music library for reels
+export const reelMusic = pgTable("reel_music", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  artist: text("artist").notNull(),
+  audioUrl: text("audio_url").notNull(),
+  duration: integer("duration").notNull(), // Duration in seconds
+  category: text("category"), // trending, popular, classical, etc.
+  usageCount: integer("usage_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Status updates (enhanced stories)
+export const statusUpdates = pgTable("status_updates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // photo, video, text, poll, question
+  content: text("content"),
+  mediaUrl: text("media_url"),
+  backgroundColor: text("background_color"), // For text-only status
+  fontStyle: text("font_style"), // For text styling
+  pollOptions: text("poll_options").array(), // For poll type
+  pollVotes: text("poll_votes").array(), // JSON array of vote counts
+  question: text("question"), // For question type
+  privacy: text("privacy").default("public"), // public, friends, close_friends, custom
+  viewersIds: text("viewers_ids").array(), // Who can view this status
+  viewsCount: integer("views_count").default(0),
+  reactionsCount: integer("reactions_count").default(0),
+  expiresAt: timestamp("expires_at").notNull(), // 24 hours by default
+  isHighlighted: boolean("is_highlighted").default(false),
+  highlightCategory: text("highlight_category"), // For story highlights
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Status views tracking
+export const statusViews = pgTable("status_views", {
+  id: serial("id").primaryKey(),
+  statusId: integer("status_id").notNull(),
+  viewerId: integer("viewer_id").notNull(),
+  viewedAt: timestamp("viewed_at").defaultNow(),
+});
+
+// Status reactions
+export const statusReactions = pgTable("status_reactions", {
+  id: serial("id").primaryKey(),
+  statusId: integer("status_id").notNull(),
+  userId: integer("user_id").notNull(),
+  reactionType: text("reaction_type").notNull(), // heart, laugh, wow, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Enhanced groups (extending community groups)
+export const groupCategories = pgTable("group_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  icon: text("icon"), // Icon name for UI
+  color: text("color"), // Theme color
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Group events
+export const groupEvents = pgTable("group_events", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  creatorId: integer("creator_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  eventDate: timestamp("event_date").notNull(),
+  endDate: timestamp("end_date"),
+  location: text("location"),
+  isVirtual: boolean("is_virtual").default(false),
+  meetingLink: text("meeting_link"),
+  maxAttendees: integer("max_attendees"),
+  currentAttendees: integer("current_attendees").default(0),
+  coverImage: text("cover_image"),
+  isRecurring: boolean("is_recurring").default(false),
+  recurringPattern: text("recurring_pattern"), // weekly, monthly, etc.
+  status: text("status").default("active"), // active, cancelled, completed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Group event attendees
+export const groupEventAttendees = pgTable("group_event_attendees", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").notNull(),
+  userId: integer("user_id").notNull(),
+  status: text("status").default("going"), // going, interested, not_going
+  responseDate: timestamp("response_date").defaultNow(),
+});
+
+// Group files and media sharing
+export const groupFiles = pgTable("group_files", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  uploaderId: integer("uploader_id").notNull(),
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileType: text("file_type").notNull(), // document, image, video, audio
+  fileSize: integer("file_size"), // Size in bytes
+  description: text("description"),
+  downloadCount: integer("download_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Group announcements (pinned messages)
+export const groupAnnouncements = pgTable("group_announcements", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  authorId: integer("author_id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  priority: text("priority").default("normal"), // high, normal, low
+  isPinned: boolean("is_pinned").default(true),
+  expiresAt: timestamp("expires_at"), // Optional expiration
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   senderId: integer("sender_id").notNull(),
@@ -611,6 +749,37 @@ export type InsertFollow = z.infer<typeof insertFollowSchema>;
 export type Story = typeof stories.$inferSelect;
 export type InsertStory = z.infer<typeof insertStorySchema>;
 
+// New feature types
+export type Reel = typeof reels.$inferSelect;
+export type InsertReel = z.infer<typeof insertReelSchema>;
+
+export type ReelMusic = typeof reelMusic.$inferSelect;
+export type InsertReelMusic = z.infer<typeof insertReelMusicSchema>;
+
+export type StatusUpdate = typeof statusUpdates.$inferSelect;
+export type InsertStatusUpdate = z.infer<typeof insertStatusUpdateSchema>;
+
+export type StatusView = typeof statusViews.$inferSelect;
+export type InsertStatusView = z.infer<typeof insertStatusViewSchema>;
+
+export type StatusReaction = typeof statusReactions.$inferSelect;
+export type InsertStatusReaction = z.infer<typeof insertStatusReactionSchema>;
+
+export type GroupCategory = typeof groupCategories.$inferSelect;
+export type InsertGroupCategory = z.infer<typeof insertGroupCategorySchema>;
+
+export type GroupEvent = typeof groupEvents.$inferSelect;
+export type InsertGroupEvent = z.infer<typeof insertGroupEventSchema>;
+
+export type GroupEventAttendee = typeof groupEventAttendees.$inferSelect;
+export type InsertGroupEventAttendee = z.infer<typeof insertGroupEventAttendeeSchema>;
+
+export type GroupFile = typeof groupFiles.$inferSelect;
+export type InsertGroupFile = z.infer<typeof insertGroupFileSchema>;
+
+export type GroupAnnouncement = typeof groupAnnouncements.$inferSelect;
+export type InsertGroupAnnouncement = z.infer<typeof insertGroupAnnouncementSchema>;
+
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
@@ -680,6 +849,28 @@ export type InsertMentorProfile = z.infer<typeof insertMentorProfileSchema>;
 
 export type MentorshipRequest = typeof mentorshipRequests.$inferSelect;
 export type InsertMentorshipRequest = z.infer<typeof insertMentorshipRequestSchema>;
+
+// Extended types for new features
+export type ReelWithUser = Reel & {
+  user: User;
+  music?: ReelMusic;
+  isLiked?: boolean;
+  userReaction?: string | null;
+};
+
+export type StatusWithUser = StatusUpdate & {
+  user: User;
+  viewers?: User[];
+  hasViewed?: boolean;
+  userReaction?: StatusReaction;
+};
+
+export type GroupEventWithDetails = GroupEvent & {
+  creator: User;
+  group: CommunityGroup;
+  attendeeStatus?: string;
+  attendeeCount?: number;
+};
 
 // Extended types for API responses
 export type CommentWithUser = Comment & {
@@ -809,6 +1000,104 @@ export const followsRelations = relations(follows, ({ one }) => ({
 export const storiesRelations = relations(stories, ({ one }) => ({
   user: one(users, {
     fields: [stories.userId],
+    references: [users.id],
+  }),
+}));
+
+// New feature relations
+export const reelsRelations = relations(reels, ({ one, many }) => ({
+  user: one(users, {
+    fields: [reels.userId],
+    references: [users.id],
+  }),
+  music: one(reelMusic, {
+    fields: [reels.musicId],
+    references: [reelMusic.id],
+  }),
+  likes: many(likes),
+  comments: many(comments),
+}));
+
+export const reelMusicRelations = relations(reelMusic, ({ many }) => ({
+  reels: many(reels),
+}));
+
+export const statusUpdatesRelations = relations(statusUpdates, ({ one, many }) => ({
+  user: one(users, {
+    fields: [statusUpdates.userId],
+    references: [users.id],
+  }),
+  views: many(statusViews),
+  reactions: many(statusReactions),
+}));
+
+export const statusViewsRelations = relations(statusViews, ({ one }) => ({
+  status: one(statusUpdates, {
+    fields: [statusViews.statusId],
+    references: [statusUpdates.id],
+  }),
+  viewer: one(users, {
+    fields: [statusViews.viewerId],
+    references: [users.id],
+  }),
+}));
+
+export const statusReactionsRelations = relations(statusReactions, ({ one }) => ({
+  status: one(statusUpdates, {
+    fields: [statusReactions.statusId],
+    references: [statusUpdates.id],
+  }),
+  user: one(users, {
+    fields: [statusReactions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const groupCategoriesRelations = relations(groupCategories, ({ many }) => ({
+  groups: many(communityGroups),
+}));
+
+export const groupEventsRelations = relations(groupEvents, ({ one, many }) => ({
+  group: one(communityGroups, {
+    fields: [groupEvents.groupId],
+    references: [communityGroups.id],
+  }),
+  creator: one(users, {
+    fields: [groupEvents.creatorId],
+    references: [users.id],
+  }),
+  attendees: many(groupEventAttendees),
+}));
+
+export const groupEventAttendeesRelations = relations(groupEventAttendees, ({ one }) => ({
+  event: one(groupEvents, {
+    fields: [groupEventAttendees.eventId],
+    references: [groupEvents.id],
+  }),
+  user: one(users, {
+    fields: [groupEventAttendees.userId],
+    references: [users.id],
+  }),
+}));
+
+export const groupFilesRelations = relations(groupFiles, ({ one }) => ({
+  group: one(communityGroups, {
+    fields: [groupFiles.groupId],
+    references: [communityGroups.id],
+  }),
+  uploader: one(users, {
+    fields: [groupFiles.uploaderId],
+    references: [users.id],
+  }),
+}));
+
+export const groupAnnouncementsRelations = relations(groupAnnouncements, ({ one }) => ({
+  group: one(communityGroups, {
+    fields: [groupAnnouncements.groupId],
+    references: [communityGroups.id],
+  }),
+  author: one(users, {
+    fields: [groupAnnouncements.authorId],
     references: [users.id],
   }),
 }));
