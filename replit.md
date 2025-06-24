@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 24, 2025: Fixed messages three dots menu functionality (AN005) - replaced Popover with DropdownMenu component, added proper click handlers for mark all as read and refresh functionality
 - June 24, 2025: Fixed saved posts functionality (AN004) - created proper saved posts database table, API endpoints, and updated frontend to use dedicated save system instead of confusing it with likes
 - June 24, 2025: Fixed events functionality (AN003) - removed duplicate API endpoints, fixed database schema requirements, and created comprehensive Events page
 - June 24, 2025: Fixed public post sharing functionality - resolved table import issues in server routes

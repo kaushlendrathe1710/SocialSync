@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
@@ -483,60 +484,60 @@ export default function RealTimeMessaging() {
             <div className="p-4 border-b border-border bg-white dark:bg-gray-900">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Messages</h2>
-                <Popover open={showMessagesMenu} onOpenChange={setShowMessagesMenu}>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm">
+                <DropdownMenu open={showMessagesMenu} onOpenChange={setShowMessagesMenu}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800">
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56" align="end">
-                    <div className="space-y-1">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start"
-                        onClick={() => {
-                          setShowMessagesMenu(false);
-                          toast({
-                            title: "Mark all as read",
-                            description: "All conversations marked as read",
-                          });
-                        }}
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Mark all as read
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start"
-                        onClick={() => {
-                          setShowMessagesMenu(false);
-                          setSearchQuery('');
-                          toast({
-                            title: "Refresh",
-                            description: "Messages refreshed",
-                          });
-                        }}
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Refresh messages
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start"
-                        onClick={() => {
-                          setShowMessagesMenu(false);
-                          toast({
-                            title: "Settings",
-                            description: "Message settings will open in the next update",
-                          });
-                        }}
-                      >
-                        <Info className="w-4 h-4 mr-2" />
-                        Message settings
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        setShowMessagesMenu(false);
+                        // Mark all conversations as read
+                        conversations?.forEach(async (conv) => {
+                          if (conv.receiverId === user?.id && !conv.readAt) {
+                            await markMessageAsRead(conv.id);
+                          }
+                        });
+                        queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+                        toast({
+                          title: "Success",
+                          description: "All conversations marked as read",
+                        });
+                      }}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Mark all as read
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        setShowMessagesMenu(false);
+                        setSearchQuery('');
+                        queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+                        toast({
+                          title: "Success",
+                          description: "Messages refreshed",
+                        });
+                      }}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Refresh messages
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        setShowMessagesMenu(false);
+                        toast({
+                          title: "Coming soon",
+                          description: "Message settings will be available in the next update",
+                        });
+                      }}
+                    >
+                      <Info className="w-4 h-4 mr-2" />
+                      Message settings
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
