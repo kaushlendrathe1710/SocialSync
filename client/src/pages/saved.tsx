@@ -310,7 +310,7 @@ export default function SavedPage() {
                 <p className="text-gray-500 mb-4">
                   When you save posts, they'll appear here so you can easily find them later
                 </p>
-                <Button>Explore Posts</Button>
+                <Button onClick={() => window.location.href = '/'}>Explore Posts</Button>
               </CardContent>
             </Card>
           ) : (

@@ -1744,36 +1744,51 @@ export class DatabaseStorage implements IStorage {
 
   // Saved posts methods
   async savePost(userId: number, postId: number): Promise<void> {
-    await db.insert(savedPosts).values({
-      userId,
-      postId,
-    }).onConflictDoNothing();
+    try {
+      await db.insert(savedPosts).values({
+        userId,
+        postId,
+      }).onConflictDoNothing();
+    } catch (error) {
+      console.error('Save post error:', error);
+      throw error;
+    }
   }
 
   async unsavePost(userId: number, postId: number): Promise<void> {
-    await db.delete(savedPosts)
-      .where(and(eq(savedPosts.userId, userId), eq(savedPosts.postId, postId)));
+    try {
+      await db.delete(savedPosts)
+        .where(and(eq(savedPosts.userId, userId), eq(savedPosts.postId, postId)));
+    } catch (error) {
+      console.error('Unsave post error:', error);
+      throw error;
+    }
   }
 
   async getSavedPosts(userId: number): Promise<PostWithUser[]> {
-    const result = await db
-      .select({
-        post: posts,
-        user: users,
-        savedAt: savedPosts.createdAt,
-      })
-      .from(savedPosts)
-      .innerJoin(posts, eq(savedPosts.postId, posts.id))
-      .innerJoin(users, eq(posts.userId, users.id))
-      .where(eq(savedPosts.userId, userId))
-      .orderBy(desc(savedPosts.createdAt));
+    try {
+      const result = await db
+        .select({
+          post: posts,
+          user: users,
+          savedAt: savedPosts.createdAt,
+        })
+        .from(savedPosts)
+        .innerJoin(posts, eq(savedPosts.postId, posts.id))
+        .innerJoin(users, eq(posts.userId, users.id))
+        .where(eq(savedPosts.userId, userId))
+        .orderBy(desc(savedPosts.createdAt));
 
-    return result.map(({ post, user, savedAt }) => ({
-      ...post,
-      user,
-      text: post.content,
-      savedAt: savedAt?.toISOString(),
-    }));
+      return result.map(({ post, user, savedAt }) => ({
+        ...post,
+        user,
+        text: post.content,
+        savedAt: savedAt?.toISOString(),
+      }));
+    } catch (error) {
+      console.error('Get saved posts error:', error);
+      throw error;
+    }
   }
 
   async getUserEvents(userId: number, type: 'created' | 'attending'): Promise<Event[]> {
