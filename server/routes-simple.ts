@@ -252,6 +252,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Authentication middleware for protected routes
+  const requireAuth = (req: Request, res: Response, next: any) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  };
+
   // Auth endpoints (simplified for now)
   app.post("/api/auth/send-otp", async (req: Request, res: Response) => {
     try {
@@ -2287,15 +2295,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/community-groups/:id/join", async (req: Request, res: Response) => {
+  app.post("/api/community-groups/:id/join", requireAuth, async (req: Request, res: Response) => {
     try {
-      // Authentication handled above
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
       const { id } = req.params;
-      const membership = await storage.joinGroup(parseInt(id), req.session.userId);
+      const groupId = parseInt(id);
+      
+      // Check if user is already a member
+      const existingMembership = await storage.getGroupMembership(groupId, req.session.userId!);
+      if (existingMembership) {
+        return res.status(400).json({ message: "Already a member of this group" });
+      }
+      
+      const membership = await storage.joinGroup(groupId, req.session.userId!);
       res.json(membership);
     } catch (error) {
       console.error("Join group error:", error);

@@ -1372,6 +1372,18 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
+  async getGroupMembership(groupId: number, userId: number): Promise<GroupMembership | undefined> {
+    const [membership] = await db
+      .select()
+      .from(groupMemberships)
+      .where(and(
+        eq(groupMemberships.groupId, groupId),
+        eq(groupMemberships.userId, userId)
+      ));
+    
+    return membership;
+  }
+
   async joinGroup(groupId: number, userId: number): Promise<GroupMembership> {
     const [membership] = await db.insert(groupMemberships).values({
       groupId,
