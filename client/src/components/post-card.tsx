@@ -68,6 +68,26 @@ export default function PostCard({ post }: PostCardProps) {
     },
   });
 
+  const saveMutation = useMutation({
+    mutationFn: () => fetch(`/api/posts/${post.id}/save`, {
+      method: 'POST',
+      credentials: 'include',
+    }),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Post saved to your collection",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error", 
+        description: error.message || "Failed to save post",
+        variant: "destructive",
+      });
+    },
+  });
+
   const commentMutation = useMutation({
     mutationFn: (content: string) => api.createComment(post.id, content),
     onSuccess: async (response) => {

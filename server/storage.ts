@@ -29,6 +29,7 @@ import {
   shoppingPosts,
   events,
   eventAttendees,
+  savedPosts,
   mentorProfiles,
   mentorshipRequests,
   type User,

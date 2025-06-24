@@ -104,8 +104,9 @@ export default function SavedPage() {
 
   const handleUnsavePost = async (postId: number) => {
     try {
-      const response = await fetch(`/api/posts/${postId}/like`, {
-        method: 'POST',
+      const response = await fetch(`/api/posts/${postId}/save`, {
+        method: 'DELETE',
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -113,6 +114,7 @@ export default function SavedPage() {
           title: "Success",
           description: "Post removed from saved items",
         });
+        // Refresh the saved posts data
         window.location.reload();
       } else {
         throw new Error('Failed to unsave post');
@@ -306,7 +308,7 @@ export default function SavedPage() {
                 <Bookmark className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No saved posts yet</h3>
                 <p className="text-gray-500 mb-4">
-                  When you like posts, they'll appear here so you can easily find them later
+                  When you save posts, they'll appear here so you can easily find them later
                 </p>
                 <Button>Explore Posts</Button>
               </CardContent>
