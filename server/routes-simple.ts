@@ -15,7 +15,9 @@ import {
   insertNotificationSchema,
   insertPostViewSchema,
   commentReactions,
-  comments 
+  comments,
+  likes,
+  postViews
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
