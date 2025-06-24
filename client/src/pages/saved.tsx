@@ -40,14 +40,11 @@ export default function SavedPage() {
     { id: 5, name: "Inspiration", count: 0, color: "bg-pink-500" },
   ]);
 
-  // Fetch user's liked posts as saved items
-  const { data: likedPosts = [], isLoading: postsLoading } = useQuery({
-    queryKey: ['/api/posts'],
+  // Fetch user's saved posts
+  const { data: savedPosts = [], isLoading: postsLoading } = useQuery({
+    queryKey: ['/api/saved-posts'],
     enabled: !!user,
   });
-
-  // Filter posts that user has liked (simulating saved posts)
-  const savedPosts = likedPosts.filter((post: PostWithUser) => post.isLiked);
 
   const filteredSavedPosts = savedPosts.filter((post: PostWithUser) => {
     // Search filter

@@ -64,6 +64,14 @@ export const comments = pgTable("comments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const savedPosts = pgTable("saved_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  postId: integer("post_id").notNull(),
+  collectionId: integer("collection_id"), // optional collection grouping
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const commentReactions = pgTable("comment_reactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),

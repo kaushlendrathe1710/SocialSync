@@ -1741,6 +1741,40 @@ export class DatabaseStorage implements IStorage {
     return attendee;
   }
 
+  // Saved posts methods
+  async savePost(userId: number, postId: number): Promise<void> {
+    await db.insert(savedPosts).values({
+      userId,
+      postId,
+    }).onConflictDoNothing();
+  }
+
+  async unsavePost(userId: number, postId: number): Promise<void> {
+    await db.delete(savedPosts)
+      .where(and(eq(savedPosts.userId, userId), eq(savedPosts.postId, postId)));
+  }
+
+  async getSavedPosts(userId: number): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: users,
+        savedAt: savedPosts.createdAt,
+      })
+      .from(savedPosts)
+      .innerJoin(posts, eq(savedPosts.postId, posts.id))
+      .innerJoin(users, eq(posts.userId, users.id))
+      .where(eq(savedPosts.userId, userId))
+      .orderBy(desc(savedPosts.createdAt));
+
+    return result.map(({ post, user, savedAt }) => ({
+      ...post,
+      user,
+      text: post.content,
+      savedAt: savedAt?.toISOString(),
+    }));
+  }
+
   async getUserEvents(userId: number, type: 'created' | 'attending'): Promise<Event[]> {
     if (type === 'created') {
       return await db

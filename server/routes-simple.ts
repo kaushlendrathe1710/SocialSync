@@ -2528,6 +2528,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Saved posts endpoints
+  app.post("/api/posts/:id/save", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const userId = req.session.userId!;
+
+      await storage.savePost(userId, postId);
+      res.json({ message: "Post saved successfully" });
+    } catch (error) {
+      console.error("Save post error:", error);
+      res.status(500).json({ message: "Failed to save post" });
+    }
+  });
+
+  app.delete("/api/posts/:id/save", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const userId = req.session.userId!;
+
+      await storage.unsavePost(userId, postId);
+      res.json({ message: "Post unsaved successfully" });
+    } catch (error) {
+      console.error("Unsave post error:", error);
+      res.status(500).json({ message: "Failed to unsave post" });
+    }
+  });
+
+  app.get("/api/saved-posts", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const savedPosts = await storage.getSavedPosts(userId);
+      res.json(savedPosts);
+    } catch (error) {
+      console.error("Get saved posts error:", error);
+      res.status(500).json({ message: "Failed to get saved posts" });
+    }
+  });
+
   // Live streams endpoints
   app.post("/api/live-streams", async (req: Request, res: Response) => {
     try {
