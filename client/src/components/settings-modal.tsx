@@ -866,20 +866,117 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   />
                 </div>
                 <Separator />
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/user/login-activity', {
+                        method: 'GET',
+                        credentials: 'include',
+                      });
+
+                      if (response.ok) {
+                        const data = await response.json();
+                        toast({
+                          title: "Login Activity",
+                          description: `Recent logins: ${data.recentLogins || 0}. Last login: ${data.lastLogin || 'Unknown'}`,
+                        });
+                      } else {
+                        throw new Error('Failed to load login activity');
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Login Activity",
+                        description: "Unable to load login activity at this time.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
                   <Shield className="w-4 h-4 mr-2" />
                   View Login Activity
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/user/devices', {
+                        method: 'GET',
+                        credentials: 'include',
+                      });
+
+                      if (response.ok) {
+                        const data = await response.json();
+                        toast({
+                          title: "Manage Devices",
+                          description: `You have ${data.devices?.length || 0} active devices. Visit Settings for full management.`,
+                        });
+                      } else {
+                        throw new Error('Failed to load devices');
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Device Management",
+                        description: "Visit the full Settings page to manage your devices.",
+                      });
+                    }
+                    onClose();
+                    window.location.href = '/settings';
+                  }}
+                >
                   <Smartphone className="w-4 h-4 mr-2" />
                   Manage Devices
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Apps and Websites",
+                      description: "Manage connected apps and websites in the full Settings page.",
+                    });
+                    onClose();
+                    window.location.href = '/settings';
+                  }}
+                >
                   <Globe className="w-4 h-4 mr-2" />
                   Apps and Websites
                 </Button>
                 <Separator />
-                <Button variant="destructive" className="w-full justify-start">
+                <Button 
+                  variant="destructive" 
+                  className="w-full justify-start"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/auth/logout-all-devices', {
+                        method: 'POST',
+                        credentials: 'include',
+                      });
+
+                      if (response.ok) {
+                        toast({
+                          title: "Logged Out",
+                          description: "You have been logged out of all devices.",
+                        });
+                        onClose();
+                        // Redirect to login after logging out all devices
+                        setTimeout(() => {
+                          window.location.href = '/';
+                        }, 2000);
+                      } else {
+                        throw new Error('Failed to logout all devices');
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Logout Failed",
+                        description: "Failed to logout from all devices. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Log Out All Devices
                 </Button>
