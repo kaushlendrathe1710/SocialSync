@@ -14,7 +14,10 @@ import {
   LogOut,
   Sparkles,
   Activity,
-  Calendar
+  Calendar,
+  Play,
+  Camera,
+  UserSquare2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

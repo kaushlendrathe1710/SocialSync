@@ -1,0 +1,429 @@
+import { useState, useRef, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  Play, 
+  Pause, 
+  Heart, 
+  MessageCircle, 
+  Share, 
+  Bookmark,
+  Music,
+  Plus,
+  Volume2,
+  VolumeX,
+  MoreVertical,
+  Upload,
+  Video,
+  Camera
+} from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+
+interface Reel {
+  id: number;
+  userId: number;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  caption?: string;
+  duration: number;
+  privacy: string;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  viewsCount: number;
+  trending: boolean;
+  createdAt: string;
+  user: {
+    id: number;
+    name: string;
+    username: string;
+    avatar?: string;
+  };
+  music?: {
+    id: number;
+    title: string;
+    artist: string;
+  };
+  isLiked?: boolean;
+}
+
+export default function ReelsPage() {
+  const [currentReelIndex, setCurrentReelIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newReel, setNewReel] = useState({
+    caption: '',
+    privacy: 'public',
+    videoFile: null as File | null,
+  });
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const videoRefs = useRef<{ [key: number]: HTMLVideoElement }>({});
+
+  // Fetch reels
+  const { data: reels = [], isLoading } = useQuery({
+    queryKey: ['/api/reels'],
+  });
+
+  // Create reel mutation
+  const createReelMutation = useMutation({
+    mutationFn: async (reelData: FormData) => {
+      return apiRequest('/api/reels', {
+        method: 'POST',
+        body: reelData,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
+      setShowCreateModal(false);
+      setNewReel({ caption: '', privacy: 'public', videoFile: null });
+      toast({
+        title: "Reel Created",
+        description: "Your reel has been uploaded successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload your reel. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Like reel mutation
+  const likeReelMutation = useMutation({
+    mutationFn: async (reelId: number) => {
+      return apiRequest(`/api/reels/${reelId}/like`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
+    },
+  });
+
+  // Handle video play/pause
+  const togglePlayPause = (index: number) => {
+    const video = videoRefs.current[index];
+    if (video) {
+      if (video.paused) {
+        video.play();
+        setIsPlaying(true);
+      } else {
+        video.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  // Handle mute/unmute
+  const toggleMute = () => {
+    Object.values(videoRefs.current).forEach(video => {
+      if (video) {
+        video.muted = !isMuted;
+      }
+    });
+    setIsMuted(!isMuted);
+  };
+
+  // Handle scroll to next reel
+  const handleScroll = (e: React.WheelEvent) => {
+    if (e.deltaY > 0 && currentReelIndex < reels.length - 1) {
+      setCurrentReelIndex(currentReelIndex + 1);
+    } else if (e.deltaY < 0 && currentReelIndex > 0) {
+      setCurrentReelIndex(currentReelIndex - 1);
+    }
+  };
+
+  // Auto-play current video
+  useEffect(() => {
+    Object.values(videoRefs.current).forEach((video, index) => {
+      if (video) {
+        if (index === currentReelIndex) {
+          video.play();
+          setIsPlaying(true);
+        } else {
+          video.pause();
+        }
+      }
+    });
+  }, [currentReelIndex]);
+
+  // Handle file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('video/')) {
+      setNewReel({ ...newReel, videoFile: file });
+    } else {
+      toast({
+        title: "Invalid File",
+        description: "Please select a valid video file.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Submit new reel
+  const handleSubmitReel = () => {
+    if (!newReel.videoFile) {
+      toast({
+        title: "No Video Selected",
+        description: "Please select a video to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('video', newReel.videoFile);
+    formData.append('caption', newReel.caption);
+    formData.append('privacy', newReel.privacy);
+
+    createReelMutation.mutate(formData);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading Reels...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white overflow-hidden">
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/70 to-transparent p-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Reels</h1>
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMute}
+              className="text-white hover:bg-white/20"
+            >
+              {isMuted ? <VolumeX /> : <Volume2 />}
+            </Button>
+            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+              <DialogTrigger asChild>
+                <Button size="icon" className="rounded-full">
+                  <Plus />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New Reel</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Upload Video
+                    </label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="video-upload"
+                      />
+                      <label
+                        htmlFor="video-upload"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <Video className="w-12 h-12 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-600">
+                          {newReel.videoFile ? newReel.videoFile.name : 'Click to upload video'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Caption
+                    </label>
+                    <Textarea
+                      placeholder="Write a caption..."
+                      value={newReel.caption}
+                      onChange={(e) => setNewReel({ ...newReel, caption: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCreateModal(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSubmitReel}
+                      disabled={createReelMutation.isPending}
+                      className="flex-1"
+                    >
+                      {createReelMutation.isPending ? 'Uploading...' : 'Share'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </div>
+
+      {/* Reels Container */}
+      <div 
+        className="h-screen snap-y snap-mandatory overflow-y-auto"
+        onWheel={handleScroll}
+      >
+        {reels.map((reel: Reel, index: number) => (
+          <div
+            key={reel.id}
+            className="relative h-screen snap-start flex items-center justify-center"
+          >
+            {/* Video */}
+            <video
+              ref={(el) => {
+                if (el) videoRefs.current[index] = el;
+              }}
+              src={reel.videoUrl}
+              className="h-full w-auto max-w-full object-cover"
+              loop
+              muted={isMuted}
+              playsInline
+              onClick={() => togglePlayPause(index)}
+            />
+
+            {/* Play/Pause Overlay */}
+            {!isPlaying && index === currentReelIndex && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Button
+                  size="icon"
+                  className="rounded-full bg-black/50 hover:bg-black/70 text-white"
+                  onClick={() => togglePlayPause(index)}
+                >
+                  <Play className="w-8 h-8" />
+                </Button>
+              </div>
+            )}
+
+            {/* Reel Info */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  {/* User Info */}
+                  <div className="flex items-center space-x-3 mb-2">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={reel.user.avatar} />
+                      <AvatarFallback>{reel.user.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">@{reel.user.username}</p>
+                      {reel.music && (
+                        <div className="flex items-center space-x-1 text-sm text-gray-300">
+                          <Music className="w-3 h-3" />
+                          <span>{reel.music.title} - {reel.music.artist}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Caption */}
+                  {reel.caption && (
+                    <p className="text-sm mb-2">{reel.caption}</p>
+                  )}
+
+                  {/* Stats */}
+                  <div className="flex items-center space-x-4 text-sm text-gray-300">
+                    <span>{reel.viewsCount} views</span>
+                    <span>{reel.likesCount} likes</span>
+                    <span>{reel.commentsCount} comments</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col space-y-4 ml-4">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={`rounded-full ${reel.isLiked ? 'text-red-500' : 'text-white'} hover:bg-white/20`}
+                    onClick={() => likeReelMutation.mutate(reel.id)}
+                  >
+                    <Heart className={`w-6 h-6 ${reel.isLiked ? 'fill-current' : ''}`} />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="rounded-full text-white hover:bg-white/20"
+                  >
+                    <MessageCircle className="w-6 h-6" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="rounded-full text-white hover:bg-white/20"
+                  >
+                    <Share className="w-6 h-6" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="rounded-full text-white hover:bg-white/20"
+                  >
+                    <Bookmark className="w-6 h-6" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="rounded-full text-white hover:bg-white/20"
+                  >
+                    <MoreVertical className="w-6 h-6" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Trending Badge */}
+            {reel.trending && (
+              <div className="absolute top-20 left-4">
+                <Badge variant="secondary" className="bg-yellow-500 text-black">
+                  🔥 Trending
+                </Badge>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {reels.length === 0 && (
+        <div className="h-screen flex items-center justify-center">
+          <div className="text-center">
+            <Video className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">No Reels Yet</h2>
+            <p className="text-gray-400 mb-4">Be the first to create a reel!</p>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Reel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

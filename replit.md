@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 24, 2025: Implemented Reels, Status, and Groups features - added three major new sections with comprehensive functionality including video reels with TikTok-style interface, story-like status updates with polls and reactions, and enhanced community groups with events and file sharing capabilities
 - June 24, 2025: Fixed Settings and Privacy security section buttons (AN011) - added missing onClick handlers to security buttons in settings modal, enabling View Login Activity, Manage Devices, Apps and Websites, and Log Out All Devices functionality
 - June 24, 2025: Fixed Settings and Privacy account section buttons (AN010) - added missing onClick handlers to account buttons in settings modal, enabling proper navigation and functionality for Edit Profile, Change Email, Change Password, Download Data, and Delete Account features
 - June 24, 2025: Fixed messages page blank screen (AN009) - corrected undefined selectedFile variable reference to use selectedFiles array, preventing component crash when clicking message icon
