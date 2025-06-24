@@ -221,6 +221,7 @@ export interface IStorage {
   // Community methods
   createCommunityGroup(group: InsertCommunityGroup): Promise<CommunityGroup>;
   getCommunityGroups(category?: string, userId?: number): Promise<GroupWithDetails[]>;
+  getGroupMembership(groupId: number, userId: number): Promise<GroupMembership | undefined>;
   joinGroup(groupId: number, userId: number): Promise<GroupMembership>;
   leaveGroup(groupId: number, userId: number): Promise<boolean>;
   getUserGroups(userId: number): Promise<CommunityGroup[]>;
