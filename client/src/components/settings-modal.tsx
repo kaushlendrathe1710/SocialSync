@@ -580,28 +580,120 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Manage your basic account settings</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    onClose();
+                    window.location.href = '/settings';
+                  }}
+                >
                   <Users className="w-4 h-4 mr-2" />
                   Edit Profile
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Change Email",
+                      description: "Please visit the Settings page to change your email address.",
+                    });
+                    onClose();
+                    window.location.href = '/settings';
+                  }}
+                >
                   <Mail className="w-4 h-4 mr-2" />
                   Change Email
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Change Password",
+                      description: "Please visit the Settings page to change your password.",
+                    });
+                    onClose();
+                    window.location.href = '/settings';
+                  }}
+                >
                   <Lock className="w-4 h-4 mr-2" />
                   Change Password
                 </Button>
                 <Separator />
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={async () => {
+                    try {
+                      toast({
+                        title: "Preparing Download",
+                        description: "Your data is being prepared for download...",
+                      });
+
+                      const response = await fetch('/api/user/export', {
+                        method: 'GET',
+                        credentials: 'include',
+                      });
+
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'user-data-export.json';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        toast({
+                          title: "Download Complete",
+                          description: "Your data has been downloaded successfully",
+                        });
+                      } else {
+                        throw new Error('Failed to download data');
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Download Failed",
+                        description: "Failed to download your data. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
                   <Download className="w-4 h-4 mr-2" />
                   Download Your Data
                 </Button>
-                <Button variant="destructive" className="w-full justify-start">
+                <Button 
+                  variant="destructive" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Account Deactivation",
+                      description: "Please visit the Settings page to deactivate your account.",
+                    });
+                    onClose();
+                    window.location.href = '/settings';
+                  }}
+                >
                   <UserX className="w-4 h-4 mr-2" />
                   Deactivate Account
                 </Button>
-                <Button variant="destructive" className="w-full justify-start">
+                <Button 
+                  variant="destructive" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Account Deletion",
+                      description: "Please visit the Settings page to delete your account.",
+                    });
+                    onClose();
+                    window.location.href = '/settings';
+                  }}
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Account
                 </Button>

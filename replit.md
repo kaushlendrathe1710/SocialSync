@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 24, 2025: Fixed Settings and Privacy account section buttons (AN010) - added missing onClick handlers to account buttons in settings modal, enabling proper navigation and functionality for Edit Profile, Change Email, Change Password, Download Data, and Delete Account features
 - June 24, 2025: Fixed messages page blank screen (AN009) - corrected undefined selectedFile variable reference to use selectedFiles array, preventing component crash when clicking message icon
 - June 24, 2025: Fixed duplicate share icons (AN008) - removed redundant SharePostButton component from enhanced post card, keeping only ShareDropdown to prevent duplicate share buttons
 - June 24, 2025: Fixed community group category filtering (AN007) - corrected React Query implementation to properly pass category parameters to server-side filtering API
