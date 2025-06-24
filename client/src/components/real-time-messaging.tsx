@@ -939,7 +939,7 @@ export default function RealTimeMessaging() {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      {messageText.trim() || selectedFile ? (
+                      {messageText.trim() || selectedFiles.length > 0 ? (
                         <Button 
                           type="submit" 
                           size="sm" 
