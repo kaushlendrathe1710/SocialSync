@@ -15,6 +15,7 @@ import NotificationsPage from "@/pages/notifications";
 import FriendsPage from "@/pages/friends";
 import WellnessPage from "@/pages/wellness";
 import CommunitiesPage from "@/pages/communities";
+import EventsPage from "@/pages/events";
 import SavedPage from "@/pages/saved";
 import SettingsPage from "@/pages/settings";
 import AdminDashboard from "@/pages/admin";
@@ -116,6 +117,7 @@ function AppContent() {
             <Route path="/friends" component={FriendsPage} />
             <Route path="/wellness" component={WellnessPage} />
             <Route path="/communities" component={CommunitiesPage} />
+            <Route path="/events" component={EventsPage} />
             <Route path="/saved" component={SavedPage} />
             <Route path="/settings" component={SettingsPage} />
             <Route component={NotFound} />

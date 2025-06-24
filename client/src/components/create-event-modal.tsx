@@ -48,8 +48,8 @@ export default function CreateEventModal({ isOpen, onClose }: CreateEventModalPr
         body: JSON.stringify({
           title: eventData.title,
           description: eventData.description,
-          eventDate: eventData.date,
-          eventTime: eventData.time,
+          date: eventData.date,
+          time: eventData.time,
           location: eventData.location,
           maxAttendees: eventData.maxAttendees ? parseInt(eventData.maxAttendees) : null
         }),

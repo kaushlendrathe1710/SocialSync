@@ -1740,42 +1740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create event endpoint
-  app.post("/api/events", async (req: Request, res: Response) => {
-    try {
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
 
-      const { title, description, eventDate, eventTime, location, maxAttendees } = req.body;
-
-      if (!title?.trim()) {
-        return res.status(400).json({ message: "Event title is required" });
-      }
-
-      // For now, we'll just return a success response since we don't have event storage implemented
-      // In a real implementation, you would save this to a database
-      const eventData = {
-        id: Date.now(),
-        title,
-        description,
-        eventDate,
-        eventTime,
-        location,
-        maxAttendees,
-        createdBy: req.session.userId,
-        createdAt: new Date().toISOString()
-      };
-
-      res.status(201).json({
-        message: "Event created successfully",
-        event: eventData
-      });
-    } catch (error) {
-      console.error("Create event error:", error);
-      res.status(500).json({ message: "Failed to create event" });
-    }
-  });
 
   // Create room endpoint
   app.post("/api/rooms", async (req: Request, res: Response) => {
@@ -2511,18 +2476,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Events API Routes
-  app.post("/api/events", async (req: Request, res: Response) => {
+  app.post("/api/events", requireAuth, async (req: Request, res: Response) => {
     try {
-      // Authentication handled above
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+      const { title, description, date, time, location, maxAttendees } = req.body;
+
+      if (!title?.trim()) {
+        return res.status(400).json({ message: "Event title is required" });
       }
 
-      const event = await storage.createEvent({
-        ...req.body,
-        creatorId: req.session.userId,
-      });
-      
+      // Combine date and time for startDate
+      let startDate = new Date();
+      if (date) {
+        if (time) {
+          startDate = new Date(`${date}T${time}`);
+        } else {
+          startDate = new Date(date);
+        }
+      }
+
+      const eventData = {
+        title: title.trim(),
+        description: description || null,
+        location: location || null,
+        startDate,
+        maxAttendees: maxAttendees ? parseInt(maxAttendees) : null,
+        currentAttendees: 0,
+        creatorId: req.session.userId!,
+      };
+
+      const event = await storage.createEvent(eventData);
       res.json(event);
     } catch (error) {
       console.error("Create event error:", error);
@@ -2532,7 +2514,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/events", async (req: Request, res: Response) => {
     try {
-      // Authentication handled above
       const events = await storage.getEvents(req.session.userId);
       res.json(events);
     } catch (error) {
