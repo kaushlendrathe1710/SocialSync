@@ -2497,10 +2497,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const eventData = {
         title: title.trim(),
         description: description || null,
+        eventType: 'general',
         location: location || null,
         startDate,
+        endDate: null,
         maxAttendees: maxAttendees ? parseInt(maxAttendees) : null,
         currentAttendees: 0,
+        isPrivate: false,
+        requiresApproval: false,
+        coverImage: null,
+        tags: null,
         creatorId: req.session.userId!,
       };
 

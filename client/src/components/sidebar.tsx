@@ -13,7 +13,8 @@ import {
   Settings,
   LogOut,
   Sparkles,
-  Activity
+  Activity,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -115,6 +116,18 @@ export default function Sidebar() {
               >
                 <Sparkles className={`mr-3 h-5 w-5 ${location === "/communities" ? "text-blue-600" : "text-gray-400"}`} />
                 Communities
+              </button>
+            </Link>
+            <Link href="/events">
+              <button 
+                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  location === "/events"
+                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Calendar className={`mr-3 h-5 w-5 ${location === "/events" ? "text-blue-600" : "text-gray-400"}`} />
+                Events
               </button>
             </Link>
             <Link href="/saved">
