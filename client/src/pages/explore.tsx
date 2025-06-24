@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 import { PostWithUser, User } from '@shared/schema';
@@ -17,7 +19,15 @@ import {
   TrendingUp,
   Users,
   Hash,
-  Image as ImageIcon
+  Image as ImageIcon,
+  X,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Share2,
+  Bookmark
 } from 'lucide-react';
 
 export default function ExplorePage() {
@@ -25,6 +35,10 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
+  const [selectedPost, setSelectedPost] = useState<PostWithUser | null>(null);
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
 
   const { data: searchResults, isLoading: searchLoading } = useQuery({
     queryKey: ['/api/search', searchQuery, searchType],
@@ -56,11 +70,56 @@ export default function ExplorePage() {
   };
 
   const handlePostClick = (post: PostWithUser) => {
-    // In a real app, this would open a post detail modal or navigate to post page
-    toast({
-      title: "Post clicked",
-      description: `Clicked on post by ${post.user.name}`,
-    });
+    setSelectedPost(post);
+    setIsPostModalOpen(true);
+    setIsVideoPlaying(false);
+    setIsVideoMuted(true);
+  };
+
+  const handleVideoToggle = () => {
+    setIsVideoPlaying(!isVideoPlaying);
+  };
+
+  const handleMuteToggle = () => {
+    setIsVideoMuted(!isVideoMuted);
+  };
+
+  const handleShare = () => {
+    if (navigator.share && selectedPost) {
+      navigator.share({
+        title: `Post by ${selectedPost.user.name}`,
+        text: selectedPost.content || 'Check out this post!',
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link copied!",
+        description: "Post link copied to clipboard",
+      });
+    }
+  };
+
+  const handleSavePost = () => {
+    if (selectedPost) {
+      fetch(`/api/posts/${selectedPost.id}/save`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(response => {
+        if (response.ok) {
+          toast({
+            title: "Success",
+            description: "Post saved to your collection",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to save post",
+            variant: "destructive",
+          });
+        }
+      });
+    }
   };
 
   const handleUserClick = (user: User) => {
@@ -361,6 +420,149 @@ export default function ExplorePage() {
           </div>
         )}
       </div>
+
+      {/* Post Detail Modal */}
+      <Dialog open={isPostModalOpen} onOpenChange={setIsPostModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <div className="flex flex-col md:flex-row h-full">
+            {/* Media Section */}
+            <div className="flex-1 bg-black flex items-center justify-center relative">
+              {selectedPost?.imageUrl ? (
+                <img 
+                  src={selectedPost.imageUrl} 
+                  alt="Post content" 
+                  className="max-w-full max-h-full object-contain"
+                />
+              ) : selectedPost?.videoUrl ? (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <video 
+                    src={selectedPost.videoUrl}
+                    className="max-w-full max-h-full object-contain"
+                    controls={false}
+                    muted={isVideoMuted}
+                    autoPlay={isVideoPlaying}
+                    loop
+                  />
+                  {/* Video Controls Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-20">
+                    <div className="flex items-center space-x-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleVideoToggle}
+                        className="text-white hover:bg-white hover:bg-opacity-20"
+                      >
+                        {isVideoPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleMuteToggle}
+                        className="text-white hover:bg-white hover:bg-opacity-20"
+                      >
+                        {isVideoMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-64 bg-muted flex items-center justify-center">
+                  <ImageIcon className="w-16 h-16 text-muted-foreground" />
+                </div>
+              )}
+              
+              {/* Close Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsPostModalOpen(false)}
+                className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
+
+            {/* Post Details Section */}
+            <div className="w-full md:w-96 flex flex-col bg-white dark:bg-gray-900">
+              {/* Header */}
+              <div className="p-4 border-b">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={selectedPost?.user.avatar || undefined} />
+                    <AvatarFallback>
+                      {selectedPost?.user.name?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="font-semibold">{selectedPost?.user.name}</h3>
+                      {selectedPost?.user.isVerified && (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                          ✓
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">@{selectedPost?.user.username}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 p-4">
+                {selectedPost?.content && (
+                  <p className="text-sm leading-relaxed mb-4">{selectedPost.content}</p>
+                )}
+                
+                {/* Engagement Stats */}
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
+                  <span className="flex items-center">
+                    <Heart className="w-4 h-4 mr-1" />
+                    {selectedPost?.likesCount || 0} likes
+                  </span>
+                  <span className="flex items-center">
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    {selectedPost?.commentsCount || 0} comments
+                  </span>
+                </div>
+
+                <Separator className="mb-4" />
+
+                {/* Action Buttons */}
+                <div className="flex justify-between">
+                  <div className="flex space-x-2">
+                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-500">
+                      <Heart className="w-4 h-4 mr-1" />
+                      Like
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-500">
+                      <MessageCircle className="w-4 h-4 mr-1" />
+                      Comment
+                    </Button>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleShare}
+                      className="text-gray-500 hover:text-green-500"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSavePost}
+                      className="text-gray-500 hover:text-blue-500"
+                    >
+                      <Bookmark className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
