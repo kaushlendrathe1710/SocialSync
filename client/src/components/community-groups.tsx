@@ -77,12 +77,22 @@ export function CommunityGroups() {
     { id: "lifestyle", label: "Lifestyle", icon: Coffee },
   ];
 
-  // Fetch community groups
+  // Fetch community groups with proper category filtering
   const { data: groups = [], isLoading } = useQuery({
-    queryKey: ["/api/community-groups", selectedCategory !== "all" ? selectedCategory : undefined],
+    queryKey: ["/api/community-groups", selectedCategory],
+    queryFn: async () => {
+      const categoryParam = selectedCategory !== "all" ? `?category=${selectedCategory}` : "";
+      const response = await fetch(`/api/community-groups${categoryParam}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch community groups');
+      }
+      return response.json();
+    },
   });
 
-  // Filter groups by search term
+  // Filter groups by search term only (category filtering is handled server-side)
   const filteredGroups = groups.filter((group: CommunityGroup) =>
     group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     group.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
