@@ -21,7 +21,6 @@ import { usePostViewTracking } from "@/hooks/use-post-view-tracking";
 import { formatDistanceToNow } from "date-fns";
 import type { PostWithUser, CommentWithUser, Like, User } from "@shared/schema";
 import ShareDropdown from "@/components/share-dropdown";
-import SharePostButton from "@/components/share-post-button";
 
 interface EnhancedPostCardProps {
   post: PostWithUser;
@@ -697,12 +696,6 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
               <MessageCircle className="h-5 w-5" />
               <span>{post.commentsCount || 0}</span>
             </Button>
-
-            <SharePostButton 
-              postId={post.id} 
-              postContent={post.content || ''} 
-              className="flex items-center space-x-2"
-            />
 
             <ShareDropdown post={post} />
             

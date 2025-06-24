@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 24, 2025: Fixed duplicate share icons (AN008) - removed redundant SharePostButton component from enhanced post card, keeping only ShareDropdown to prevent duplicate share buttons
 - June 24, 2025: Fixed community group category filtering (AN007) - corrected React Query implementation to properly pass category parameters to server-side filtering API
 - June 24, 2025: Fixed explore page post opening functionality (AN006) - created full-size post detail modal with media display, video controls, and interactive features for trending posts
 - June 24, 2025: Fixed messages three dots menu functionality (AN005) - replaced Popover with DropdownMenu component, added proper click handlers for mark all as read and refresh functionality
