@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import type { MessageWithUser, User } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface MessagesDropdownProps {
   isOpen: boolean;
@@ -520,7 +521,7 @@ export default function MessagesDropdown({
               />
             </div>
             
-            <Separator />
+            <DropdownMenuSeparator />
             
             {/* Privacy Settings */}
             <div className="space-y-4">
