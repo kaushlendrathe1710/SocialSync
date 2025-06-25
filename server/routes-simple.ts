@@ -2942,8 +2942,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save the file to disk so it can be served
       const fileName = `${Date.now()}-${req.file.originalname}`;
-      const fs = require('fs');
-      const path = require('path');
+      const fs = await import('fs');
+      const path = await import('path');
       
       // Ensure uploads directory exists
       const uploadsDir = path.join(process.cwd(), 'uploads');
