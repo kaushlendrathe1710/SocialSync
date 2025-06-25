@@ -1934,7 +1934,7 @@ export class DatabaseStorage implements IStorage {
         duration: data.duration || 30,
         privacy: data.privacy || 'public',
         musicId: data.musicId || null,
-        effects: data.effects ? JSON.stringify(data.effects) : null,
+        effects: data.effects || [],
       };
 
       const [reel] = await db.insert(reels).values(insertData).returning();
