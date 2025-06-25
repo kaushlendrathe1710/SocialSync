@@ -108,10 +108,13 @@ export default function ReelsPage() {
       });
     },
     onError: (error) => {
+      console.error("=== UPLOAD ERROR ===");
       console.error("Reel upload error:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
       toast({
         title: "Upload Failed",
-        description: "Failed to upload your reel. Please try again.",
+        description: `Failed to upload your reel: ${error.message}`,
         variant: "destructive",
       });
     },
