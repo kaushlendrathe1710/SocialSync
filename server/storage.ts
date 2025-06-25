@@ -103,6 +103,8 @@ import {
   type WishlistWithItems,
   type ProductWithReviews,
   type MentorWithProfile,
+  type Reel,
+  type InsertReel,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, or, gt, isNull, sql, inArray } from "drizzle-orm";
@@ -1894,24 +1896,27 @@ export class DatabaseStorage implements IStorage {
 
   async getReels(userId?: number): Promise<any[]> {
     try {
-      console.log("Getting reels from memory storage, total reels:", this.reels.length);
-      // Return actual uploaded reels from memory storage with real user data
-      const reelsWithUsers = await Promise.all(
-        this.reels.map(async (reel) => {
-          const user = await this.getUser(reel.userId);
-          return {
-            ...reel,
-            user: {
-              id: reel.userId,
-              name: user?.name || user?.email?.split('@')[0] || 'User',
-              username: user?.username || user?.email?.split('@')[0] || 'user',
-              avatar: user?.avatar || '/uploads/default-avatar.jpg'
-            },
-            isLiked: false // You can implement like tracking later
-          };
+      console.log("Getting reels from database");
+      
+      const result = await db
+        .select({
+          reel: reels,
+          user: users,
         })
-      );
-      return reelsWithUsers;
+        .from(reels)
+        .innerJoin(users, eq(reels.userId, users.id))
+        .orderBy(desc(reels.createdAt));
+
+      return result.map(({ reel, user }) => ({
+        ...reel,
+        user: {
+          id: user.id,
+          name: user.name || user.email?.split('@')[0] || 'User',
+          username: user.username || user.email?.split('@')[0] || 'user',
+          avatar: user.avatar || '/uploads/default-avatar.jpg'
+        },
+        isLiked: false // You can implement like tracking later
+      }));
     } catch (error) {
       console.error("Get reels error:", error);
       return [];
@@ -1920,21 +1925,23 @@ export class DatabaseStorage implements IStorage {
 
   async createReel(data: any): Promise<any> {
     try {
-      const user = await this.getUser(data.userId);
-      const newReel = {
-        id: Math.floor(Math.random() * 10000),
+      const insertData: InsertReel = {
         userId: data.userId,
         videoUrl: data.videoUrl,
         thumbnailUrl: data.videoUrl.replace('.mp4', '-thumb.jpg'),
         caption: data.caption,
         duration: data.duration || 30,
         privacy: data.privacy || 'public',
-        likesCount: 0,
-        commentsCount: 0,
-        sharesCount: 0,
-        viewsCount: 0,
-        trending: false,
-        createdAt: new Date().toISOString(),
+        musicId: data.musicId || null,
+        effects: data.effects ? JSON.stringify(data.effects) : null,
+      };
+
+      const [reel] = await db.insert(reels).values(insertData).returning();
+      
+      const user = await this.getUser(data.userId);
+      
+      const reelWithUser = {
+        ...reel,
         user: {
           id: data.userId,
           name: user?.name || user?.email?.split('@')[0] || 'User',
@@ -1949,11 +1956,8 @@ export class DatabaseStorage implements IStorage {
         isLiked: false
       };
       
-      // Store the reel in memory
-      this.reels.push(newReel);
-      console.log("Reel stored in memory, total reels:", this.reels.length);
-      
-      return newReel;
+      console.log("Reel saved to database:", reel.id);
+      return reelWithUser;
     } catch (error) {
       console.error("Create reel error:", error);
       throw error;
