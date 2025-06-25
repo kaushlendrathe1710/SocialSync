@@ -2269,17 +2269,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const groupId = parseInt(id);
       
+      console.log("Join group request:", { groupId, userId: req.session.userId });
+      
       // Check if user is already a member
       const existingMembership = await storage.getGroupMembership(groupId, req.session.userId!);
       if (existingMembership) {
+        console.log("User already member of group:", groupId);
         return res.status(400).json({ message: "Already a member of this group" });
       }
       
       const membership = await storage.joinGroup(groupId, req.session.userId!);
-      res.json(membership);
+      console.log("Successfully joined group:", membership);
+      res.json({ success: true, membership });
     } catch (error) {
       console.error("Join group error:", error);
-      res.status(500).json({ message: "Failed to join group" });
+      res.status(500).json({ message: "Failed to join group", error: error.message });
     }
   });
 
