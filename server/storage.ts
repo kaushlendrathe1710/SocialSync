@@ -264,6 +264,8 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private reels: any[] = [];
+  
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
