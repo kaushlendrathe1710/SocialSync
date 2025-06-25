@@ -124,7 +124,14 @@ export default function LandingPage() {
               <Button size="lg" asChild className="facebook-blue">
                 <Link href="/auth">Join SocialConnect</Link>
               </Button>
-              <Button size="lg" variant="outline" onClick={() => setActiveSection('explore')}>
+              <Button size="lg" variant="outline" onClick={() => {
+                setActiveSection('explore');
+                // Scroll to content section
+                const contentSection = document.getElementById('content-preview');
+                if (contentSection) {
+                  contentSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}>
                 <Eye className="h-4 w-4 mr-2" />
                 Explore Platform
               </Button>
@@ -182,7 +189,7 @@ export default function LandingPage() {
       </section>
 
       {/* Public Content Preview */}
-      <section className="py-20 bg-gray-50">
+      <section id="content-preview" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Discover Amazing Content</h2>
@@ -215,7 +222,7 @@ export default function LandingPage() {
 
           {/* Public Posts Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {publicPosts.slice(0, 6).map((post: PublicPost) => (
+            {activeSection === 'trending' && publicPosts.slice(0, 6).map((post: PublicPost) => (
               <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <CardContent className="p-0">
                   {post.imageUrl && (
