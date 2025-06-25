@@ -85,6 +85,8 @@ function AppContent() {
               <Route path="/saved" component={SavedPage} />
               <Route path="/settings" component={SettingsPage} />
               <Route path="/community-guidelines" component={CommunityGuidelinesPage} />
+              <Route path="/terms" component={TermsOfServicePage} />
+              <Route path="/privacy" component={PrivacyPolicyPage} />
               {/* During impersonation, redirect any admin routes to feed */}
               <Route path="/admin" component={FeedPage} />
               <Route component={FeedPage} />
