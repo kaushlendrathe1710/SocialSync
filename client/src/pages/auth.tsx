@@ -11,7 +11,10 @@ import { z } from 'zod';
 const emailSchema = z.string().email('Please enter a valid email address');
 const otpSchema = z.string().length(6, 'OTP must be 6 digits');
 const nameSchema = z.string().min(2, 'Name must be at least 2 characters');
-const usernameSchema = z.string().min(3, 'Username must be at least 3 characters').regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
+const usernameSchema = z.string()
+  .min(3, 'Username must be at least 3 characters')
+  .regex(/^[a-zA-Z0-9][a-zA-Z0-9_.]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/, 'Username can contain letters, numbers, dots, and underscores. Cannot start/end with dots or have consecutive dots')
+  .refine(val => !val.includes('..'), 'Username cannot have consecutive dots');
 
 type AuthStep = 'email' | 'otp' | 'signup';
 
@@ -117,11 +120,15 @@ export default function AuthPage() {
     
     try {
       nameSchema.parse(name);
+      // Check if username ends with dot before validation
+      if (username.endsWith('.')) {
+        throw new Error('Username cannot end with a dot');
+      }
       usernameSchema.parse(username);
     } catch (error: any) {
       toast({
         title: "Invalid input",
-        description: error.message,
+        description: error.message || error.issues?.[0]?.message || "Invalid input",
         variant: "destructive",
       });
       return;
@@ -274,12 +281,24 @@ export default function AuthPage() {
                   type="text"
                   placeholder="Choose a username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  onChange={(e) => {
+                    let value = e.target.value.toLowerCase();
+                    // Allow only letters, numbers, dots, and underscores
+                    value = value.replace(/[^a-z0-9._]/g, '');
+                    // Prevent starting with dot
+                    if (value.startsWith('.')) {
+                      value = value.substring(1);
+                    }
+                    // Prevent ending with dot (will be handled during typing)
+                    // Prevent consecutive dots
+                    value = value.replace(/\.{2,}/g, '.');
+                    setUsername(value);
+                  }}
                   required
                   disabled={isLoading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Only letters, numbers, and underscores allowed
+                  Letters, numbers, dots, and underscores allowed. Cannot start/end with dots.
                 </p>
               </div>
               <Button 
