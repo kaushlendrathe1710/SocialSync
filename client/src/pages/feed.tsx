@@ -75,6 +75,11 @@ export default function FeedPage() {
     enabled: !!user,
   });
 
+  const { data: liveStreams = [] } = useQuery({
+    queryKey: ['/api/live-streams'],
+    enabled: !!user,
+  });
+
   const sendRequestMutation = useMutation({
     mutationFn: async (receiverId: number) => {
       return apiRequest("POST", "/api/friend-requests", { receiverId });
@@ -168,6 +173,54 @@ export default function FeedPage() {
                     <p className="text-xs mt-2 text-muted-foreground font-medium truncate max-w-[80px]">
                       {story.user?.name || story.user?.username}
                     </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Live Streams Section */}
+        {liveStreams.length > 0 && (
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <h2 className="text-lg font-semibold flex items-center">
+                <Video className="w-5 h-5 mr-2 text-red-500" />
+                Live Virtual Rooms
+              </h2>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="space-y-3">
+                {liveStreams.map((stream: any) => (
+                  <div key={stream.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={stream.user?.avatar || ""} />
+                        <AvatarFallback className="bg-red-100 text-red-600 font-semibold">
+                          {getUserInitials(stream.user)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-medium text-gray-900">{stream.title}</h3>
+                        <p className="text-sm text-gray-600">{stream.user?.name} is live</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1 text-red-600">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium">LIVE</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className="bg-red-500 hover:bg-red-600 text-white"
+                        onClick={() => {
+                          // Navigate to live stream view
+                          window.open(`/live/${stream.id}`, '_blank');
+                        }}
+                      >
+                        Join Room
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
