@@ -92,7 +92,8 @@ export default function ReelsPage() {
       console.log("Reel upload successful:", data);
       queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
       setShowCreateModal(false);
-      setNewReel({ caption: '', privacy: 'public', videoFile: null });
+      setNewReel({ caption: '', privacy: 'public' });
+      selectedVideoFile.current = null;
       toast({
         title: "Reel Created",
         description: "Your reel has been uploaded successfully!",
@@ -178,10 +179,13 @@ export default function ReelsPage() {
     });
     
     if (file && file.type.startsWith('video/')) {
-      console.log("Valid video file selected, updating state");
-      setNewReel(prev => ({ ...prev, videoFile: file }));
+      console.log("Valid video file selected, storing in ref");
+      selectedVideoFile.current = file;
+      // Force re-render to update UI
+      setNewReel(prev => ({ ...prev }));
     } else {
       console.log("Invalid file type or no file selected");
+      selectedVideoFile.current = null;
       toast({
         title: "Invalid File",
         description: "Please select a valid video file.",
@@ -193,9 +197,10 @@ export default function ReelsPage() {
   // Submit new reel
   const handleSubmitReel = () => {
     console.log("Submit reel called, current state:", newReel);
+    console.log("Selected video file:", selectedVideoFile.current);
     
-    if (!newReel.videoFile) {
-      console.log("No video file in state");
+    if (!selectedVideoFile.current) {
+      console.log("No video file selected");
       toast({
         title: "No Video Selected",
         description: "Please select a video to upload.",
@@ -205,13 +210,13 @@ export default function ReelsPage() {
     }
 
     console.log("Creating FormData with file:", {
-      name: newReel.videoFile.name,
-      type: newReel.videoFile.type,
-      size: newReel.videoFile.size
+      name: selectedVideoFile.current.name,
+      type: selectedVideoFile.current.type,
+      size: selectedVideoFile.current.size
     });
 
     const formData = new FormData();
-    formData.append('video', newReel.videoFile);
+    formData.append('video', selectedVideoFile.current);
     formData.append('caption', newReel.caption);
     formData.append('privacy', newReel.privacy);
 
@@ -303,11 +308,11 @@ export default function ReelsPage() {
                     htmlFor="video-upload"
                     className="cursor-pointer"
                   >
-                    {newReel.videoFile ? (
+                    {selectedVideoFile.current ? (
                       <div className="flex items-center justify-center space-x-2">
                         <Video className="w-8 h-8 text-green-500" />
                         <div>
-                          <p className="text-sm font-medium text-green-600">{newReel.videoFile.name}</p>
+                          <p className="text-sm font-medium text-green-600">{selectedVideoFile.current.name}</p>
                           <p className="text-xs text-gray-500">Click to change video</p>
                         </div>
                       </div>
