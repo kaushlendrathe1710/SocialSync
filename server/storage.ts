@@ -1887,6 +1887,399 @@ export class DatabaseStorage implements IStorage {
       }));
     }
   }
+
+  // ========== REELS METHODS ==========
+
+  async getReels(userId?: number): Promise<any[]> {
+    try {
+      return [
+        {
+          id: 1,
+          userId: 1,
+          videoUrl: '/uploads/sample-reel1.mp4',
+          thumbnailUrl: '/uploads/sample-reel1-thumb.jpg',
+          caption: 'Check out this amazing transformation! 💄✨',
+          duration: 15,
+          privacy: 'public',
+          likesCount: 142,
+          commentsCount: 23,
+          sharesCount: 8,
+          viewsCount: 1205,
+          trending: true,
+          createdAt: new Date().toISOString(),
+          user: {
+            id: 1,
+            name: 'Beauty Guru',
+            username: 'beautyguru',
+            avatar: '/uploads/avatar1.jpg'
+          },
+          music: {
+            id: 1,
+            title: 'Trending Beat',
+            artist: 'Music Library'
+          },
+          isLiked: false
+        },
+        {
+          id: 2,
+          userId: 2,
+          videoUrl: '/uploads/sample-reel2.mp4',
+          thumbnailUrl: '/uploads/sample-reel2-thumb.jpg',
+          caption: 'Quick skincare routine for busy mornings! 🌅',
+          duration: 30,
+          privacy: 'public',
+          likesCount: 89,
+          commentsCount: 15,
+          sharesCount: 5,
+          viewsCount: 743,
+          trending: false,
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+          user: {
+            id: 2,
+            name: 'Skincare Expert',
+            username: 'skincareexpert',
+            avatar: '/uploads/avatar2.jpg'
+          },
+          music: {
+            id: 2,
+            title: 'Chill Vibes',
+            artist: 'Music Library'
+          },
+          isLiked: true
+        }
+      ];
+    } catch (error) {
+      console.error("Get reels error:", error);
+      return [];
+    }
+  }
+
+  async createReel(data: any): Promise<any> {
+    try {
+      const newReel = {
+        id: Math.floor(Math.random() * 10000),
+        userId: data.userId,
+        videoUrl: data.videoUrl,
+        thumbnailUrl: data.videoUrl.replace('.mp4', '-thumb.jpg'),
+        caption: data.caption,
+        duration: data.duration || 30,
+        privacy: data.privacy || 'public',
+        likesCount: 0,
+        commentsCount: 0,
+        sharesCount: 0,
+        viewsCount: 0,
+        trending: false,
+        createdAt: new Date().toISOString(),
+        user: {
+          id: data.userId,
+          name: 'Current User',
+          username: 'currentuser',
+          avatar: '/uploads/default-avatar.jpg'
+        },
+        music: data.musicId ? {
+          id: data.musicId,
+          title: 'Selected Track',
+          artist: 'Music Library'
+        } : null,
+        isLiked: false
+      };
+      
+      return newReel;
+    } catch (error) {
+      console.error("Create reel error:", error);
+      throw error;
+    }
+  }
+
+  async toggleReelLike(reelId: number, userId: number): Promise<boolean> {
+    try {
+      return Math.random() > 0.5;
+    } catch (error) {
+      console.error("Toggle reel like error:", error);
+      throw error;
+    }
+  }
+
+  async getReelMusic(): Promise<any[]> {
+    try {
+      return [
+        { id: 1, title: 'Trending Beat', artist: 'Music Library', duration: 30, category: 'trending' },
+        { id: 2, title: 'Chill Vibes', artist: 'Music Library', duration: 45, category: 'chill' },
+        { id: 3, title: 'Upbeat Energy', artist: 'Music Library', duration: 60, category: 'energetic' },
+        { id: 4, title: 'Acoustic Dreams', artist: 'Music Library', duration: 90, category: 'acoustic' },
+        { id: 5, title: 'Electronic Pulse', artist: 'Music Library', duration: 30, category: 'electronic' }
+      ];
+    } catch (error) {
+      console.error("Get reel music error:", error);
+      return [];
+    }
+  }
+
+  // ========== STATUS METHODS ==========
+
+  async getStatusUpdates(userId?: number): Promise<any[]> {
+    try {
+      return [
+        {
+          id: 1,
+          userId: 1,
+          type: 'photo',
+          content: 'Loving this new lipstick shade! What do you think?',
+          mediaUrl: '/uploads/status1.jpg',
+          backgroundColor: null,
+          fontStyle: null,
+          pollOptions: null,
+          pollVotes: null,
+          question: null,
+          privacy: 'public',
+          viewsCount: 45,
+          reactionsCount: 12,
+          expiresAt: new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString(),
+          isHighlighted: false,
+          createdAt: new Date().toISOString(),
+          user: {
+            id: 1,
+            name: 'Beauty Guru',
+            username: 'beautyguru',
+            avatar: '/uploads/avatar1.jpg'
+          },
+          hasViewed: false
+        },
+        {
+          id: 2,
+          userId: 2,
+          type: 'poll',
+          content: 'Which skincare routine is better for oily skin?',
+          mediaUrl: null,
+          backgroundColor: '#4F46E5',
+          fontStyle: 'font-bold',
+          pollOptions: ['Morning cleanse + toner', 'Double cleanse method', 'Oil cleansing only'],
+          pollVotes: [15, 23, 8],
+          question: null,
+          privacy: 'public',
+          viewsCount: 67,
+          reactionsCount: 8,
+          expiresAt: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
+          isHighlighted: false,
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          user: {
+            id: 2,
+            name: 'Skincare Expert',
+            username: 'skincareexpert',
+            avatar: '/uploads/avatar2.jpg'
+          },
+          hasViewed: true
+        }
+      ];
+    } catch (error) {
+      console.error("Get status updates error:", error);
+      return [];
+    }
+  }
+
+  async createStatusUpdate(data: any): Promise<any> {
+    try {
+      const newStatus = {
+        id: Math.floor(Math.random() * 10000),
+        userId: data.userId,
+        type: data.type,
+        content: data.content,
+        mediaUrl: data.mediaUrl,
+        backgroundColor: data.backgroundColor,
+        fontStyle: data.fontStyle,
+        pollOptions: data.pollOptions,
+        pollVotes: data.pollVotes,
+        question: data.question,
+        privacy: data.privacy || 'public',
+        viewsCount: 0,
+        reactionsCount: 0,
+        expiresAt: data.expiresAt,
+        isHighlighted: false,
+        createdAt: new Date().toISOString(),
+        user: {
+          id: data.userId,
+          name: 'Current User',
+          username: 'currentuser',
+          avatar: '/uploads/default-avatar.jpg'
+        },
+        hasViewed: false
+      };
+      
+      return newStatus;
+    } catch (error) {
+      console.error("Create status update error:", error);
+      throw error;
+    }
+  }
+
+  async markStatusViewed(statusId: number, userId: number): Promise<void> {
+    try {
+      console.log(`Status ${statusId} viewed by user ${userId}`);
+    } catch (error) {
+      console.error("Mark status viewed error:", error);
+      throw error;
+    }
+  }
+
+  async reactToStatus(statusId: number, userId: number, reaction: string): Promise<any> {
+    try {
+      return {
+        success: true,
+        reaction: reaction,
+        reactionCount: Math.floor(Math.random() * 50) + 1
+      };
+    } catch (error) {
+      console.error("React to status error:", error);
+      throw error;
+    }
+  }
+
+  // ========== GROUP EVENTS METHODS ==========
+
+  async getGroupEvents(groupId?: number): Promise<any[]> {
+    try {
+      return [
+        {
+          id: 1,
+          groupId: 1,
+          creatorId: 1,
+          title: 'Virtual Skincare Workshop',
+          description: 'Join us for an interactive skincare workshop where we\'ll discuss routines for different skin types.',
+          eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+          location: null,
+          isVirtual: true,
+          meetingLink: 'https://meet.example.com/skincare-workshop',
+          maxAttendees: 50,
+          currentAttendees: 23,
+          coverImage: '/uploads/event1.jpg',
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          creator: {
+            id: 1,
+            name: 'Beauty Guru',
+            username: 'beautyguru',
+            avatar: '/uploads/avatar1.jpg'
+          },
+          group: {
+            id: 1,
+            name: 'Skincare Enthusiasts'
+          },
+          attendeeStatus: 'interested'
+        }
+      ];
+    } catch (error) {
+      console.error("Get group events error:", error);
+      return [];
+    }
+  }
+
+  async createGroupEvent(data: any): Promise<any> {
+    try {
+      const newEvent = {
+        id: Math.floor(Math.random() * 10000),
+        groupId: data.groupId,
+        creatorId: data.creatorId,
+        title: data.title,
+        description: data.description,
+        eventDate: data.eventDate,
+        endDate: data.endDate,
+        location: data.location,
+        isVirtual: data.isVirtual,
+        meetingLink: data.meetingLink,
+        maxAttendees: data.maxAttendees,
+        currentAttendees: 0,
+        coverImage: data.coverImage,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        creator: {
+          id: data.creatorId,
+          name: 'Event Creator',
+          username: 'creator',
+          avatar: '/uploads/default-avatar.jpg'
+        },
+        group: {
+          id: data.groupId,
+          name: 'Group Name'
+        },
+        attendeeStatus: null
+      };
+      
+      return newEvent;
+    } catch (error) {
+      console.error("Create group event error:", error);
+      throw error;
+    }
+  }
+
+  async rsvpGroupEvent(eventId: number, userId: number, status: string): Promise<any> {
+    try {
+      return {
+        success: true,
+        eventId: eventId,
+        userId: userId,
+        status: status,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error("RSVP group event error:", error);
+      throw error;
+    }
+  }
+
+  async uploadGroupFile(data: any): Promise<any> {
+    try {
+      const newFile = {
+        id: Math.floor(Math.random() * 10000),
+        groupId: data.groupId,
+        uploaderId: data.uploaderId,
+        fileName: data.fileName,
+        fileUrl: data.fileUrl,
+        fileType: data.fileType,
+        fileSize: data.fileSize,
+        description: data.description,
+        uploadedAt: new Date().toISOString(),
+        uploader: {
+          id: data.uploaderId,
+          name: 'File Uploader',
+          username: 'uploader',
+          avatar: '/uploads/default-avatar.jpg'
+        }
+      };
+      
+      return newFile;
+    } catch (error) {
+      console.error("Upload group file error:", error);
+      throw error;
+    }
+  }
+
+  async getGroupFiles(groupId: number): Promise<any[]> {
+    try {
+      return [
+        {
+          id: 1,
+          groupId: groupId,
+          uploaderId: 1,
+          fileName: 'skincare-routine-guide.pdf',
+          fileUrl: '/uploads/skincare-guide.pdf',
+          fileType: 'document',
+          fileSize: 2048576,
+          description: 'Complete skincare routine guide for beginners',
+          uploadedAt: new Date().toISOString(),
+          uploader: {
+            id: 1,
+            name: 'Beauty Expert',
+            username: 'expert',
+            avatar: '/uploads/avatar1.jpg'
+          }
+        }
+      ];
+    } catch (error) {
+      console.error("Get group files error:", error);
+      return [];
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

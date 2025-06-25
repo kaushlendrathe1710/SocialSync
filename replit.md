@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 25, 2025: Fixed storage methods for new features - Added complete implementations for Reels, Status, and Groups storage methods, resolving upload errors and enabling full functionality for all three major new sections
 - June 25, 2025: Successfully tested and validated all new API endpoints - Reels, Status, and Groups APIs are fully functional with proper JSON responses, authentication, and interactive features including likes, views, reactions, and RSVP functionality
 - June 24, 2025: Implemented Reels, Status, and Groups features - added three major new sections with comprehensive functionality including video reels with TikTok-style interface, story-like status updates with polls and reactions, and enhanced community groups with events and file sharing capabilities
 - June 24, 2025: Fixed Settings and Privacy security section buttons (AN011) - added missing onClick handlers to security buttons in settings modal, enabling View Login Activity, Manage Devices, Apps and Websites, and Log Out All Devices functionality
