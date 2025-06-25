@@ -1392,15 +1392,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async joinGroup(groupId: number, userId: number): Promise<GroupMembership> {
+    console.log('Storage joinGroup called:', { groupId, userId });
+    
     const [membership] = await db.insert(groupMemberships).values({
       groupId,
       userId,
+      role: 'member',
+      status: 'active'
     }).returning();
+
+    console.log('Membership created:', membership);
 
     await db.update(communityGroups)
       .set({ memberCount: sql`${communityGroups.memberCount} + 1` })
       .where(eq(communityGroups.id, groupId));
 
+    console.log('Member count updated for group:', groupId);
     return membership;
   }
 

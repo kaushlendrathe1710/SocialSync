@@ -2264,7 +2264,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/community-groups/:id/join", requireAuth, async (req: Request, res: Response) => {
+  app.post("/api/community-groups/:id/join", async (req: Request, res: Response) => {
+    // Check authentication
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
     try {
       const { id } = req.params;
       const groupId = parseInt(id);
