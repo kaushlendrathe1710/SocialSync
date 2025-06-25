@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 25, 2025: Fixed Groups page functionality (AN016) - resolved unresponsive Join and Message buttons by adding proper onClick handlers, fixed blank My Groups tab by adding proper filtering logic and empty state handling, improved user experience with functional group interactions
 - June 25, 2025: Enhanced username validation (PA17) - updated username creation to allow dots between characters with rules: no consecutive dots, cannot start or end with dots, improved user experience with real-time input filtering and clear validation messages
 - June 25, 2025: Added guest exploration mode (PA16) - implemented landing page with public content preview, platform statistics, and feature showcase allowing new users to explore before signup, plus updated authentication flow to support guest browsing
 - June 25, 2025: Fixed habit streak calculation (AN015) - implemented proper streak calculation algorithm that counts consecutive completed days, updated logHabit method to automatically calculate and update streaks when habits are marked complete, and fixed frontend to display actual streak counts from database

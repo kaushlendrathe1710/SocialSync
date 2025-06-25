@@ -505,7 +505,14 @@ export default function GroupsPage() {
                           {group.privacy === 'public' ? 'Join' : 'Request to Join'}
                         </Button>
                       )}
-                      <Button variant="outline" size="icon">
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => {
+                          // Navigate to messages with group context
+                          window.location.href = `/messages?group=${group.id}`;
+                        }}
+                      >
                         <MessageSquare className="w-4 h-4" />
                       </Button>
                     </div>
@@ -533,9 +540,23 @@ export default function GroupsPage() {
           </TabsContent>
 
           {/* My Groups */}
-          <TabsContent value="my-groups">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {groups.filter((group: Group) => group.isJoined).map((group: Group) => (
+          <TabsContent value="my-groups" className="space-y-6">
+            {/* My Groups Content */}
+            {groups.filter((group: Group) => group.isJoined || group.membershipStatus).length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold mb-2">No Groups Joined</h2>
+                <p className="text-gray-600 mb-4">
+                  You haven't joined any groups yet. Discover and join groups that interest you!
+                </p>
+                <Button onClick={() => setActiveTab('discover')}>
+                  <Search className="w-4 h-4 mr-2" />
+                  Discover Groups
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {groups.filter((group: Group) => group.isJoined || group.membershipStatus).map((group: Group) => (
                 <Card key={group.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -564,15 +585,25 @@ export default function GroupsPage() {
                         View Group
                       </Button>
                       {group.membershipStatus === 'admin' && (
-                        <Button variant="outline" size="icon">
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => {
+                            toast({
+                              title: "Group Settings",
+                              description: "Group management features coming soon!",
+                            });
+                          }}
+                        >
                           <Settings className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Events */}
