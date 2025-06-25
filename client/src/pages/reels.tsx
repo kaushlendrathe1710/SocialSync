@@ -206,23 +206,32 @@ export default function ReelsPage() {
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/70 to-transparent p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Reels</h1>
+      <div className="fixed top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 backdrop-blur-sm">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-white">Reels</h1>
+            <div className="hidden sm:block">
+              <span className="text-sm text-gray-300">Discover amazing videos</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleMute}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 rounded-full"
             >
-              {isMuted ? <VolumeX /> : <Volume2 />}
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </Button>
             <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
               <DialogTrigger asChild>
-                <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold shadow-lg">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-200 rounded-full px-6 py-2.5 border-2 border-white/20"
+                >
                   <Camera className="w-5 h-5 mr-2" />
-                  Create Reel
+                  <span className="hidden sm:inline">Create Reel</span>
+                  <span className="sm:hidden">Create</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
@@ -301,18 +310,22 @@ export default function ReelsPage() {
 
       {/* Quick Upload Button - Floating */}
       <div className="fixed bottom-6 right-6 z-20">
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          size="lg"
-          className="rounded-full w-14 h-14 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
-        >
-          <Plus className="w-6 h-6" />
-        </Button>
+        <div className="relative">
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            size="lg"
+            className="rounded-full w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 border-3 border-white/30"
+          >
+            <Plus className="w-7 h-7" />
+          </Button>
+          {/* Pulse animation */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 animate-ping opacity-20"></div>
+        </div>
       </div>
 
       {/* Reels Container */}
       <div 
-        className="h-screen snap-y snap-mandatory overflow-y-auto"
+        className="h-screen snap-y snap-mandatory overflow-y-auto pt-20"
         onWheel={handleScroll}
       >
         {reels.map((reel: Reel, index: number) => (
