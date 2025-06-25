@@ -48,20 +48,16 @@ function AppContent() {
     return <PublicPostPage />;
   }
 
-  // Show landing page for unauthenticated users on home page
-  if (!user && window.location.pathname === '/') {
-    return <LandingPage />;
-  }
-
-  // Show auth page for other protected routes
-  if (!user && window.location.pathname === '/auth') {
-    return <AuthPage />;
-  }
-
-  // Redirect to auth for other protected routes
+  // Handle unauthenticated users
   if (!user) {
-    window.location.href = '/auth';
-    return null;
+    // Show landing page for home route
+    if (window.location.pathname === '/') {
+      return <LandingPage />;
+    }
+    // Show auth page for auth route and all other protected routes
+    if (window.location.pathname === '/auth' || window.location.pathname.startsWith('/')) {
+      return <AuthPage />;
+    }
   }
 
   // If impersonating, always show the regular user interface regardless of URL

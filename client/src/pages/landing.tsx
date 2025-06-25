@@ -97,11 +97,17 @@ export default function LandingPage() {
               <span className="text-xl font-bold text-gray-900">SocialConnect</span>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" asChild>
-                <Link href="/auth">Sign In</Link>
+              <Button 
+                variant="ghost" 
+                onClick={() => window.location.href = '/auth'}
+              >
+                Sign In
               </Button>
-              <Button asChild className="facebook-blue">
-                <Link href="/auth">Get Started</Link>
+              <Button 
+                className="facebook-blue"
+                onClick={() => window.location.href = '/auth'}
+              >
+                Get Started
               </Button>
             </div>
           </div>
@@ -121,8 +127,12 @@ export default function LandingPage() {
               Join millions of people sharing their stories.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button size="lg" asChild className="facebook-blue">
-                <Link href="/auth">Join SocialConnect</Link>
+              <Button 
+                size="lg" 
+                className="facebook-blue"
+                onClick={() => window.location.href = '/auth'}
+              >
+                Join SocialConnect
               </Button>
               <Button size="lg" variant="outline" onClick={() => {
                 setActiveSection('explore');
@@ -280,11 +290,13 @@ export default function LandingPage() {
                 <p className="text-gray-600 mb-6">
                   Create your account to start sharing, connecting, and discovering amazing content.
                 </p>
-                <Button size="lg" asChild className="facebook-blue">
-                  <Link href="/auth">
-                    Get Started Now
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Link>
+                <Button 
+                  size="lg" 
+                  className="facebook-blue"
+                  onClick={() => window.location.href = '/auth'}
+                >
+                  Get Started Now
+                  <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </CardContent>
             </Card>

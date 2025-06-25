@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 25, 2025: Fixed landing page authentication buttons (PA19) - resolved non-working Sign In and Get Started buttons by replacing Link components with direct navigation using window.location.href, fixed routing logic in App.tsx to properly handle auth navigation from landing page
 - June 25, 2025: Fixed Reels interactive buttons (AN017) - added proper onClick handlers for Like, Comment, Share, Bookmark, and More buttons in Reels section, implemented like/share/save mutations with API calls and user feedback, buttons now respond correctly to clicks
 - June 25, 2025: Fixed Explore Platform functionality (PA18) - enhanced Explore Platform button to scroll to content section and show dedicated explore content with platform features showcase, different content from trending section, and proper visual feedback
 - June 25, 2025: Created legal pages - added comprehensive Community Guidelines, Terms of Service, and Privacy Policy pages with proper routing, detailed sections covering safety, data protection, user rights, and legal compliance
