@@ -32,6 +32,7 @@ import {
   savedPosts,
   mentorProfiles,
   mentorshipRequests,
+  reels,
   type User,
   type InsertUser,
   type OtpCode,
