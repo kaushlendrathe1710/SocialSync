@@ -199,6 +199,7 @@ export function CommunityGroups() {
       });
       return;
     }
+    console.log('Submitting community form:', createForm);
     createGroupMutation.mutate(createForm);
   };
 
