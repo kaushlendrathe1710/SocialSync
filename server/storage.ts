@@ -1984,6 +1984,9 @@ export class DatabaseStorage implements IStorage {
         isLiked: false
       };
       
+      // Store the reel in memory
+      this.reels.push(newReel);
+      
       return newReel;
     } catch (error) {
       console.error("Create reel error:", error);

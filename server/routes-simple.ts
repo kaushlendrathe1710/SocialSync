@@ -2940,7 +2940,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Video file is required" });
       }
 
-      let videoUrl = `/uploads/${req.file.filename}`;
+      // Since we're using memory storage with buffer, create a proper filename
+      const fileName = `${Date.now()}-${req.file.originalname}`;
+      let videoUrl = `/uploads/${fileName}`;
       const duration = 30;
 
       console.log("Video URL:", videoUrl);
