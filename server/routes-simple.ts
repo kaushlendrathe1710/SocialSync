@@ -2940,10 +2940,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Video file is required" });
       }
 
-      // Since we're using memory storage with buffer, create a proper filename
+      // Save the file to disk so it can be served
       const fileName = `${Date.now()}-${req.file.originalname}`;
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      // Write the file to disk
+      const filePath = path.join(uploadsDir, fileName);
+      fs.writeFileSync(filePath, req.file.buffer);
+      
       let videoUrl = `/uploads/${fileName}`;
       const duration = 30;
+      
+      console.log("File saved to:", filePath);
+      console.log("Video URL will be:", videoUrl);
 
       console.log("Video URL:", videoUrl);
 

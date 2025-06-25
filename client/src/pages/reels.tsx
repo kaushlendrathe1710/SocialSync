@@ -408,11 +408,19 @@ export default function ReelsPage() {
                 if (el) videoRefs.current[index] = el;
               }}
               src={reel.videoUrl}
-              className="h-full w-auto max-w-full object-cover"
+              className="h-full w-auto max-w-full object-cover bg-gray-900"
               loop
               muted={isMuted}
               playsInline
+              autoPlay={index === currentReelIndex}
+              preload="metadata"
               onClick={() => togglePlayPause(index)}
+              onError={(e) => {
+                console.error('Video error:', e);
+                console.error('Video src:', reel.videoUrl);
+              }}
+              onLoadStart={() => console.log('Video loading:', reel.videoUrl)}
+              onCanPlay={() => console.log('Video can play:', reel.videoUrl)}
             />
 
             {/* Play/Pause Overlay */}
