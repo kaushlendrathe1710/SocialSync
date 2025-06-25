@@ -116,8 +116,42 @@ export default function StatusPage() {
     mutationFn: async ({ statusId, reaction }: { statusId: number; reaction: string }) => {
       return apiRequest('POST', `/api/status/${statusId}/react`, { reaction });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/status'] });
+      toast({
+        title: "Reaction Added",
+        description: `You reacted with ${variables.reaction}`,
+        duration: 2000,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to React",
+        description: error.message || "Could not add reaction. Try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Vote on poll mutation
+  const votePollMutation = useMutation({
+    mutationFn: async ({ statusId, optionIndex }: { statusId: number; optionIndex: number }) => {
+      return apiRequest('POST', `/api/status/${statusId}/vote`, { optionIndex });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/status'] });
+      toast({
+        title: "Vote Recorded",
+        description: "Your poll vote has been counted!",
+        duration: 2000,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Vote Failed",
+        description: error.message || "Could not record your vote. Try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -509,15 +543,38 @@ export default function StatusPage() {
                       <div>
                         <p className="text-lg font-semibold mb-4">{selectedStatus.content}</p>
                         <div className="space-y-2">
-                          {selectedStatus.pollOptions?.map((option, index) => (
-                            <Button
-                              key={index}
-                              variant="outline"
-                              className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30"
-                            >
-                              {option}
-                            </Button>
-                          ))}
+                          {selectedStatus.pollOptions?.map((option, index) => {
+                            const voteCount = selectedStatus.pollVotes?.[index] || 0;
+                            const totalVotes = selectedStatus.pollVotes?.reduce((a, b) => a + b, 0) || 0;
+                            const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                            
+                            return (
+                              <Button
+                                key={index}
+                                variant="outline"
+                                className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30 relative overflow-hidden transition-all duration-200 hover:scale-105"
+                                onClick={() => votePollMutation.mutate({ statusId: selectedStatus.id, optionIndex: index })}
+                                disabled={votePollMutation.isPending}
+                              >
+                                <div 
+                                  className="absolute left-0 top-0 h-full bg-white/20 transition-all duration-500"
+                                  style={{ width: `${percentage}%` }}
+                                />
+                                <span className="relative z-10 flex justify-between w-full">
+                                  <span>{option}</span>
+                                  <span className="text-sm opacity-80">{percentage}%</span>
+                                </span>
+                                {votePollMutation.isPending && (
+                                  <div className="absolute inset-0 bg-white/10 flex items-center justify-center">
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  </div>
+                                )}
+                              </Button>
+                            );
+                          })}
+                          <p className="text-center text-sm opacity-70 mt-2">
+                            {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
+                          </p>
                         </div>
                       </div>
                     ) : (
@@ -566,11 +623,12 @@ export default function StatusPage() {
                     {['❤️', '😂', '😮', '😢', '😡', '👍'].map((emoji) => (
                       <button
                         key={emoji}
-                        className="text-2xl hover:scale-110 transition-transform"
+                        className="text-2xl hover:scale-110 transition-all duration-200 hover:bg-white/20 rounded-full p-1"
                         onClick={() => reactToStatusMutation.mutate({
                           statusId: selectedStatus.id,
                           reaction: emoji
                         })}
+                        disabled={reactToStatusMutation.isPending}
                       >
                         {emoji}
                       </button>

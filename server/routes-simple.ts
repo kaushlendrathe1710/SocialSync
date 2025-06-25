@@ -3171,6 +3171,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/status/:id/vote", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { optionIndex } = req.body;
+      const statusId = parseInt(id);
+      
+      if (typeof optionIndex !== 'number' || optionIndex < 0) {
+        return res.status(400).json({ message: "Valid option index is required" });
+      }
+      
+      const voteResult = await storage.voteOnStatusPoll(statusId, req.session.userId!, optionIndex);
+      res.json(voteResult);
+    } catch (error) {
+      console.error("Vote on status poll error:", error);
+      res.status(500).json({ message: "Failed to vote on poll" });
+    }
+  });
+
   // ========== ENHANCED GROUPS API ROUTES ==========
 
   app.get("/api/groups", async (req: Request, res: Response) => {
