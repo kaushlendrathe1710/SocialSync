@@ -99,13 +99,23 @@ export default function LandingPage() {
             <div className="flex items-center space-x-4">
               <Button 
                 variant="ghost" 
-                onClick={() => window.location.href = '/auth'}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Sign In clicked');
+                  window.location.href = '/auth';
+                }}
               >
                 Sign In
               </Button>
               <Button 
                 className="facebook-blue"
-                onClick={() => window.location.href = '/auth'}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Get Started clicked');
+                  window.location.href = '/auth';
+                }}
               >
                 Get Started
               </Button>
@@ -130,7 +140,12 @@ export default function LandingPage() {
               <Button 
                 size="lg" 
                 className="facebook-blue"
-                onClick={() => window.location.href = '/auth'}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Join SocialConnect clicked');
+                  window.location.href = '/auth';
+                }}
               >
                 Join SocialConnect
               </Button>
@@ -293,7 +308,12 @@ export default function LandingPage() {
                 <Button 
                   size="lg" 
                   className="facebook-blue"
-                  onClick={() => window.location.href = '/auth'}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Get Started Now clicked');
+                    window.location.href = '/auth';
+                  }}
                 >
                   Get Started Now
                   <ArrowRight className="h-4 w-4 ml-2" />
