@@ -1952,6 +1952,84 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // ========== PUBLIC METHODS (NO AUTH REQUIRED) ==========
+
+  async getPublicPosts(limit = 12): Promise<any[]> {
+    try {
+      // Get public posts with high engagement for landing page
+      const result = await db
+        .select({
+          post: posts,
+          user: users,
+          likesCount: sql<number>`COALESCE(COUNT(DISTINCT ${likes.id}), 0)`,
+          commentsCount: sql<number>`COALESCE(COUNT(DISTINCT ${comments.id}), 0)`,
+          viewsCount: sql<number>`COALESCE(${posts.viewCount}, 0)`,
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .leftJoin(likes, eq(likes.postId, posts.id))
+        .leftJoin(comments, eq(comments.postId, posts.id))
+        .where(eq(posts.privacy, 'public'))
+        .groupBy(posts.id, users.id)
+        .orderBy(desc(sql`COALESCE(COUNT(DISTINCT ${likes.id}), 0) + COALESCE(COUNT(DISTINCT ${comments.id}), 0) + COALESCE(${posts.viewCount}, 0)`))
+        .limit(limit);
+
+      return result.map(({ post, user, likesCount, commentsCount, viewsCount }) => ({
+        id: post.id,
+        content: post.content,
+        imageUrl: post.imageUrl,
+        videoUrl: post.videoUrl,
+        createdAt: post.createdAt,
+        user: {
+          id: user.id,
+          name: user.name || user.email?.split('@')[0] || 'User',
+          username: user.username || user.email?.split('@')[0] || 'user',
+          avatar: user.avatar
+        },
+        likesCount: Number(likesCount),
+        commentsCount: Number(commentsCount),
+        viewsCount: Number(viewsCount)
+      }));
+    } catch (error) {
+      console.error("Get public posts error:", error);
+      return [];
+    }
+  }
+
+  async getPlatformStats(): Promise<any> {
+    try {
+      // Get platform statistics for landing page
+      const [
+        usersResult,
+        postsResult,
+        activeTodayResult,
+        communitiesResult
+      ] = await Promise.all([
+        db.select({ count: sql<number>`COUNT(*)` }).from(users),
+        db.select({ count: sql<number>`COUNT(*)` }).from(posts),
+        db.select({ count: sql<number>`COUNT(DISTINCT ${posts.userId})` })
+          .from(posts)
+          .where(sql`DATE(${posts.createdAt}) = CURRENT_DATE`),
+        db.select({ count: sql<number>`COUNT(*)` }).from(communityGroups)
+      ]);
+
+      return {
+        totalUsers: Number(usersResult[0]?.count || 0),
+        totalPosts: Number(postsResult[0]?.count || 0),
+        activeToday: Number(activeTodayResult[0]?.count || 0),
+        totalCommunities: Number(communitiesResult[0]?.count || 0)
+      };
+    } catch (error) {
+      console.error("Get platform stats error:", error);
+      return {
+        totalUsers: 0,
+        totalPosts: 0,
+        activeToday: 0,
+        totalCommunities: 0
+      };
+    }
+  }
+
   // ========== REELS METHODS ==========
 
   async getReels(userId?: number): Promise<any[]> {

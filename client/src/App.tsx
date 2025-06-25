@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./lib/auth.tsx";
 import { useAuth } from "./hooks/use-auth";
 import { useAuthContext } from "./lib/auth";
+import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
 import FeedPage from "@/pages/feed";
 import ProfilePage from "@/pages/profile";
@@ -47,8 +48,20 @@ function AppContent() {
     return <PublicPostPage />;
   }
 
-  if (!user) {
+  // Show landing page for unauthenticated users on home page
+  if (!user && window.location.pathname === '/') {
+    return <LandingPage />;
+  }
+
+  // Show auth page for other protected routes
+  if (!user && window.location.pathname === '/auth') {
     return <AuthPage />;
+  }
+
+  // Redirect to auth for other protected routes
+  if (!user) {
+    window.location.href = '/auth';
+    return null;
   }
 
   // If impersonating, always show the regular user interface regardless of URL

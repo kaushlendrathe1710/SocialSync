@@ -192,6 +192,16 @@ export default function AuthPage() {
               <p className="text-xs text-muted-foreground text-center">
                 We'll send you a secure code to sign in
               </p>
+              <div className="text-center">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="text-blue-600 hover:text-blue-800"
+                  onClick={() => window.location.href = '/'}
+                >
+                  ← Back to explore
+                </Button>
+              </div>
             </form>
           )}
 
