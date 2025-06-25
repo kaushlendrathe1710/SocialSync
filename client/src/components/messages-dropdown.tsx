@@ -27,6 +27,8 @@ import { api } from "@/lib/api";
 import type { MessageWithUser, User } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MessagesDropdownProps {
   isOpen: boolean;
