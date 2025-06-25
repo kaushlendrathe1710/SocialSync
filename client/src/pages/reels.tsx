@@ -62,12 +62,12 @@ export default function ReelsPage() {
   const [newReel, setNewReel] = useState({
     caption: '',
     privacy: 'public',
-    videoFile: null as File | null,
   });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement }>({});
+  const selectedVideoFile = useRef<File | null>(null);
 
   // Fetch reels
   const { data: reels = [], isLoading } = useQuery({
@@ -347,7 +347,7 @@ export default function ReelsPage() {
                 </Button>
                 <Button
                   onClick={handleSubmitReel}
-                  disabled={createReelMutation.isPending || !newReel.videoFile}
+                  disabled={createReelMutation.isPending || !selectedVideoFile.current}
                   className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
                 >
                   {createReelMutation.isPending ? 'Uploading...' : 'Share Reel'}
