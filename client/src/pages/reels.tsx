@@ -227,24 +227,27 @@ export default function ReelsPage() {
         </div>
       </div>
 
-      {/* Create Reel Button - Prominent Center Position */}
-      <div className="fixed top-28 left-1/2 transform -translate-x-1/2 z-30">
+      {/* Create Reel Button - Better Positioned */}
+      <div className="fixed top-24 right-4 z-30">
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
           <DialogTrigger asChild>
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 rounded-full px-8 py-3 border-3 border-white/30 animate-pulse"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 rounded-full px-6 py-3 border-2 border-white/20"
             >
-              <Camera className="w-6 h-6 mr-2" />
+              <Camera className="w-5 h-5 mr-2" />
               Create Reel
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" aria-describedby="create-reel-description">
             <DialogHeader>
               <DialogTitle className="flex items-center">
                 <Video className="w-5 h-5 mr-2" />
                 Create New Reel
               </DialogTitle>
+              <p id="create-reel-description" className="text-sm text-gray-600">
+                Upload a video file to create and share your reel with the community.
+              </p>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -328,7 +331,7 @@ export default function ReelsPage() {
 
       {/* Reels Container */}
       <div 
-        className="h-screen snap-y snap-mandatory overflow-y-auto pt-32"
+        className="h-screen snap-y snap-mandatory overflow-y-auto pt-24"
         onWheel={handleScroll}
       >
         {reels.map((reel: Reel, index: number) => (
