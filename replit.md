@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 25, 2025: Fixed Community option in Settings section (AN014) - added missing Community tab with functional buttons for Community Guidelines, Terms of Service, Privacy Policy, Report Content, and Join Community Groups, plus community participation settings
 - June 25, 2025: Fixed Contact Support functionality (AN013) - added missing onClick handlers to Email Support, Live Chat, and Report a Problem buttons in Help & Support modal, enabling proper contact support actions
 - June 25, 2025: Fixed messages page blank screen issue (AN012) - resolved missing imports for Select, ScrollArea, and DropdownMenu components in MessagesDropdown, preventing ReferenceError crashes when clicking message icon
 - June 25, 2025: Successfully implemented persistent video storage for Reels - Videos are now saved to disk and database permanently, with working upload functionality, proper file serving, and database persistence ensuring uploaded reels remain accessible across sessions with proper user data display. Fixed file filter to support all video formats including MP4 and MKV files.
