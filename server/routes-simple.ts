@@ -2912,5 +2912,273 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== REELS API ROUTES ==========
+
+  app.get("/api/reels", async (req: Request, res: Response) => {
+    try {
+      const reels = await storage.getReels(req.session.userId);
+      res.json(reels);
+    } catch (error) {
+      console.error("Get reels error:", error);
+      res.status(500).json({ message: "Failed to get reels" });
+    }
+  });
+
+  app.post("/api/reels", requireAuth, upload.single('video'), async (req: Request, res: Response) => {
+    try {
+      const { caption, privacy = 'public', musicId, effects } = req.body;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "Video file is required" });
+      }
+
+      let videoUrl = `/uploads/${req.file.filename}`;
+      const duration = 30;
+
+      const reel = await storage.createReel({
+        userId: req.session.userId,
+        videoUrl,
+        caption: caption || null,
+        musicId: musicId ? parseInt(musicId) : null,
+        effects: effects ? JSON.parse(effects) : [],
+        duration,
+        privacy,
+      });
+
+      res.json(reel);
+    } catch (error) {
+      console.error("Create reel error:", error);
+      res.status(500).json({ message: "Failed to create reel" });
+    }
+  });
+
+  app.post("/api/reels/:id/like", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const reelId = parseInt(id);
+      
+      const isLiked = await storage.toggleReelLike(reelId, req.session.userId!);
+      res.json({ isLiked });
+    } catch (error) {
+      console.error("Toggle reel like error:", error);
+      res.status(500).json({ message: "Failed to toggle reel like" });
+    }
+  });
+
+  app.get("/api/reel-music", async (req: Request, res: Response) => {
+    try {
+      const music = await storage.getReelMusic();
+      res.json(music);
+    } catch (error) {
+      console.error("Get reel music error:", error);
+      res.status(500).json({ message: "Failed to get reel music" });
+    }
+  });
+
+  // ========== STATUS API ROUTES ==========
+
+  app.get("/api/status", async (req: Request, res: Response) => {
+    try {
+      const statusUpdates = await storage.getStatusUpdates(req.session.userId);
+      res.json(statusUpdates);
+    } catch (error) {
+      console.error("Get status updates error:", error);
+      res.status(500).json({ message: "Failed to get status updates" });
+    }
+  });
+
+  app.post("/api/status", requireAuth, upload.single('media'), async (req: Request, res: Response) => {
+    try {
+      const { type, content, backgroundColor, fontStyle, pollOptions, question, privacy = 'public' } = req.body;
+      
+      let mediaUrl = null;
+      if (req.file) {
+        mediaUrl = `/uploads/${req.file.filename}`;
+      }
+
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      const statusData: any = {
+        userId: req.session.userId,
+        type,
+        content: content || null,
+        mediaUrl,
+        backgroundColor: backgroundColor || null,
+        fontStyle: fontStyle || null,
+        question: question || null,
+        privacy,
+        expiresAt,
+      };
+
+      if (type === 'poll' && pollOptions) {
+        statusData.pollOptions = JSON.parse(pollOptions);
+        statusData.pollVotes = new Array(JSON.parse(pollOptions).length).fill(0);
+      }
+
+      const status = await storage.createStatusUpdate(statusData);
+      res.json(status);
+    } catch (error) {
+      console.error("Create status error:", error);
+      res.status(500).json({ message: "Failed to create status" });
+    }
+  });
+
+  app.post("/api/status/:id/view", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const statusId = parseInt(id);
+      
+      await storage.markStatusViewed(statusId, req.session.userId!);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark status viewed error:", error);
+      res.status(500).json({ message: "Failed to mark status as viewed" });
+    }
+  });
+
+  app.post("/api/status/:id/react", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { reaction } = req.body;
+      const statusId = parseInt(id);
+      
+      const reactionResult = await storage.reactToStatus(statusId, req.session.userId!, reaction);
+      res.json(reactionResult);
+    } catch (error) {
+      console.error("React to status error:", error);
+      res.status(500).json({ message: "Failed to react to status" });
+    }
+  });
+
+  // ========== ENHANCED GROUPS API ROUTES ==========
+
+  app.get("/api/groups", async (req: Request, res: Response) => {
+    try {
+      const { category, search, filter } = req.query;
+      
+      let groups;
+      if (filter === 'joined' && req.session.userId) {
+        groups = await storage.getUserCommunityGroups(req.session.userId);
+      } else {
+        groups = await storage.getCommunityGroups(category as string, req.session.userId);
+      }
+
+      if (search) {
+        const searchTerm = (search as string).toLowerCase();
+        groups = groups.filter((group: any) => 
+          group.name.toLowerCase().includes(searchTerm) ||
+          group.description?.toLowerCase().includes(searchTerm) ||
+          group.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      res.json(groups);
+    } catch (error) {
+      console.error("Get groups error:", error);
+      res.status(500).json({ message: "Failed to get groups" });
+    }
+  });
+
+  app.post("/api/group-events", requireAuth, upload.single('coverImage'), async (req: Request, res: Response) => {
+    try {
+      const { groupId, title, description, eventDate, endDate, location, isVirtual, meetingLink, maxAttendees } = req.body;
+      
+      let coverImage = null;
+      if (req.file) {
+        coverImage = `/uploads/${req.file.filename}`;
+      }
+
+      const event = await storage.createGroupEvent({
+        groupId: parseInt(groupId),
+        creatorId: req.session.userId,
+        title,
+        description: description || null,
+        eventDate: new Date(eventDate),
+        endDate: endDate ? new Date(endDate) : null,
+        location: location || null,
+        isVirtual: isVirtual === 'true',
+        meetingLink: meetingLink || null,
+        maxAttendees: maxAttendees ? parseInt(maxAttendees) : null,
+        coverImage,
+      });
+
+      res.json(event);
+    } catch (error) {
+      console.error("Create group event error:", error);
+      res.status(500).json({ message: "Failed to create group event" });
+    }
+  });
+
+  app.get("/api/group-events", async (req: Request, res: Response) => {
+    try {
+      const { groupId } = req.query;
+      const events = await storage.getGroupEvents(groupId ? parseInt(groupId as string) : undefined);
+      res.json(events);
+    } catch (error) {
+      console.error("Get group events error:", error);
+      res.status(500).json({ message: "Failed to get group events" });
+    }
+  });
+
+  app.post("/api/group-events/:id/rsvp", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const eventId = parseInt(id);
+      
+      const rsvp = await storage.rsvpGroupEvent(eventId, req.session.userId!, status);
+      res.json(rsvp);
+    } catch (error) {
+      console.error("RSVP group event error:", error);
+      res.status(500).json({ message: "Failed to RSVP to group event" });
+    }
+  });
+
+  app.post("/api/group-files", requireAuth, upload.single('file'), async (req: Request, res: Response) => {
+    try {
+      const { groupId, description } = req.body;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "File is required" });
+      }
+
+      const fileUrl = `/uploads/${req.file.filename}`;
+      const fileType = req.file.mimetype.startsWith('image/') ? 'image' :
+                      req.file.mimetype.startsWith('video/') ? 'video' :
+                      req.file.mimetype.startsWith('audio/') ? 'audio' : 'document';
+
+      const file = await storage.uploadGroupFile({
+        groupId: parseInt(groupId),
+        uploaderId: req.session.userId,
+        fileName: req.file.originalname,
+        fileUrl,
+        fileType,
+        fileSize: req.file.size,
+        description: description || null,
+      });
+
+      res.json(file);
+    } catch (error) {
+      console.error("Upload group file error:", error);
+      res.status(500).json({ message: "Failed to upload group file" });
+    }
+  });
+
+  app.get("/api/group-files", async (req: Request, res: Response) => {
+    try {
+      const { groupId } = req.query;
+      
+      if (!groupId) {
+        return res.status(400).json({ message: "Group ID is required" });
+      }
+
+      const files = await storage.getGroupFiles(parseInt(groupId as string));
+      res.json(files);
+    } catch (error) {
+      console.error("Get group files error:", error);
+      res.status(500).json({ message: "Failed to get group files" });
+    }
+  });
+
   return httpServer;
 }
