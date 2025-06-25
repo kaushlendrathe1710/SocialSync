@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 25, 2025: Created Community Guidelines page - added comprehensive community guidelines page with safety, respect, and community standards sections, proper routing, and navigation from settings
 - June 25, 2025: Fixed virtual room visibility (AN012) - implemented live streams API and backend functionality, virtual rooms are now properly stored and can be accessed through direct links or other UI sections (removed from main feed per user preference)
 - June 25, 2025: Fixed Groups page functionality (AN016) - resolved unresponsive Join and Message buttons by adding proper onClick handlers, fixed blank My Groups tab by adding proper filtering logic and empty state handling, improved user experience with functional group interactions
 - June 25, 2025: Enhanced username validation (PA17) - updated username creation to allow dots between characters with rules: no consecutive dots, cannot start or end with dots, improved user experience with real-time input filtering and clear validation messages
