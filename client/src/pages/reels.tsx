@@ -77,10 +77,18 @@ export default function ReelsPage() {
   // Create reel mutation
   const createReelMutation = useMutation({
     mutationFn: async (reelData: FormData) => {
+      console.log("=== API REQUEST START ===");
       console.log("Making API request to /api/reels with FormData");
       // Log FormData contents
       for (let [key, value] of reelData.entries()) {
-        console.log(key, value);
+        console.log(`API FormData ${key}:`, value);
+        if (value instanceof File) {
+          console.log(`${key} is valid File object:`, {
+            name: value.name,
+            type: value.type,
+            size: value.size
+          });
+        }
       }
       
       return apiRequest('/api/reels', {
@@ -171,18 +179,22 @@ export default function ReelsPage() {
   // Handle file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    console.log("=== FILE SELECTION ===");
     console.log("File selected:", file);
     console.log("File properties:", {
       name: file?.name,
       type: file?.type,
-      size: file?.size
+      size: file?.size,
+      lastModified: file?.lastModified
     });
     
     if (file && file.type.startsWith('video/')) {
       console.log("Valid video file selected, storing in ref");
       selectedVideoFile.current = file;
+      console.log("Ref after assignment:", selectedVideoFile.current);
+      console.log("Ref instanceof File:", selectedVideoFile.current instanceof File);
       // Force re-render to update UI
-      setNewReel(prev => ({ ...prev }));
+      setNewReel(prev => ({ ...prev, caption: prev.caption }));
     } else {
       console.log("Invalid file type or no file selected");
       selectedVideoFile.current = null;
@@ -196,11 +208,13 @@ export default function ReelsPage() {
 
   // Submit new reel
   const handleSubmitReel = () => {
+    console.log("=== REEL SUBMISSION ===");
     console.log("Submit reel called, current state:", newReel);
-    console.log("Selected video file:", selectedVideoFile.current);
+    console.log("Selected video file ref:", selectedVideoFile.current);
+    console.log("File instanceof check:", selectedVideoFile.current instanceof File);
     
-    if (!selectedVideoFile.current) {
-      console.log("No video file selected");
+    if (!selectedVideoFile.current || !(selectedVideoFile.current instanceof File)) {
+      console.log("No valid video file selected");
       toast({
         title: "No Video Selected",
         description: "Please select a video to upload.",
@@ -209,22 +223,25 @@ export default function ReelsPage() {
       return;
     }
 
+    const file = selectedVideoFile.current;
     console.log("Creating FormData with file:", {
-      name: selectedVideoFile.current.name,
-      type: selectedVideoFile.current.type,
-      size: selectedVideoFile.current.size
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      lastModified: file.lastModified
     });
 
     const formData = new FormData();
-    formData.append('video', selectedVideoFile.current);
+    formData.append('video', file);
     formData.append('caption', newReel.caption);
     formData.append('privacy', newReel.privacy);
 
-    // Verify FormData contents
+    // Verify FormData contents before sending
+    console.log("=== FORMDATA VERIFICATION ===");
     for (let [key, value] of formData.entries()) {
-      console.log("FormData entry:", key, value);
+      console.log(`FormData ${key}:`, value);
       if (value instanceof File) {
-        console.log("File details:", {
+        console.log(`${key} file details:`, {
           name: value.name,
           type: value.type,
           size: value.size
@@ -232,6 +249,7 @@ export default function ReelsPage() {
       }
     }
 
+    console.log("Calling mutation...");
     createReelMutation.mutate(formData);
   };
 

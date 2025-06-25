@@ -2926,10 +2926,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/reels", requireAuth, upload.single('video'), async (req: Request, res: Response) => {
     try {
+      console.log("=== REEL UPLOAD REQUEST ===");
       console.log("Creating reel - Request body:", req.body);
       console.log("Creating reel - File:", req.file);
       console.log("Creating reel - User ID:", req.session.userId);
       console.log("Creating reel - Headers:", req.headers['content-type']);
+      console.log("Creating reel - Files in request:", req.files);
       
       const { caption, privacy = 'public', musicId, effects } = req.body;
       
