@@ -206,10 +206,10 @@ export default function ReelsPage() {
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 backdrop-blur-sm">
+      <div className="fixed top-16 left-0 right-0 z-20 bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 backdrop-blur-sm">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-white">Reels</h1>
+            <h1 className="text-3xl font-bold text-white">Reels</h1>
             <div className="hidden sm:block">
               <span className="text-sm text-gray-300">Discover amazing videos</span>
             </div>
@@ -223,89 +223,94 @@ export default function ReelsPage() {
             >
               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </Button>
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-              <DialogTrigger asChild>
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-200 rounded-full px-6 py-2.5 border-2 border-white/20"
-                >
-                  <Camera className="w-5 h-5 mr-2" />
-                  <span className="hidden sm:inline">Create Reel</span>
-                  <span className="sm:hidden">Create</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center">
-                    <Video className="w-5 h-5 mr-2" />
-                    Create New Reel
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Upload Video</label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        id="video-upload"
-                      />
-                      <label
-                        htmlFor="video-upload"
-                        className="cursor-pointer"
-                      >
-                        {newReel.videoFile ? (
-                          <div className="flex items-center justify-center space-x-2">
-                            <Video className="w-8 h-8 text-green-500" />
-                            <div>
-                              <p className="text-sm font-medium text-green-600">{newReel.videoFile.name}</p>
-                              <p className="text-xs text-gray-500">Click to change video</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div>
-                            <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                            <p className="text-sm text-gray-600">Click to upload video</p>
-                            <p className="text-xs text-gray-400">MP4, MOV, AVI up to 100MB</p>
-                          </div>
-                        )}
-                      </label>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Caption</label>
-                    <Textarea
-                      placeholder="What's this reel about? Add hashtags and mentions..."
-                      value={newReel.caption}
-                      onChange={(e) => setNewReel({ ...newReel, caption: e.target.value })}
-                      className="min-h-[80px]"
-                      maxLength={150}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">{newReel.caption.length}/150 characters</p>
-                  </div>
-                  <div className="flex space-x-3 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowCreateModal(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSubmitReel}
-                      disabled={createReelMutation.isPending || !newReel.videoFile}
-                      className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                    >
-                      {createReelMutation.isPending ? 'Uploading...' : 'Share Reel'}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
         </div>
+      </div>
+
+      {/* Create Reel Button - Prominent Center Position */}
+      <div className="fixed top-28 left-1/2 transform -translate-x-1/2 z-30">
+        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+          <DialogTrigger asChild>
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 rounded-full px-8 py-3 border-3 border-white/30 animate-pulse"
+            >
+              <Camera className="w-6 h-6 mr-2" />
+              Create Reel
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <Video className="w-5 h-5 mr-2" />
+                Create New Reel
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Upload Video</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="video-upload"
+                  />
+                  <label
+                    htmlFor="video-upload"
+                    className="cursor-pointer"
+                  >
+                    {newReel.videoFile ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <Video className="w-8 h-8 text-green-500" />
+                        <div>
+                          <p className="text-sm font-medium text-green-600">{newReel.videoFile.name}</p>
+                          <p className="text-xs text-gray-500">Click to change video</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm text-gray-600">Click to upload video</p>
+                        <p className="text-xs text-gray-400">MP4, MOV, AVI up to 100MB</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Caption</label>
+                <Textarea
+                  placeholder="What's this reel about? Add hashtags and mentions..."
+                  value={newReel.caption}
+                  onChange={(e) => setNewReel({ ...newReel, caption: e.target.value })}
+                  className="min-h-[80px]"
+                  maxLength={150}
+                />
+                <p className="text-xs text-gray-400 mt-1">{newReel.caption.length}/150 characters</p>
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitReel}
+                  disabled={createReelMutation.isPending || !newReel.videoFile}
+                  className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                >
+                  {createReelMutation.isPending ? 'Uploading...' : 'Share Reel'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+        </Dialog>
       </div>
 
       {/* Quick Upload Button - Floating */}
@@ -325,7 +330,7 @@ export default function ReelsPage() {
 
       {/* Reels Container */}
       <div 
-        className="h-screen snap-y snap-mandatory overflow-y-auto pt-20"
+        className="h-screen snap-y snap-mandatory overflow-y-auto pt-32"
         onWheel={handleScroll}
       >
         {reels.map((reel: Reel, index: number) => (
@@ -449,17 +454,17 @@ export default function ReelsPage() {
 
       {/* Empty State */}
       {reels.length === 0 && (
-        <div className="h-screen flex items-center justify-center px-4">
+        <div className="h-screen flex items-center justify-center px-4 pt-20">
           <div className="text-center max-w-sm">
-            <Video className="w-20 h-20 mx-auto mb-4 text-gray-500" />
-            <h3 className="text-xl font-semibold mb-2 text-white">No reels yet</h3>
-            <p className="text-gray-400 mb-6">Share your first reel to get started! Create short, engaging videos to connect with your community.</p>
+            <Video className="w-24 h-24 mx-auto mb-6 text-gray-500" />
+            <h3 className="text-2xl font-semibold mb-3 text-white">No reels yet</h3>
+            <p className="text-gray-400 mb-8">Share your first reel to get started! Create short, engaging videos to connect with your community.</p>
             <Button 
               onClick={() => setShowCreateModal(true)}
               size="lg"
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 px-8 py-3 text-lg font-bold rounded-full shadow-xl"
             >
-              <Camera className="w-5 h-5 mr-2" />
+              <Camera className="w-6 h-6 mr-2" />
               Create Your First Reel
             </Button>
           </div>
