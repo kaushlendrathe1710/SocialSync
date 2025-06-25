@@ -44,31 +44,30 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="fixed left-0 top-14 h-full w-64 bg-white border-r border-gray-200 shadow-sm z-30">
-      <div className="flex flex-col h-full">
-        {/* User Profile Section */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={user?.avatar || ""} />
-              <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
-                {getUserInitials(user)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user?.name || user?.username}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                @{user?.username}
-              </p>
-            </div>
+    <div className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-64 bg-white border-r border-gray-200 shadow-sm z-30 flex flex-col">
+      {/* User Profile Section - Fixed */}
+      <div className="p-4 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center space-x-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={user?.avatar || ""} />
+            <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
+              {getUserInitials(user)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">
+              {user?.name || user?.username}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              @{user?.username}
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Navigation Menu */}
-        <nav className="flex-1 py-4">
-          <div className="px-2 space-y-1">
+      {/* Scrollable Navigation Menu */}
+      <nav className="flex-1 overflow-y-auto py-4">
+        <div className="px-2 space-y-1">
             {menuItems.map((item) => (
               <Link key={item.path} href={item.path}>
                 <button
@@ -172,19 +171,18 @@ export default function Sidebar() {
               </button>
             </Link>
           </div>
-        </nav>
+      </nav>
 
-        {/* Logout Button */}
-        <div className="p-4 border-t border-gray-100">
-          <Button
-            onClick={handleLogout}
-            variant="ghost"
-            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <LogOut className="mr-3 h-4 w-4" />
-            Logout
-          </Button>
-        </div>
+      {/* Logout Button - Fixed at bottom */}
+      <div className="p-4 border-t border-gray-100 flex-shrink-0">
+        <Button
+          onClick={handleLogout}
+          variant="ghost"
+          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+        >
+          <LogOut className="mr-3 h-4 w-4" />
+          Logout
+        </Button>
       </div>
     </div>
   );

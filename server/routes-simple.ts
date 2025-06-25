@@ -256,6 +256,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public API Routes (no authentication required)
+  app.get("/api/public/posts", async (req: Request, res: Response) => {
+    try {
+      const posts = await storage.getPublicPosts(12);
+      res.json(posts);
+    } catch (error) {
+      console.error("Get public posts error:", error);
+      res.status(500).json({ message: "Failed to get public posts" });
+    }
+  });
+
+  app.get("/api/public/stats", async (req: Request, res: Response) => {
+    try {
+      const stats = await storage.getPlatformStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Get platform stats error:", error);
+      res.status(500).json({ message: "Failed to get platform stats" });
+    }
+  });
+
   // Authentication middleware for protected routes
   const requireAuth = (req: Request, res: Response, next: any) => {
     if (!req.session.userId) {
