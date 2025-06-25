@@ -77,12 +77,19 @@ export default function ReelsPage() {
   // Create reel mutation
   const createReelMutation = useMutation({
     mutationFn: async (reelData: FormData) => {
+      console.log("Making API request to /api/reels with FormData");
+      // Log FormData contents
+      for (let [key, value] of reelData.entries()) {
+        console.log(key, value);
+      }
+      
       return apiRequest('/api/reels', {
         method: 'POST',
         body: reelData,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Reel upload successful:", data);
       queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
       setShowCreateModal(false);
       setNewReel({ caption: '', privacy: 'public', videoFile: null });
@@ -91,7 +98,8 @@ export default function ReelsPage() {
         description: "Your reel has been uploaded successfully!",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Reel upload error:", error);
       toast({
         title: "Upload Failed",
         description: "Failed to upload your reel. Please try again.",

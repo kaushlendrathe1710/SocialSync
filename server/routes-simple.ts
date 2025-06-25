@@ -2926,14 +2926,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/reels", requireAuth, upload.single('video'), async (req: Request, res: Response) => {
     try {
+      console.log("Creating reel - Request body:", req.body);
+      console.log("Creating reel - File:", req.file);
+      console.log("Creating reel - User ID:", req.session.userId);
+      
       const { caption, privacy = 'public', musicId, effects } = req.body;
       
       if (!req.file) {
+        console.log("No file provided in request");
         return res.status(400).json({ message: "Video file is required" });
       }
 
       let videoUrl = `/uploads/${req.file.filename}`;
       const duration = 30;
+
+      console.log("Video URL:", videoUrl);
 
       const reel = await storage.createReel({
         userId: req.session.userId,
@@ -2945,10 +2952,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         privacy,
       });
 
+      console.log("Reel created successfully:", reel);
       res.json(reel);
     } catch (error) {
-      console.error("Create reel error:", error);
-      res.status(500).json({ message: "Failed to create reel" });
+      console.error("Create reel error details:", error);
+      res.status(500).json({ 
+        message: "Failed to create reel",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
