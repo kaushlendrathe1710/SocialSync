@@ -27,6 +27,8 @@ export default function Sidebar() {
 
   const menuItems = [
     { icon: Home, label: "Home", path: "/", active: location === "/" },
+    { icon: Play, label: "Reels", path: "/reels", active: location === "/reels" },
+    { icon: Camera, label: "Status", path: "/status", active: location === "/status" },
     { icon: Search, label: "Explore", path: "/explore", active: location === "/explore" },
     { icon: MessageCircle, label: "Messages", path: "/messages", active: location === "/messages" },
     { icon: Heart, label: "Notifications", path: "/notifications", active: location === "/notifications" },
@@ -107,6 +109,18 @@ export default function Sidebar() {
               >
                 <Activity className={`mr-3 h-5 w-5 ${location === "/wellness" ? "text-blue-600" : "text-gray-400"}`} />
                 Wellness
+              </button>
+            </Link>
+            <Link href="/groups">
+              <button 
+                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  location === "/groups"
+                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Users className={`mr-3 h-5 w-5 ${location === "/groups" ? "text-blue-600" : "text-gray-400"}`} />
+                Groups
               </button>
             </Link>
             <Link href="/communities">

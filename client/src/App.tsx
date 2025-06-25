@@ -110,6 +110,9 @@ function AppContent() {
         <main className="flex-1 ml-64 min-h-screen">
           <Switch>
             <Route path="/" component={FeedPage} />
+            <Route path="/reels" component={ReelsPage} />
+            <Route path="/status" component={StatusPage} />
+            <Route path="/groups" component={GroupsPage} />
             <Route path="/posts/:id" component={PublicPostPage} />
             <Route path="/profile/:id?" component={ProfilePage} />
             <Route path="/profile" component={ProfilePage} />
