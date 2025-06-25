@@ -91,10 +91,8 @@ export default function ReelsPage() {
         }
       }
       
-      return apiRequest('/api/reels', {
-        method: 'POST',
-        body: reelData,
-      });
+      const response = await apiRequest('POST', '/api/reels', reelData);
+      return response.json();
     },
     onSuccess: (data) => {
       console.log("Reel upload successful:", data);
