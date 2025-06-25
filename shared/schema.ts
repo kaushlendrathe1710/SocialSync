@@ -587,6 +587,67 @@ export const insertStorySchema = createInsertSchema(stories).omit({
   createdAt: true,
 });
 
+// Insert schemas for new features
+export const insertReelSchema = createInsertSchema(reels).omit({
+  id: true,
+  createdAt: true,
+  likesCount: true,
+  commentsCount: true,
+  sharesCount: true,
+  viewsCount: true,
+  trending: true,
+});
+
+export const insertReelMusicSchema = createInsertSchema(reelMusic).omit({
+  id: true,
+  createdAt: true,
+  usageCount: true,
+});
+
+export const insertStatusUpdateSchema = createInsertSchema(statusUpdates).omit({
+  id: true,
+  createdAt: true,
+  viewsCount: true,
+  reactionsCount: true,
+});
+
+export const insertStatusViewSchema = createInsertSchema(statusViews).omit({
+  id: true,
+  viewedAt: true,
+});
+
+export const insertStatusReactionSchema = createInsertSchema(statusReactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGroupCategorySchema = createInsertSchema(groupCategories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGroupEventSchema = createInsertSchema(groupEvents).omit({
+  id: true,
+  createdAt: true,
+  currentAttendees: true,
+});
+
+export const insertGroupEventAttendeeSchema = createInsertSchema(groupEventAttendees).omit({
+  id: true,
+  responseDate: true,
+});
+
+export const insertGroupFileSchema = createInsertSchema(groupFiles).omit({
+  id: true,
+  createdAt: true,
+  downloadCount: true,
+});
+
+export const insertGroupAnnouncementSchema = createInsertSchema(groupAnnouncements).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
   createdAt: true,

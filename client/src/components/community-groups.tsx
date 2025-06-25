@@ -102,13 +102,27 @@ export function CommunityGroups() {
   // Mutations
   const createGroupMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/community-groups", "POST", {
-        name: data.name,
-        description: data.description || null,
-        category: data.category,
-        privacy: data.privacy,
-        tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
+      const response = await fetch("/api/community-groups", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description || null,
+          category: data.category,
+          privacy: data.privacy,
+          tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
+        }),
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to create community group');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -130,7 +144,20 @@ export function CommunityGroups() {
 
   const joinGroupMutation = useMutation({
     mutationFn: async (groupId: number) => {
-      return apiRequest(`/api/community-groups/${groupId}/join`, "POST");
+      const response = await fetch(`/api/community-groups/${groupId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to join community');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({

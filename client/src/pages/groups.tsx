@@ -29,7 +29,8 @@ import {
   Download,
   ExternalLink,
   MapPin,
-  Clock
+  Clock,
+  Volume2
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
