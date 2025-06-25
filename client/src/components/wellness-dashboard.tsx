@@ -221,9 +221,10 @@ export function WellnessDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/habit-logs", selectedDate] });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits"] }); // Refresh habits to get updated streak counts
       toast({
         title: "Habit updated",
-        description: "Habit completion status has been updated.",
+        description: "Habit completion status and streak have been updated.",
       });
     },
     onError: (error: any) => {
@@ -282,9 +283,9 @@ export function WellnessDashboard() {
   };
 
   const getHabitStreak = (habitId: number) => {
-    // This is a simplified streak calculation - could be enhanced
-    const todayCompleted = isHabitCompletedForDate(habitId, selectedDate);
-    return todayCompleted ? 1 : 0; // Simplified for now
+    // Get the streak count from the habit data
+    const habit = habits.find((h: Habit) => h.id === habitId);
+    return habit?.streakCount || 0;
   };
 
   const toggleHabitCompletion = (habitId: number) => {

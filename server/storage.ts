@@ -1544,6 +1544,8 @@ export class DatabaseStorage implements IStorage {
       ))
       .limit(1);
 
+    let resultLog: HabitLog;
+
     if (existingLog.length > 0) {
       // Update existing log
       const [updatedLog] = await db
@@ -1551,15 +1553,26 @@ export class DatabaseStorage implements IStorage {
         .set({ completed: log.completed, value: log.value, notes: log.notes })
         .where(eq(habitLogs.id, existingLog[0].id))
         .returning();
-      return updatedLog;
+      resultLog = updatedLog;
     } else {
       // Create new log
       const [newLog] = await db.insert(habitLogs).values({
         ...log,
         date: logDate
       }).returning();
-      return newLog;
+      resultLog = newLog;
     }
+
+    // Calculate and update streak count
+    if (log.completed) {
+      const newStreak = await this.calculateHabitStreak(log.habitId, log.userId);
+      await this.updateHabitStreak(log.habitId, newStreak);
+    } else {
+      // If marking as incomplete, reset streak to 0
+      await this.updateHabitStreak(log.habitId, 0);
+    }
+
+    return resultLog;
   }
 
   async getHabitLogs(habitId: number, days = 30): Promise<HabitLog[]> {
@@ -1591,6 +1604,45 @@ export class DatabaseStorage implements IStorage {
     await db.update(habitTracking)
       .set({ streakCount: streak })
       .where(eq(habitTracking.id, habitId));
+  }
+
+  async calculateHabitStreak(habitId: number, userId: number): Promise<number> {
+    // Get all completed logs for this habit, ordered by date descending
+    const logs = await db
+      .select()
+      .from(habitLogs)
+      .where(and(
+        eq(habitLogs.habitId, habitId),
+        eq(habitLogs.userId, userId),
+        eq(habitLogs.completed, true)
+      ))
+      .orderBy(desc(habitLogs.date));
+
+    if (logs.length === 0) return 0;
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Start from today and count backwards for consecutive days
+    let currentDate = new Date(today);
+    
+    for (let i = 0; i < logs.length; i++) {
+      const logDate = new Date(logs[i].date);
+      logDate.setHours(0, 0, 0, 0);
+      
+      const expectedDate = new Date(currentDate);
+      expectedDate.setDate(expectedDate.getDate() - streak);
+      
+      if (logDate.getTime() === expectedDate.getTime()) {
+        streak++;
+      } else if (logDate.getTime() < expectedDate.getTime()) {
+        // Found a gap in the streak
+        break;
+      }
+    }
+
+    return streak;
   }
 
   // Beauty & Shopping methods
