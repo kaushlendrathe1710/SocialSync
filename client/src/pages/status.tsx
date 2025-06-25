@@ -90,10 +90,7 @@ export default function StatusPage() {
   // Create status mutation
   const createStatusMutation = useMutation({
     mutationFn: async (statusData: FormData) => {
-      return apiRequest('/api/status', {
-        method: 'POST',
-        body: statusData,
-      });
+      return apiRequest('POST', '/api/status', statusData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/status'] });
@@ -104,10 +101,11 @@ export default function StatusPage() {
         description: "Your status has been shared successfully!",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Status creation error:", error);
       toast({
         title: "Post Failed",
-        description: "Failed to post your status. Please try again.",
+        description: error.message || "Failed to post your status. Please try again.",
         variant: "destructive",
       });
     },
@@ -116,10 +114,7 @@ export default function StatusPage() {
   // React to status mutation
   const reactToStatusMutation = useMutation({
     mutationFn: async ({ statusId, reaction }: { statusId: number; reaction: string }) => {
-      return apiRequest(`/api/status/${statusId}/react`, {
-        method: 'POST',
-        body: JSON.stringify({ reaction }),
-      });
+      return apiRequest('POST', `/api/status/${statusId}/react`, { reaction });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/status'] });
@@ -129,9 +124,7 @@ export default function StatusPage() {
   // Mark status as viewed
   const markViewedMutation = useMutation({
     mutationFn: async (statusId: number) => {
-      return apiRequest(`/api/status/${statusId}/view`, {
-        method: 'POST',
-      });
+      return apiRequest('POST', `/api/status/${statusId}/view`, {});
     },
   });
 

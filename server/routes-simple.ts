@@ -3087,7 +3087,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/status", requireAuth, upload.single('media'), async (req: Request, res: Response) => {
     try {
+      console.log("Creating status with data:", req.body);
+      console.log("File uploaded:", req.file);
+      
       const { type, content, backgroundColor, fontStyle, pollOptions, question, privacy = 'public' } = req.body;
+      
+      // Validate required fields based on type
+      if (type === 'text' && !content) {
+        return res.status(400).json({ message: "Content is required for text status" });
+      }
+      if (type === 'poll' && (!pollOptions || !content)) {
+        return res.status(400).json({ message: "Poll options and content are required for poll status" });
+      }
+      if (type === 'question' && !question) {
+        return res.status(400).json({ message: "Question is required for question status" });
+      }
+      if ((type === 'photo' || type === 'video') && !req.file) {
+        return res.status(400).json({ message: "Media file is required for photo/video status" });
+      }
       
       let mediaUrl = null;
       if (req.file) {
@@ -3109,15 +3126,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       if (type === 'poll' && pollOptions) {
-        statusData.pollOptions = JSON.parse(pollOptions);
-        statusData.pollVotes = new Array(JSON.parse(pollOptions).length).fill(0);
+        try {
+          const parsedOptions = JSON.parse(pollOptions);
+          statusData.pollOptions = parsedOptions;
+          statusData.pollVotes = new Array(parsedOptions.length).fill(0);
+        } catch (e) {
+          return res.status(400).json({ message: "Invalid poll options format" });
+        }
       }
 
       const status = await storage.createStatusUpdate(statusData);
+      console.log("Status created successfully:", status);
       res.json(status);
     } catch (error) {
       console.error("Create status error:", error);
-      res.status(500).json({ message: "Failed to create status" });
+      res.status(500).json({ message: "Failed to create status", error: error.message });
     }
   });
 
