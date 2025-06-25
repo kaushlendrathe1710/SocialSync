@@ -1892,6 +1892,7 @@ export class DatabaseStorage implements IStorage {
 
   async getReels(userId?: number): Promise<any[]> {
     try {
+      console.log("Getting reels from memory storage, total reels:", this.reels.length);
       // Return actual uploaded reels from memory storage
       return this.reels.map(reel => ({
         ...reel,
@@ -1941,6 +1942,7 @@ export class DatabaseStorage implements IStorage {
       
       // Store the reel in memory
       this.reels.push(newReel);
+      console.log("Reel stored in memory, total reels:", this.reels.length);
       
       return newReel;
     } catch (error) {
