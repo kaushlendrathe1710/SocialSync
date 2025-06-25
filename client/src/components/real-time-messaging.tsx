@@ -69,6 +69,17 @@ export default function RealTimeMessaging() {
   const wsRef = useRef<WebSocket | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Add error boundary to catch rendering issues
+  if (!user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <Card className="p-8 text-center">
+          <p>Please log in to access messages</p>
+        </Card>
+      </div>
+    );
+  }
+
   // WebSocket connection for real-time messaging
   useEffect(() => {
     if (!user) return;
