@@ -102,6 +102,7 @@ export function CommunityGroups() {
   // Mutations
   const createGroupMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log('Creating community group:', data);
       const response = await fetch("/api/community-groups", {
         method: 'POST',
         headers: {
@@ -119,21 +120,25 @@ export function CommunityGroups() {
       
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Community creation failed:', errorText);
         throw new Error(errorText || 'Failed to create community group');
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log('Community created successfully:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Community created",
-        description: "Your community group has been created successfully.",
+        description: `Your community "${data.name}" has been created successfully.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/community-groups"] });
       setShowCreateDialog(false);
       resetForm();
     },
     onError: (error: any) => {
+      console.error('Community creation error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create community group",
