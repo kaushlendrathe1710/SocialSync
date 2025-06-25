@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 25, 2025: Fixed messages page blank screen issue (AN012) - resolved missing imports for Select, ScrollArea, and DropdownMenu components in MessagesDropdown, preventing ReferenceError crashes when clicking message icon
 - June 25, 2025: Successfully implemented persistent video storage for Reels - Videos are now saved to disk and database permanently, with working upload functionality, proper file serving, and database persistence ensuring uploaded reels remain accessible across sessions with proper user data display. Fixed file filter to support all video formats including MP4 and MKV files.
 - June 25, 2025: Enhanced Reels interface with Instagram/TikTok-style design - Added prominent upload buttons, floating action button, improved video cards with user avatars, trending badges, and smooth interaction buttons for a professional social media experience
 - June 25, 2025: Fixed storage methods for new features - Added complete implementations for Reels, Status, and Groups storage methods, resolving upload errors and enabling full functionality for all three major new sections

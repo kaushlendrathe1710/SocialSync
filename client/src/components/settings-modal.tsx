@@ -52,6 +52,8 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose, type }: SettingsModalProps) {
   const { toast } = useToast();
+  const [loginActivity, setLoginActivity] = useState<any>(null);
+  const [showLoginActivity, setShowLoginActivity] = useState(false);
   const [selectedHelpTopic, setSelectedHelpTopic] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     likes: true,
@@ -878,9 +880,18 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
 
                       if (response.ok) {
                         const data = await response.json();
+                        const lastLoginFormatted = data.lastLogin 
+                          ? new Date(data.lastLogin).toLocaleString()
+                          : 'Unknown';
+                        
+                        // Show detailed login activity modal
+                        const deviceList = data.devices?.map((device: any) => 
+                          `${device.device} - ${device.location} (${new Date(device.timestamp).toLocaleString()})`
+                        ).join('\n') || 'No recent devices found';
+                        
                         toast({
                           title: "Login Activity",
-                          description: `Recent logins: ${data.recentLogins || 0}. Last login: ${data.lastLogin || 'Unknown'}`,
+                          description: `Recent logins: ${data.recentLogins || 0}\nLast login: ${lastLoginFormatted}\n\nRecent devices:\n${deviceList}`,
                         });
                       } else {
                         throw new Error('Failed to load login activity');
