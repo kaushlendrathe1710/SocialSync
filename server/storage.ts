@@ -1895,17 +1895,23 @@ export class DatabaseStorage implements IStorage {
   async getReels(userId?: number): Promise<any[]> {
     try {
       console.log("Getting reels from memory storage, total reels:", this.reels.length);
-      // Return actual uploaded reels from memory storage
-      return this.reels.map(reel => ({
-        ...reel,
-        user: {
-          id: reel.userId,
-          name: 'Current User',
-          username: 'currentuser',
-          avatar: '/uploads/default-avatar.jpg'
-        },
-        isLiked: false // You can implement like tracking later
-      }));
+      // Return actual uploaded reels from memory storage with real user data
+      const reelsWithUsers = await Promise.all(
+        this.reels.map(async (reel) => {
+          const user = await this.getUser(reel.userId);
+          return {
+            ...reel,
+            user: {
+              id: reel.userId,
+              name: user?.name || user?.email?.split('@')[0] || 'User',
+              username: user?.username || user?.email?.split('@')[0] || 'user',
+              avatar: user?.avatar || '/uploads/default-avatar.jpg'
+            },
+            isLiked: false // You can implement like tracking later
+          };
+        })
+      );
+      return reelsWithUsers;
     } catch (error) {
       console.error("Get reels error:", error);
       return [];
@@ -1914,6 +1920,7 @@ export class DatabaseStorage implements IStorage {
 
   async createReel(data: any): Promise<any> {
     try {
+      const user = await this.getUser(data.userId);
       const newReel = {
         id: Math.floor(Math.random() * 10000),
         userId: data.userId,
@@ -1930,9 +1937,9 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date().toISOString(),
         user: {
           id: data.userId,
-          name: 'Current User',
-          username: 'currentuser',
-          avatar: '/uploads/default-avatar.jpg'
+          name: user?.name || user?.email?.split('@')[0] || 'User',
+          username: user?.username || user?.email?.split('@')[0] || 'user',
+          avatar: user?.avatar || '/uploads/default-avatar.jpg'
         },
         music: data.musicId ? {
           id: data.musicId,

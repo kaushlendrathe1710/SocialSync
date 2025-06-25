@@ -434,14 +434,17 @@ export default function ReelsPage() {
                 <div className="flex-1">
                   {/* User Info */}
                   <div className="flex items-center space-x-3 mb-2">
-                    <Avatar className="w-10 h-10">
+                    <Avatar className="w-12 h-12 ring-2 ring-white/20">
                       <AvatarImage src={reel.user.avatar} />
-                      <AvatarFallback>{reel.user.name[0]}</AvatarFallback>
+                      <AvatarFallback className="bg-gradient-to-br from-pink-500 to-purple-600 text-white font-bold">
+                        {reel.user.name[0]?.toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold">@{reel.user.username}</p>
+                      <p className="font-bold text-white text-lg">{reel.user.name}</p>
+                      <p className="text-gray-300 text-sm">@{reel.user.username}</p>
                       {reel.music && (
-                        <div className="flex items-center space-x-1 text-sm text-gray-300">
+                        <div className="flex items-center space-x-1 text-sm text-gray-300 mt-1">
                           <Music className="w-3 h-3" />
                           <span>{reel.music.title} - {reel.music.artist}</span>
                         </div>
@@ -463,36 +466,47 @@ export default function ReelsPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col space-y-4 ml-4">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className={`rounded-full ${reel.isLiked ? 'text-red-500' : 'text-white'} hover:bg-white/20`}
-                    onClick={() => likeReelMutation.mutate(reel.id)}
-                  >
-                    <Heart className={`w-6 h-6 ${reel.isLiked ? 'fill-current' : ''}`} />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="rounded-full text-white hover:bg-white/20"
-                  >
-                    <MessageCircle className="w-6 h-6" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="rounded-full text-white hover:bg-white/20"
-                  >
-                    <Share className="w-6 h-6" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="rounded-full text-white hover:bg-white/20"
-                  >
-                    <Bookmark className="w-6 h-6" />
-                  </Button>
+                <div className="flex flex-col space-y-6 ml-4">
+                  <div className="flex flex-col items-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={`rounded-full w-12 h-12 ${reel.isLiked ? 'text-red-500' : 'text-white'} hover:bg-white/20 transition-all duration-200 hover:scale-110`}
+                      onClick={() => likeReelMutation.mutate(reel.id)}
+                    >
+                      <Heart className={`w-7 h-7 ${reel.isLiked ? 'fill-current' : ''}`} />
+                    </Button>
+                    <span className="text-xs text-white mt-1 font-medium">{reel.likesCount}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
+                    >
+                      <MessageCircle className="w-7 h-7" />
+                    </Button>
+                    <span className="text-xs text-white mt-1 font-medium">{reel.commentsCount}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
+                    >
+                      <Share className="w-7 h-7" />
+                    </Button>
+                    <span className="text-xs text-white mt-1 font-medium">{reel.sharesCount}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
+                    >
+                      <Bookmark className="w-7 h-7" />
+                    </Button>
+                  </div>
                   <Button
                     size="icon"
                     variant="ghost"
