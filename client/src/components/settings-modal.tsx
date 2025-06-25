@@ -355,15 +355,44 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Get personalized help from our team</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    window.open('mailto:support@chunumunu.com?subject=Support Request&body=Please describe your issue or question:', '_blank');
+                    toast({
+                      title: "Email Support",
+                      description: "Opening your email client to contact support",
+                    });
+                  }}
+                >
                   <Mail className="w-4 h-4 mr-2" />
                   Email Support
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Live Chat",
+                      description: "Live chat support will be available soon. Please use email support for now.",
+                    });
+                  }}
+                >
                   <Smartphone className="w-4 h-4 mr-2" />
                   Live Chat
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Report a Problem",
+                      description: "Please use email support to report any issues you're experiencing.",
+                    });
+                    window.open('mailto:support@chunumunu.com?subject=Problem Report&body=Please describe the problem you encountered:', '_blank');
+                  }}
+                >
                   Report a Problem
                 </Button>
               </CardContent>
@@ -376,13 +405,43 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                 <CardDescription>Connect with other users</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Community Guidelines",
+                      description: "Opening community guidelines page",
+                    });
+                    window.open('/community-guidelines', '_blank');
+                  }}
+                >
                   Community Guidelines
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Terms of Service",
+                      description: "Opening terms of service page",
+                    });
+                    window.open('/terms', '_blank');
+                  }}
+                >
                   Terms of Service
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Privacy Policy",
+                      description: "Opening privacy policy page",
+                    });
+                    window.open('/privacy', '_blank');
+                  }}
+                >
                   Privacy Policy
                 </Button>
               </CardContent>
