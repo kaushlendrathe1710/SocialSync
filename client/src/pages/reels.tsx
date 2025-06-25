@@ -74,6 +74,64 @@ export default function ReelsPage() {
     queryKey: ['/api/reels'],
   });
 
+  // Like reel mutation
+  const likeReelMutation = useMutation({
+    mutationFn: async (reelId: number) => {
+      return apiRequest('POST', `/api/reels/${reelId}/like`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to like reel",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Share reel mutation
+  const shareReelMutation = useMutation({
+    mutationFn: async (reelId: number) => {
+      return apiRequest('POST', `/api/reels/${reelId}/share`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
+      toast({
+        title: "Shared",
+        description: "Reel shared successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to share reel",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Save reel mutation
+  const saveReelMutation = useMutation({
+    mutationFn: async (reelId: number) => {
+      return apiRequest('POST', `/api/reels/${reelId}/save`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Saved",
+        description: "Reel saved to your collection!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save reel",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Create reel mutation
   const createReelMutation = useMutation({
     mutationFn: async (reelData: FormData) => {
@@ -115,18 +173,6 @@ export default function ReelsPage() {
         description: `Failed to upload your reel: ${error.message}`,
         variant: "destructive",
       });
-    },
-  });
-
-  // Like reel mutation
-  const likeReelMutation = useMutation({
-    mutationFn: async (reelId: number) => {
-      return apiRequest(`/api/reels/${reelId}/like`, {
-        method: 'POST',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
     },
   });
 
@@ -491,6 +537,12 @@ export default function ReelsPage() {
                       size="icon"
                       variant="ghost"
                       className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
+                      onClick={() => {
+                        toast({
+                          title: "Comments",
+                          description: "Comments feature coming soon!",
+                        });
+                      }}
                     >
                       <MessageCircle className="w-7 h-7" />
                     </Button>
@@ -501,6 +553,7 @@ export default function ReelsPage() {
                       size="icon"
                       variant="ghost"
                       className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
+                      onClick={() => shareReelMutation.mutate(reel.id)}
                     >
                       <Share className="w-7 h-7" />
                     </Button>
@@ -511,6 +564,7 @@ export default function ReelsPage() {
                       size="icon"
                       variant="ghost"
                       className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
+                      onClick={() => saveReelMutation.mutate(reel.id)}
                     >
                       <Bookmark className="w-7 h-7" />
                     </Button>
@@ -519,6 +573,12 @@ export default function ReelsPage() {
                     size="icon"
                     variant="ghost"
                     className="rounded-full text-white hover:bg-white/20"
+                    onClick={() => {
+                      toast({
+                        title: "More Options",
+                        description: "Additional options coming soon!",
+                      });
+                    }}
                   >
                     <MoreVertical className="w-6 h-6" />
                   </Button>

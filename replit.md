@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 25, 2025: Fixed Reels interactive buttons (AN017) - added proper onClick handlers for Like, Comment, Share, Bookmark, and More buttons in Reels section, implemented like/share/save mutations with API calls and user feedback, buttons now respond correctly to clicks
 - June 25, 2025: Fixed Explore Platform functionality (PA18) - enhanced Explore Platform button to scroll to content section and show dedicated explore content with platform features showcase, different content from trending section, and proper visual feedback
 - June 25, 2025: Created legal pages - added comprehensive Community Guidelines, Terms of Service, and Privacy Policy pages with proper routing, detailed sections covering safety, data protection, user rights, and legal compliance
 - June 25, 2025: Fixed virtual room visibility (AN012) - implemented live streams API and backend functionality, virtual rooms are now properly stored and can be accessed through direct links or other UI sections (removed from main feed per user preference)
