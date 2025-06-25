@@ -131,16 +131,20 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024 // 10MB limit for cloud storage
   },
   fileFilter: (req, file, cb) => {
-    // Accept images and videos
-    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|mov|avi|mkv/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Accept images and videos including MKV
+    console.log('File filter check:', {
+      originalName: file.originalname,
+      mimeType: file.mimetype
+    });
     
-    if (mimetype && extname) {
+    // Check if it's an image or video file
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      console.log('File accepted:', file.originalname);
       return cb(null, true);
-    } else {
-      cb(new Error('Only image and video files are allowed'));
     }
+    
+    console.log('File rejected:', file.originalname, file.mimetype);
+    cb(new Error('Only image and video files are allowed'));
   }
 });
 
