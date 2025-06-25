@@ -1892,62 +1892,17 @@ export class DatabaseStorage implements IStorage {
 
   async getReels(userId?: number): Promise<any[]> {
     try {
-      return [
-        {
-          id: 1,
-          userId: 1,
-          videoUrl: '/uploads/sample-reel1.mp4',
-          thumbnailUrl: '/uploads/sample-reel1-thumb.jpg',
-          caption: 'Check out this amazing transformation! 💄✨',
-          duration: 15,
-          privacy: 'public',
-          likesCount: 142,
-          commentsCount: 23,
-          sharesCount: 8,
-          viewsCount: 1205,
-          trending: true,
-          createdAt: new Date().toISOString(),
-          user: {
-            id: 1,
-            name: 'Beauty Guru',
-            username: 'beautyguru',
-            avatar: '/uploads/avatar1.jpg'
-          },
-          music: {
-            id: 1,
-            title: 'Trending Beat',
-            artist: 'Music Library'
-          },
-          isLiked: false
+      // Return actual uploaded reels from memory storage
+      return this.reels.map(reel => ({
+        ...reel,
+        user: {
+          id: reel.userId,
+          name: 'Current User',
+          username: 'currentuser',
+          avatar: '/uploads/default-avatar.jpg'
         },
-        {
-          id: 2,
-          userId: 2,
-          videoUrl: '/uploads/sample-reel2.mp4',
-          thumbnailUrl: '/uploads/sample-reel2-thumb.jpg',
-          caption: 'Quick skincare routine for busy mornings! 🌅',
-          duration: 30,
-          privacy: 'public',
-          likesCount: 89,
-          commentsCount: 15,
-          sharesCount: 5,
-          viewsCount: 743,
-          trending: false,
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          user: {
-            id: 2,
-            name: 'Skincare Expert',
-            username: 'skincareexpert',
-            avatar: '/uploads/avatar2.jpg'
-          },
-          music: {
-            id: 2,
-            title: 'Chill Vibes',
-            artist: 'Music Library'
-          },
-          isLiked: true
-        }
-      ];
+        isLiked: false // You can implement like tracking later
+      }));
     } catch (error) {
       console.error("Get reels error:", error);
       return [];
