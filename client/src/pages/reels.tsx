@@ -170,9 +170,18 @@ export default function ReelsPage() {
   // Handle file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    console.log("File selected:", file);
+    console.log("File properties:", {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size
+    });
+    
     if (file && file.type.startsWith('video/')) {
-      setNewReel({ ...newReel, videoFile: file });
+      console.log("Valid video file selected, updating state");
+      setNewReel(prev => ({ ...prev, videoFile: file }));
     } else {
+      console.log("Invalid file type or no file selected");
       toast({
         title: "Invalid File",
         description: "Please select a valid video file.",
@@ -183,7 +192,10 @@ export default function ReelsPage() {
 
   // Submit new reel
   const handleSubmitReel = () => {
+    console.log("Submit reel called, current state:", newReel);
+    
     if (!newReel.videoFile) {
+      console.log("No video file in state");
       toast({
         title: "No Video Selected",
         description: "Please select a video to upload.",
@@ -192,10 +204,28 @@ export default function ReelsPage() {
       return;
     }
 
+    console.log("Creating FormData with file:", {
+      name: newReel.videoFile.name,
+      type: newReel.videoFile.type,
+      size: newReel.videoFile.size
+    });
+
     const formData = new FormData();
     formData.append('video', newReel.videoFile);
     formData.append('caption', newReel.caption);
     formData.append('privacy', newReel.privacy);
+
+    // Verify FormData contents
+    for (let [key, value] of formData.entries()) {
+      console.log("FormData entry:", key, value);
+      if (value instanceof File) {
+        console.log("File details:", {
+          name: value.name,
+          type: value.type,
+          size: value.size
+        });
+      }
+    }
 
     createReelMutation.mutate(formData);
   };
@@ -267,6 +297,7 @@ export default function ReelsPage() {
                     onChange={handleFileUpload}
                     className="hidden"
                     id="video-upload"
+                    key={`video-upload-${Date.now()}`}
                   />
                   <label
                     htmlFor="video-upload"
