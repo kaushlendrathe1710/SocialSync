@@ -56,6 +56,17 @@ interface StatusUpdate {
   userReaction?: string;
 }
 
+interface NewStatus {
+  content: string;
+  backgroundColor: string;
+  fontStyle: string;
+  pollOptions: string[];
+  question: string;
+  privacy: string;
+  mediaFile: File | null;
+  mediaFiles: File[];
+}
+
 const backgroundColors = [
   '#4F46E5', '#7C3AED', '#EC4899', '#EF4444', '#F59E0B',
   '#10B981', '#06B6D4', '#8B5CF6', '#F97316', '#84CC16'
@@ -350,6 +361,7 @@ export default function StatusPage() {
                       <input
                         type="file"
                         accept="image/*"
+                        multiple
                         onChange={handleFileUpload}
                         className="hidden"
                         id="photo-upload"
@@ -357,7 +369,8 @@ export default function StatusPage() {
                       <label htmlFor="photo-upload" className="cursor-pointer">
                         <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                         <span className="text-sm text-gray-600">
-                          {newStatus.mediaFile ? newStatus.mediaFile.name : 'Click to upload photo'}
+                          {newStatus.mediaFiles.length > 0 ? `${newStatus.mediaFiles.length} photos selected` : 
+                           newStatus.mediaFile ? newStatus.mediaFile.name : 'Click to upload photos (multiple allowed)'}
                         </span>
                       </label>
                     </div>

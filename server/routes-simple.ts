@@ -3165,13 +3165,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type === 'question' && !question) {
         return res.status(400).json({ message: "Question is required for question status" });
       }
-      if ((type === 'photo' || type === 'video') && !req.file) {
+      if ((type === 'photo' || type === 'video') && (!req.files || (req.files as Express.Multer.File[]).length === 0)) {
         return res.status(400).json({ message: "Media file is required for photo/video status" });
       }
       
       let mediaUrl = null;
-      if (req.file) {
-        mediaUrl = `/uploads/${req.file.filename}`;
+      if (req.files && (req.files as Express.Multer.File[]).length > 0) {
+        const files = req.files as Express.Multer.File[];
+        if (files.length === 1) {
+          mediaUrl = `/uploads/${files[0].filename}`;
+        } else {
+          // Multiple files - create array of URLs
+          mediaUrl = files.map(file => `/uploads/${file.filename}`).join(',');
+        }
       }
 
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
