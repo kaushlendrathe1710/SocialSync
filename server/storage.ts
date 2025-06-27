@@ -529,33 +529,6 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(likes).where(eq(likes.userId, userId));
   }
 
-  async getPostReactions(postId: number): Promise<any[]> {
-    try {
-      const result = await db
-        .select({
-          like: likes,
-          user: users,
-        })
-        .from(likes)
-        .innerJoin(users, eq(likes.userId, users.id))
-        .where(eq(likes.postId, postId))
-        .orderBy(desc(likes.createdAt));
-
-      return result.map(({ like, user }) => ({
-        ...like,
-        user: {
-          id: user.id,
-          name: user.name || user.email?.split('@')[0] || 'User',
-          username: user.username || user.email?.split('@')[0] || 'user',
-          avatar: user.avatar
-        }
-      }));
-    } catch (error) {
-      console.error("Get post reactions error:", error);
-      return [];
-    }
-  }
-
   async updateLike(userId: number, postId: number, reactionType: string): Promise<Like | undefined> {
     const [updated] = await db
       .update(likes)
@@ -2002,15 +1975,21 @@ export class DatabaseStorage implements IStorage {
           user: users,
           likesCount: sql<number>`COALESCE(COUNT(DISTINCT ${likes.id}), 0)`,
           commentsCount: sql<number>`COALESCE(COUNT(DISTINCT ${comments.id}), 0)`,
-          viewsCount: sql<number>`COALESCE(${posts.viewCount}, 0)`,
+          viewsCount: sql<number>`COALESCE(${posts.viewsCount}, 0)`,
         })
         .from(posts)
         .innerJoin(users, eq(posts.userId, users.id))
         .leftJoin(likes, eq(likes.postId, posts.id))
         .leftJoin(comments, eq(comments.postId, posts.id))
-        .where(eq(posts.privacy, 'public'))
+        .where(and(
+          eq(posts.privacy, 'public'),
+          or(
+            isNull(posts.expiresAt),
+            gt(posts.expiresAt, new Date())
+          )
+        ))
         .groupBy(posts.id, users.id)
-        .orderBy(desc(sql`COALESCE(COUNT(DISTINCT ${likes.id}), 0) + COALESCE(COUNT(DISTINCT ${comments.id}), 0) + COALESCE(${posts.viewCount}, 0)`))
+        .orderBy(desc(sql`COALESCE(COUNT(DISTINCT ${likes.id}), 0) + COALESCE(COUNT(DISTINCT ${comments.id}), 0) + COALESCE(${posts.viewsCount}, 0)`))
         .limit(limit);
 
       return result.map(({ post, user, likesCount, commentsCount, viewsCount }) => ({
