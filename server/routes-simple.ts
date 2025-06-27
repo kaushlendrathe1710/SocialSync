@@ -2635,7 +2635,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/events", async (req: Request, res: Response) => {
     try {
-      const events = await storage.getEvents(req.session.userId);
+      // Show all events to everyone, not just user's own events
+      const events = await storage.getEvents();
       res.json(events);
     } catch (error) {
       console.error("Get events error:", error);

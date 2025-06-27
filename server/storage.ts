@@ -1800,6 +1800,7 @@ export class DatabaseStorage implements IStorage {
       .from(events)
       .innerJoin(users, eq(events.creatorId, users.id));
 
+    // Only filter by userId if specifically requested (for user's own events page)
     if (userId) {
       query = query.where(eq(events.creatorId, userId));
     }
