@@ -738,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Create notification for post author (if not reacting to own post)
         if (post.userId !== userId) {
-          await storage.createNotification({
+          const notification = await storage.createNotification({
             userId: post.userId,
             type: 'like',
             fromUserId: userId,
@@ -746,6 +746,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             reactionType: reactionType,
             isRead: false,
           });
+
+          // Get user info for notification
+          const fromUser = await storage.getUser(userId);
+          
+          // Broadcast notification in real-time if user is online
+          if (connectedUsers.has(post.userId)) {
+            const userSockets = connectedUsers.get(post.userId)!;
+            userSockets.forEach(socket => {
+              if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                  type: 'new_notification',
+                  data: {
+                    ...notification,
+                    fromUser: fromUser,
+                    message: `${fromUser?.name || 'Someone'} reacted to your post`
+                  }
+                }));
+              }
+            });
+          }
         }
         
         res.json({ reacted: true, reactionType });
@@ -917,13 +937,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create notification for post author (if not commenting on own post)
       if (post.userId !== req.session.userId) {
-        await storage.createNotification({
+        const notification = await storage.createNotification({
           userId: post.userId,
           type: 'comment',
           fromUserId: req.session.userId,
           postId: postId,
           isRead: false,
         });
+
+        // Get user info for notification
+        const fromUser = await storage.getUser(req.session.userId);
+        
+        // Broadcast notification in real-time if user is online
+        if (connectedUsers.has(post.userId)) {
+          const userSockets = connectedUsers.get(post.userId)!;
+          userSockets.forEach(socket => {
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({
+                type: 'new_notification',
+                data: {
+                  ...notification,
+                  fromUser: fromUser,
+                  message: `${fromUser?.name || 'Someone'} commented on your post`
+                }
+              }));
+            }
+          });
+        }
       }
 
       res.json(comment);

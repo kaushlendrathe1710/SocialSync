@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./lib/auth.tsx";
 import { useAuth } from "./hooks/use-auth";
 import { useAuthContext } from "./lib/auth";
+import { NotificationProvider } from "./contexts/notification-context";
 import LandingPage from "@/pages/landing";
 import AuthPage from "@/pages/auth";
 import FeedPage from "@/pages/feed";
