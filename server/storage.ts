@@ -585,7 +585,7 @@ export class DatabaseStorage implements IStorage {
       return result.map(({ comment, user, userReaction }) => ({
         ...comment,
         user,
-        userReaction: userReaction || null,
+        userReaction: userReaction || undefined,
       }));
     } else {
       // No user context, just get comments without reactions
@@ -602,7 +602,7 @@ export class DatabaseStorage implements IStorage {
       return result.map(({ comment, user }) => ({
         ...comment,
         user,
-        userReaction: null,
+        userReaction: undefined,
       }));
     }
   }
@@ -628,7 +628,7 @@ export class DatabaseStorage implements IStorage {
       return result.map(({ comment, user, userReaction }) => ({
         ...comment,
         user,
-        userReaction: userReaction || null,
+        userReaction: userReaction || undefined,
       }));
     } else {
       // No user context, just get comments without reactions
@@ -645,7 +645,7 @@ export class DatabaseStorage implements IStorage {
       return result.map(({ comment, user }) => ({
         ...comment,
         user,
-        userReaction: null,
+        userReaction: undefined,
       }));
     }
   }
@@ -1810,7 +1810,7 @@ export class DatabaseStorage implements IStorage {
       ...event,
       creator,
       attendeeStatus: 'none',
-      attendeeCount: event.currentAttendees,
+      attendeeCount: event.currentAttendees || 0,
     }));
   }
 
