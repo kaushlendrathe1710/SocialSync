@@ -1210,19 +1210,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriends(userId: number): Promise<User[]> {
-    const result = await db
-      .select({ user: users })
+    // Get friends from friendships table
+    const friendships = await db
+      .select()
       .from(friendships)
-      .innerJoin(users, or(
-        and(eq(friendships.user1Id, userId), eq(users.id, friendships.user2Id)),
-        and(eq(friendships.user2Id, userId), eq(users.id, friendships.user1Id))
-      ))
       .where(or(
         eq(friendships.user1Id, userId),
         eq(friendships.user2Id, userId)
       ));
 
-    return result.map(({ user }) => user);
+    // Extract friend user IDs
+    const friendIds = friendships.map(friendship => 
+      friendship.user1Id === userId ? friendship.user2Id : friendship.user1Id
+    );
+
+    if (friendIds.length === 0) {
+      return [];
+    }
+
+    // Get user details for all friends
+    const friends = await db
+      .select()
+      .from(users)
+      .where(inArray(users.id, friendIds));
+
+    return friends;
   }
 
   async getFriendSuggestions(userId: number, limit = 10): Promise<User[]> {
