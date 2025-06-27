@@ -340,6 +340,37 @@ export default function SavedPage() {
                           </Button>
                         </div>
                         <p className="text-sm text-gray-700 mb-3 line-clamp-3">{post.text}</p>
+                        
+                        {/* Display image if exists */}
+                        {post.imageUrl && (
+                          <div className="mb-3">
+                            <img 
+                              src={post.imageUrl} 
+                              alt="Post image" 
+                              className="w-full h-48 object-cover rounded-lg"
+                              onError={(e) => {
+                                console.error('Image failed to load:', post.imageUrl);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Display video if exists */}
+                        {post.videoUrl && (
+                          <div className="mb-3">
+                            <video 
+                              src={post.videoUrl} 
+                              controls 
+                              className="w-full h-48 object-cover rounded-lg"
+                              onError={(e) => {
+                                console.error('Video failed to load:', post.videoUrl);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        
                         <div className="flex items-center justify-between text-xs text-gray-500">
                           <div className="flex items-center space-x-4">
                             <span className="flex items-center">

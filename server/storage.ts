@@ -1904,6 +1904,8 @@ export class DatabaseStorage implements IStorage {
         ...post,
         user,
         text: post.content,
+        imageUrl: post.imageUrl,
+        videoUrl: post.videoUrl,
         savedAt: savedAt?.toISOString(),
       }));
     } catch (error) {
