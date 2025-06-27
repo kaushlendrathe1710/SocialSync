@@ -80,14 +80,15 @@ export default function StatusPage() {
   const [selectedStatus, setSelectedStatus] = useState<StatusUpdate | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createType, setCreateType] = useState<'photo' | 'video' | 'text' | 'poll' | 'question'>('text');
-  const [newStatus, setNewStatus] = useState({
+  const [newStatus, setNewStatus] = useState<NewStatusState>({
     content: '',
     backgroundColor: backgroundColors[0],
     fontStyle: fontStyles[0],
     pollOptions: ['', ''],
     question: '',
     privacy: 'public',
-    mediaFile: null as File | null,
+    mediaFile: null,
+    mediaFiles: [],
   });
 
   const { toast } = useToast();
@@ -242,7 +243,7 @@ export default function StatusPage() {
       formData.append('question', newStatus.question);
     } else if (createType === 'photo' && newStatus.mediaFiles.length > 0) {
       // Multiple images for photo status
-      newStatus.mediaFiles.forEach((file, index) => {
+      newStatus.mediaFiles.forEach((file: File, index: number) => {
         formData.append(`media${index}`, file);
       });
       formData.append('mediaCount', newStatus.mediaFiles.length.toString());
