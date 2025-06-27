@@ -129,6 +129,7 @@ function AppContent() {
             <Route path="/reels" component={ReelsPage} />
             <Route path="/reels/:id" component={ReelsPage} />
             <Route path="/status" component={StatusPage} />
+            <Route path="/groups/:id" component={GroupsPage} />
             <Route path="/groups" component={GroupsPage} />
             <Route path="/virtual-rooms" component={VirtualRoomsPage} />
             <Route path="/posts/:id" component={PublicPostPage} />

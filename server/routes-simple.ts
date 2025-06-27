@@ -2377,6 +2377,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/groups/:id", async (req: Request, res: Response) => {
+    try {
+      // Authentication handled above
+      const { id } = req.params;
+      const groupId = parseInt(id);
+      
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: "Invalid group ID" });
+      }
+      
+      const group = await storage.getGroupById(groupId);
+      if (!group) {
+        return res.status(404).json({ message: "Group not found" });
+      }
+      
+      res.json(group);
+    } catch (error) {
+      console.error("Get group by ID error:", error);
+      res.status(500).json({ message: "Failed to get group" });
+    }
+  });
+
   app.post("/api/community-groups/:id/join", async (req: Request, res: Response) => {
     // Check authentication
     if (!req.session.userId) {

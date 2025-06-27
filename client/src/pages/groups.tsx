@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -106,6 +107,9 @@ const groupCategories = [
 ];
 
 export default function GroupsPage() {
+  const params = useParams();
+  const groupId = params.id;
+  
   const [activeTab, setActiveTab] = useState('discover');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -122,6 +126,122 @@ export default function GroupsPage() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch specific group if ID is provided
+  const { data: currentGroup, isLoading: groupLoading } = useQuery({
+    queryKey: ['/api/groups', groupId],
+    queryFn: () => apiRequest('GET', `/api/groups/${groupId}`),
+    enabled: !!groupId,
+  });
+
+  // If viewing a specific group, render group detail view
+  if (groupId && currentGroup) {
+    return (
+      <div className="p-6 space-y-6">
+        {/* Group Header */}
+        <div className="relative">
+          {currentGroup.coverImage && (
+            <img 
+              src={currentGroup.coverImage} 
+              alt={currentGroup.name}
+              className="w-full h-64 object-cover rounded-lg"
+            />
+          )}
+          <div className="bg-white rounded-lg shadow-lg p-6 mt-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-2">
+                  <h1 className="text-3xl font-bold">{currentGroup.name}</h1>
+                  {currentGroup.isVerified && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                      <Shield className="w-3 h-3 mr-1" />
+                      Verified
+                    </Badge>
+                  )}
+                  <Badge variant="outline">{currentGroup.privacy}</Badge>
+                </div>
+                <p className="text-gray-600 mb-4">{currentGroup.description}</p>
+                <div className="flex items-center space-x-6 text-sm text-gray-500">
+                  <span className="flex items-center">
+                    <Users className="w-4 h-4 mr-1" />
+                    {currentGroup.memberCount} members
+                  </span>
+                  <span className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    Created {new Date(currentGroup.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Button>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Join Group
+                </Button>
+                <Button variant="outline">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Message
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Group Content Tabs */}
+        <Tabs defaultValue="posts" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="members">Members</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="posts" className="space-y-4">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-center text-gray-500">Group posts will appear here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="events" className="space-y-4">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-center text-gray-500">Group events will appear here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="files" className="space-y-4">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-center text-gray-500">Shared files will appear here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="members" className="space-y-4">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-center text-gray-500">Group members will appear here.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  }
+
+  // Show loading state for specific group
+  if (groupId && groupLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading group...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch groups based on tab
   const { data: groups = [], isLoading } = useQuery({
