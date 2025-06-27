@@ -2215,13 +2215,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/friends", async (req: Request, res: Response) => {
     try {
+      console.log('Friends endpoint - Session check:', { 
+        sessionId: req.sessionID, 
+        userId: req.session.userId,
+        sessionExists: !!req.session 
+      });
+      
       if (!req.session.userId) {
+        console.log('Friends endpoint - No user ID in session');
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      // Get mutual followers as friends (users who follow each other)
-      const mutualFriends = await storage.getMutualFollowers(req.session.userId);
-      res.json(mutualFriends);
+      // Get friends based on existing friendships table for now
+      // In the future, this can be enhanced to use mutual follows
+      const friends = await storage.getFriends(req.session.userId);
+      console.log('Friends found:', friends.length);
+      res.json(friends);
     } catch (error) {
       console.error("Get friends error:", error);
       res.status(500).json({ message: "Failed to get friends" });
