@@ -1383,6 +1383,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/conversations", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { receiverId } = req.body;
+      if (!receiverId || typeof receiverId !== 'number') {
+        return res.status(400).json({ message: "Valid receiverId is required" });
+      }
+
+      // Check if conversation already exists
+      const existingConversations = await storage.getConversations(req.session.userId);
+      const existingConversation = existingConversations.find(conv => 
+        (conv.senderId === req.session.userId && conv.receiverId === receiverId) ||
+        (conv.senderId === receiverId && conv.receiverId === req.session.userId)
+      );
+
+      if (existingConversation) {
+        return res.json({ success: true, conversationExists: true });
+      }
+
+      // Create a placeholder message to establish the conversation
+      const message = await storage.createMessage({
+        senderId: req.session.userId,
+        receiverId,
+        content: "👋", // Initial greeting
+      });
+
+      res.json({ success: true, conversationExists: false, message });
+    } catch (error) {
+      console.error("Create conversation error:", error);
+      res.status(500).json({ message: "Failed to create conversation" });
+    }
+  });
+
   // Mark message as read endpoint
   app.post("/api/messages/:id/read", async (req: Request, res: Response) => {
     try {
