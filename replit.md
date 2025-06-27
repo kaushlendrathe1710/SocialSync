@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 27, 2025: Fixed top navigation search bar functionality (AN028) - resolved issue where search results showed posts but couldn't be opened by adding proper navigation to post detail pages, corrected routing from /post/:id to /posts/:id to match existing routes, search bar now properly opens both users and posts
 - June 27, 2025: Fixed events visibility issue (AN027) - resolved events not visible to other users by removing user ID filter from events API endpoint, all public events now display properly to all users regardless of who created them, verified with 3 active events from different creators
 - June 27, 2025: Fixed profile message button functionality (AN026) - resolved non-working Message button on user profiles by adding proper onClick handler, implemented conversation creation API endpoint with duplicate checking, added navigation to messages page, users can now start conversations directly from any profile
 - June 27, 2025: Fixed virtual room access issue (AN025) - created dedicated Virtual Rooms page to view and join created live streams, added navigation link in sidebar, implemented proper room listing with user details and join functionality, resolved issue where created virtual rooms were not accessible anywhere in the interface

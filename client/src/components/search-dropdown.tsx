@@ -222,6 +222,7 @@ export default function SearchDropdown({
                       onClick={() => {
                         addToRecentSearches(post.content?.substring(0, 30) + "..." || "Post");
                         onClose();
+                        setLocation(`/posts/${post.id}`);
                       }}
                     >
                       <Avatar className="h-8 w-8 mr-3 mt-1">
