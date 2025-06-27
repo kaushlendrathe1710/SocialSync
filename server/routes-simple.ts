@@ -2213,13 +2213,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/friends", async (req: Request, res: Response) => {
+  app.get("/api/friends", requireAuth, async (req: Request, res: Response) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      const friends = await storage.getFriends(req.session.userId);
+      const friends = await storage.getFriends(req.session.userId!);
       res.json(friends);
     } catch (error) {
       console.error("Get friends error:", error);
