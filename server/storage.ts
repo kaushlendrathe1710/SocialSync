@@ -2211,7 +2211,59 @@ export class DatabaseStorage implements IStorage {
 
   async toggleReelLike(reelId: number, userId: number): Promise<boolean> {
     try {
-      return Math.random() > 0.5;
+      // Check if user already liked this reel
+      const [existingLike] = await db
+        .select()
+        .from(likes)
+        .where(and(
+          eq(likes.userId, userId),
+          eq(likes.postId, reelId), // Using postId for reels too
+          eq(likes.reactionType, 'like')
+        ))
+        .limit(1);
+
+      if (existingLike) {
+        // Unlike the reel
+        await db
+          .delete(likes)
+          .where(and(
+            eq(likes.userId, userId),
+            eq(likes.postId, reelId),
+            eq(likes.reactionType, 'like')
+          ));
+        
+        // Decrease likes count in reels table if it exists
+        try {
+          await db
+            .update(reels)
+            .set({ likesCount: sql`${reels.likesCount} - 1` })
+            .where(eq(reels.id, reelId));
+        } catch (e) {
+          // Reels table might not exist yet, ignore error
+        }
+        
+        return false; // Now unliked
+      } else {
+        // Like the reel
+        await db.insert(likes).values({
+          userId,
+          postId: reelId,
+          reactionType: 'like',
+          createdAt: new Date(),
+        });
+        
+        // Increase likes count in reels table if it exists
+        try {
+          await db
+            .update(reels)
+            .set({ likesCount: sql`${reels.likesCount} + 1` })
+            .where(eq(reels.id, reelId));
+        } catch (e) {
+          // Reels table might not exist yet, ignore error
+        }
+        
+        return true; // Now liked
+      }
     } catch (error) {
       console.error("Toggle reel like error:", error);
       throw error;
