@@ -43,6 +43,7 @@ import {
   UserX,
   AlertTriangle
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 interface SettingsModalProps {
   isOpen: boolean;

@@ -22,8 +22,11 @@ import {
   MoreVertical,
   Upload,
   Video,
-  Camera
+  Camera,
+  Link,
+  Send
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { apiRequest } from '@/lib/queryClient';
 
 interface Reel {
@@ -79,10 +82,16 @@ export default function ReelsPage() {
     mutationFn: async (reelId: number) => {
       return apiRequest('POST', `/api/reels/${reelId}/like`, {});
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
+      toast({
+        title: data?.isLiked ? "Liked!" : "Unliked",
+        description: data?.isLiked ? "Added to your liked reels" : "Removed from liked reels",
+        duration: 1500,
+      });
     },
     onError: (error: any) => {
+      console.error("Like error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to like reel",
@@ -93,19 +102,20 @@ export default function ReelsPage() {
 
   // Share reel mutation
   const shareReelMutation = useMutation({
-    mutationFn: async (reelId: number) => {
-      return apiRequest('POST', `/api/reels/${reelId}/share`, {});
+    mutationFn: async ({ reelId, platform }: { reelId: number; platform?: string }) => {
+      return apiRequest('POST', `/api/reels/${reelId}/share`, { platform });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
+      const platform = variables.platform;
       toast({
-        title: "Shared",
-        description: "Reel shared successfully!",
+        title: "Shared Successfully",
+        description: platform ? `Reel shared to ${platform}!` : "Reel shared successfully!",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: "Share Failed",
         description: error.message || "Failed to share reel",
         variant: "destructive",
       });
@@ -138,7 +148,7 @@ export default function ReelsPage() {
       console.log("=== API REQUEST START ===");
       console.log("Making API request to /api/reels with FormData");
       // Log FormData contents
-      for (let [key, value] of reelData.entries()) {
+      reelData.forEach((value, key) => {
         console.log(`API FormData ${key}:`, value);
         if (value instanceof File) {
           console.log(`${key} is valid File object:`, {
@@ -147,7 +157,7 @@ export default function ReelsPage() {
             size: value.size
           });
         }
-      }
+      });
       
       const response = await apiRequest('POST', '/api/reels', reelData);
       return response.json();
@@ -285,7 +295,7 @@ export default function ReelsPage() {
 
     // Verify FormData contents before sending
     console.log("=== FORMDATA VERIFICATION ===");
-    for (let [key, value] of formData.entries()) {
+    formData.forEach((value, key) => {
       console.log(`FormData ${key}:`, value);
       if (value instanceof File) {
         console.log(`${key} file details:`, {
@@ -294,7 +304,7 @@ export default function ReelsPage() {
           size: value.size
         });
       }
-    }
+    });
 
     console.log("Calling mutation...");
     createReelMutation.mutate(formData);
@@ -527,6 +537,7 @@ export default function ReelsPage() {
                       variant="ghost"
                       className={`rounded-full w-12 h-12 ${reel.isLiked ? 'text-red-500' : 'text-white'} hover:bg-white/20 transition-all duration-200 hover:scale-110`}
                       onClick={() => likeReelMutation.mutate(reel.id)}
+                      disabled={likeReelMutation.isPending}
                     >
                       <Heart className={`w-7 h-7 ${reel.isLiked ? 'fill-current' : ''}`} />
                     </Button>
@@ -549,14 +560,53 @@ export default function ReelsPage() {
                     <span className="text-xs text-white mt-1 font-medium">{reel.commentsCount}</span>
                   </div>
                   <div className="flex flex-col items-center">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
-                      onClick={() => shareReelMutation.mutate(reel.id)}
-                    >
-                      <Share className="w-7 h-7" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
+                        >
+                          <Share className="w-7 h-7" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem 
+                          onClick={() => shareReelMutation.mutate({ reelId: reel.id, platform: 'WhatsApp' })}
+                          className="flex items-center gap-2"
+                        >
+                          <Send className="w-4 h-4 text-green-600" />
+                          Share to WhatsApp
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => shareReelMutation.mutate({ reelId: reel.id, platform: 'Instagram' })}
+                          className="flex items-center gap-2"
+                        >
+                          <Camera className="w-4 h-4 text-pink-600" />
+                          Share to Instagram
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => shareReelMutation.mutate({ reelId: reel.id, platform: 'Twitter' })}
+                          className="flex items-center gap-2"
+                        >
+                          <Share className="w-4 h-4 text-blue-500" />
+                          Share to Twitter
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/reels/${reel.id}`);
+                            toast({
+                              title: "Link Copied",
+                              description: "Reel link copied to clipboard!",
+                            });
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Link className="w-4 h-4" />
+                          Copy Link
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <span className="text-xs text-white mt-1 font-medium">{reel.sharesCount}</span>
                   </div>
                   <div className="flex flex-col items-center">
