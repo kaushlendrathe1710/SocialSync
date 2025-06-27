@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { useNotifications } from '@/contexts/notification-context';
 import { api } from '@/lib/api';
 import { MessageWithUser, User } from '@shared/schema';
 import { 
@@ -53,12 +54,12 @@ export default function RealTimeMessaging() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { onlineUsers } = useNotifications();
   const [location, setLocation] = useLocation();
   const { userId: paramUserId } = useParams();
   const [selectedConversation, setSelectedConversation] = useState<User | null>(null);
   const [messageText, setMessageText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
   const [userPrivacySettings, setUserPrivacySettings] = useState<{[key: number]: {onlineStatus: boolean}}>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -583,7 +584,7 @@ export default function RealTimeMessaging() {
                     const otherUser = isSelfMessage ? message.sender : (message.senderId === user?.id ? message.receiver : message.sender);
                     const isSelected = selectedConversation?.id === otherUser.id;
                     const isUnread = !message.readAt && message.receiverId === user?.id;
-                    const isOnline = onlineUsers.includes(otherUser.id) && 
+                    const isOnline = onlineUsers.has(otherUser.id) && 
                       (userPrivacySettings[otherUser.id]?.onlineStatus !== false);
                     
                     return (
@@ -664,7 +665,7 @@ export default function RealTimeMessaging() {
                             {selectedConversation.name?.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        {onlineUsers.includes(selectedConversation.id) && 
+                        {onlineUsers.has(selectedConversation.id) && 
                          (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) && (
                           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                         )}
@@ -674,7 +675,7 @@ export default function RealTimeMessaging() {
                           {selectedConversation.name}
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {onlineUsers.includes(selectedConversation.id) && 
+                          {onlineUsers.has(selectedConversation.id) && 
                            (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? (
                             <span className="text-green-600 dark:text-green-400 font-medium">Active now</span>
                           ) : (
