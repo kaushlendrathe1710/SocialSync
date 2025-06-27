@@ -1211,7 +1211,7 @@ export class DatabaseStorage implements IStorage {
 
   async getFriends(userId: number): Promise<User[]> {
     // Get friends from friendships table
-    const friendships = await db
+    const friendshipRecords = await db
       .select()
       .from(friendships)
       .where(or(
@@ -1220,7 +1220,7 @@ export class DatabaseStorage implements IStorage {
       ));
 
     // Extract friend user IDs
-    const friendIds = friendships.map(friendship => 
+    const friendIds = friendshipRecords.map((friendship: Friendship) => 
       friendship.user1Id === userId ? friendship.user2Id : friendship.user1Id
     );
 
