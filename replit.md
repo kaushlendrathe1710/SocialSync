@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 27, 2025: Fixed profile message button functionality (AN026) - resolved non-working Message button on user profiles by adding proper onClick handler, implemented conversation creation API endpoint with duplicate checking, added navigation to messages page, users can now start conversations directly from any profile
 - June 27, 2025: Fixed virtual room access issue (AN025) - created dedicated Virtual Rooms page to view and join created live streams, added navigation link in sidebar, implemented proper room listing with user details and join functionality, resolved issue where created virtual rooms were not accessible anywhere in the interface
 - June 27, 2025: Fixed post expiration system comprehensively (AN024) - implemented complete post expiration filtering across all endpoints (getPosts, getPublicPosts, getPost, searchPosts), expired posts are now properly hidden from all feeds and search results, verified with database testing showing 2 expired posts out of 20 total are correctly filtered
 - June 27, 2025: Enhanced notification system with comprehensive reaction details (AN023) - added reaction_type and metadata columns to notifications table, implemented detailed reaction viewing with emoji-specific grouping, enhanced notification display to show specific reaction types instead of generic "liked your post"
