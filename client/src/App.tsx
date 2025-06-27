@@ -27,6 +27,9 @@ import Navigation from "@/components/navigation";
 import Sidebar from "@/components/sidebar";
 import NotFound from "@/pages/not-found";
 import PublicPostPage from "@/pages/public-post";
+import CommunityGuidelinesPage from "@/pages/community-guidelines";
+import TermsOfServicePage from "@/pages/terms-of-service";
+import PrivacyPolicyPage from "@/pages/privacy-policy";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -138,6 +141,9 @@ function AppContent() {
             <Route path="/events" component={EventsPage} />
             <Route path="/saved" component={SavedPage} />
             <Route path="/settings" component={SettingsPage} />
+            <Route path="/community-guidelines" component={CommunityGuidelinesPage} />
+            <Route path="/terms" component={TermsOfServicePage} />
+            <Route path="/privacy" component={PrivacyPolicyPage} />
             <Route component={NotFound} />
           </Switch>
         </main>
