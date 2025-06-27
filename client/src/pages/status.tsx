@@ -83,9 +83,14 @@ export default function StatusPage() {
   const queryClient = useQueryClient();
 
   // Fetch status updates
-  const { data: statusUpdates = [], isLoading } = useQuery({
+  const { data: statusUpdates = [], isLoading, error } = useQuery<StatusUpdate[]>({
     queryKey: ['/api/status'],
   });
+
+  // Log for debugging
+  console.log("Status updates data:", statusUpdates);
+  console.log("Status updates loading:", isLoading);
+  console.log("Status updates error:", error);
 
   // Create status mutation
   const createStatusMutation = useMutation({
@@ -228,6 +233,7 @@ export default function StatusPage() {
   };
 
   const openStatusViewer = (status: StatusUpdate) => {
+    console.log("Opening status viewer for:", status);
     setSelectedStatus(status);
     if (!status.hasViewed) {
       markViewedMutation.mutate(status.id);
@@ -510,8 +516,11 @@ export default function StatusPage() {
 
       {/* Status Viewer Modal */}
       {selectedStatus && (
-        <Dialog open={true} onOpenChange={() => setSelectedStatus(null)}>
-          <DialogContent className="max-w-md p-0 h-[80vh] overflow-hidden">
+        <Dialog open={!!selectedStatus} onOpenChange={() => setSelectedStatus(null)}>
+          <DialogContent className="max-w-md p-0 h-[80vh] overflow-hidden" aria-describedby="status-viewer-description">
+            <div id="status-viewer-description" className="sr-only">
+              Viewing status update from {selectedStatus.user.name}
+            </div>
             <div className="relative h-full">
               {selectedStatus.type === 'text' ? (
                 <div
@@ -544,8 +553,8 @@ export default function StatusPage() {
                         <p className="text-lg font-semibold mb-4">{selectedStatus.content}</p>
                         <div className="space-y-2">
                           {selectedStatus.pollOptions?.map((option, index) => {
-                            const voteCount = selectedStatus.pollVotes?.[index] || 0;
-                            const totalVotes = selectedStatus.pollVotes?.reduce((a, b) => a + b, 0) || 0;
+                            const voteCount = parseInt(selectedStatus.pollVotes?.[index] as string) || 0;
+                            const totalVotes = selectedStatus.pollVotes?.reduce((sum: number, count: string) => sum + (parseInt(count) || 0), 0) || 0;
                             const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
                             
                             return (
@@ -573,7 +582,10 @@ export default function StatusPage() {
                             );
                           })}
                           <p className="text-center text-sm opacity-70 mt-2">
-                            {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
+                            {(() => {
+                              const total = selectedStatus.pollVotes?.reduce((sum: number, count: string) => sum + (parseInt(count) || 0), 0) || 0;
+                              return `${total} ${total === 1 ? 'vote' : 'votes'}`;
+                            })()}
                           </p>
                         </div>
                       </div>
