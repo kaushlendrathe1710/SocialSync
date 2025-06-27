@@ -1417,9 +1417,14 @@ export class DatabaseStorage implements IStorage {
       .select({
         group: communityGroups,
         creator: users,
+        membership: groupMemberships,
       })
       .from(communityGroups)
-      .innerJoin(users, eq(communityGroups.creatorId, users.id));
+      .innerJoin(users, eq(communityGroups.creatorId, users.id))
+      .leftJoin(groupMemberships, and(
+        eq(groupMemberships.groupId, communityGroups.id),
+        userId ? eq(groupMemberships.userId, userId) : sql`false`
+      ));
 
     if (category) {
       query = query.where(eq(communityGroups.category, category));
@@ -1427,11 +1432,11 @@ export class DatabaseStorage implements IStorage {
 
     const result = await query.orderBy(desc(communityGroups.createdAt));
 
-    return result.map(({ group, creator }) => ({
+    return result.map(({ group, creator, membership }) => ({
       ...group,
       creator,
-      membershipStatus: 'none',
-      isJoined: false,
+      membershipStatus: membership?.status || 'none',
+      isJoined: !!membership && membership.status === 'active',
     }));
   }
 

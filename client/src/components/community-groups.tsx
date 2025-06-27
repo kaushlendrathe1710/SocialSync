@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,9 @@ import {
   Coffee,
   Search,
   Crown,
-  UserCheck
+  UserCheck,
+  MessageCircle,
+  ArrowRight
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -63,6 +66,7 @@ export function CommunityGroups() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Categories with icons
   const categories = [
@@ -207,6 +211,14 @@ export function CommunityGroups() {
     joinGroupMutation.mutate(groupId);
   };
 
+  const handleViewGroup = (groupId: number) => {
+    setLocation(`/groups/${groupId}`);
+  };
+
+  const handleMessageMembers = (groupId: number) => {
+    setLocation(`/messages?group=${groupId}`);
+  };
+
   const getCategoryIcon = (category: string) => {
     const categoryData = categories.find(cat => cat.id === category);
     return categoryData?.icon || Users;
@@ -328,13 +340,35 @@ export function CommunityGroups() {
                           <Users className="h-4 w-4" />
                           {group.memberCount} members
                         </div>
-                        <Button
-                          size="sm"
-                          onClick={() => handleJoinGroup(group.id)}
-                          disabled={joinGroupMutation.isPending}
-                        >
-                          Join
-                        </Button>
+                        {group.isJoined ? (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewGroup(group.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <ArrowRight className="h-3 w-3" />
+                              View Group
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleMessageMembers(group.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <MessageCircle className="h-3 w-3" />
+                              Message
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleJoinGroup(group.id)}
+                            disabled={joinGroupMutation.isPending}
+                          >
+                            Join
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -424,10 +458,25 @@ export function CommunityGroups() {
                           {group.memberCount} members
                         </div>
                         {group.isJoined ? (
-                          <Badge variant="secondary" className="flex items-center gap-1">
-                            <UserCheck className="h-3 w-3" />
-                            Joined
-                          </Badge>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewGroup(group.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <ArrowRight className="h-3 w-3" />
+                              Enter Group
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleMessageMembers(group.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <MessageCircle className="h-3 w-3" />
+                              Message Members
+                            </Button>
+                          </div>
                         ) : (
                           <Button
                             size="sm"
