@@ -52,6 +52,7 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose, type }: SettingsModalProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [loginActivity, setLoginActivity] = useState<any>(null);
   const [showLoginActivity, setShowLoginActivity] = useState(false);
   const [selectedHelpTopic, setSelectedHelpTopic] = useState<string | null>(null);
@@ -409,11 +410,12 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   variant="outline" 
                   className="w-full justify-start"
                   onClick={() => {
+                    onClose();
+                    setLocation('/community-guidelines');
                     toast({
                       title: "Community Guidelines",
-                      description: "Opening community guidelines page",
+                      description: "Navigating to community guidelines",
                     });
-                    window.open('/community-guidelines', '_blank');
                   }}
                 >
                   Community Guidelines
@@ -422,11 +424,12 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   variant="outline" 
                   className="w-full justify-start"
                   onClick={() => {
+                    onClose();
+                    setLocation('/terms');
                     toast({
                       title: "Terms of Service",
-                      description: "Opening terms of service page",
+                      description: "Navigating to terms of service",
                     });
-                    window.open('/terms', '_blank');
                   }}
                 >
                   Terms of Service
@@ -435,11 +438,12 @@ export default function SettingsModal({ isOpen, onClose, type }: SettingsModalPr
                   variant="outline" 
                   className="w-full justify-start"
                   onClick={() => {
+                    onClose();
+                    setLocation('/privacy');
                     toast({
                       title: "Privacy Policy",
-                      description: "Opening privacy policy page",
+                      description: "Navigating to privacy policy",
                     });
-                    window.open('/privacy', '_blank');
                   }}
                 >
                   Privacy Policy

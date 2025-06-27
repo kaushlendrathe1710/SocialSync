@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 27, 2025: Fixed Community page routing from Settings (AN020) - replaced window.open() with proper navigation using wouter's setLocation, community buttons now close modal and navigate to correct pages instead of showing "page not found"
 - June 25, 2025: Fixed Status interaction feedback (AN019) - added visible confirmation for status reactions and poll voting with toast notifications, implemented poll voting API endpoint with loading states, enhanced reaction buttons with hover effects and disabled states during requests, added vote percentage display and loading animations
 - June 25, 2025: Fixed Status posting functionality (AN018) - resolved "Post Failed" error by correcting API request format in createStatusMutation, updated all status mutations to use proper apiRequest method signature, added better error handling and validation on both frontend and backend
 - June 25, 2025: Fixed landing page authentication buttons (PA19) - resolved non-working Sign In and Get Started buttons by replacing Link components with direct navigation using window.location.href, fixed routing logic in App.tsx to properly handle auth navigation from landing page
