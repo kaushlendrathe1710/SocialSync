@@ -30,10 +30,11 @@ import {
   Plus,
   Settings,
   UserPlus,
-  UserMinus
+  UserMinus,
+  MessageCircle
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 
 // Helper function to safely format dates
 const safeFormatDate = (dateValue: any): string => {
@@ -52,6 +53,7 @@ export default function ProfilePage() {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
@@ -186,6 +188,40 @@ export default function ProfilePage() {
 
   const handleFollow = () => {
     followMutation.mutate();
+  };
+
+  const handleMessage = async () => {
+    if (!profileUser || !currentUser) return;
+    
+    try {
+      // Create or get existing conversation
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          receiverId: profileUser.id,
+        }),
+      });
+
+      if (response.ok) {
+        // Navigate to messages page with the user
+        setLocation(`/messages/${profileUser.id}`);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to start conversation",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start conversation",
+        variant: "destructive",
+      });
+    }
   };
 
   const isFollowing = followers?.some(follower => follower.id === currentUser?.id);
@@ -459,8 +495,12 @@ export default function ProfilePage() {
                         </>
                       )}
                     </Button>
-                    <Button variant="secondary">
-                      <LinkIcon className="w-4 h-4 mr-2" />
+                    <Button 
+                      variant="secondary"
+                      onClick={handleMessage}
+                      className="hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
                       Message
                     </Button>
                   </>
