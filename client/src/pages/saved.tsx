@@ -21,6 +21,7 @@ export default function SavedPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState('posts');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showFilterDialog, setShowFilterDialog] = useState(false);
