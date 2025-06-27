@@ -2681,10 +2681,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/saved-posts", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/saved-posts", async (req: Request, res: Response) => {
     try {
-      const userId = req.session.userId!;
-      const savedPosts = await storage.getSavedPosts(userId);
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const savedPosts = await storage.getSavedPosts(req.session.userId);
       res.json(savedPosts);
     } catch (error) {
       console.error("Get saved posts error:", error);
