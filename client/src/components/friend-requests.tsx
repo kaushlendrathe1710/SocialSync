@@ -50,21 +50,28 @@ export function FriendRequests() {
   const queryClient = useQueryClient();
 
   // Fetch friend requests
-  const { data: receivedRequests = [], isLoading: loadingReceived } = useQuery({
+  const { data: receivedRequests = [], isLoading: loadingReceived } = useQuery<FriendRequest[]>({
     queryKey: ["/api/friend-requests/received"],
   });
 
-  const { data: sentRequests = [], isLoading: loadingSent } = useQuery({
+  const { data: sentRequests = [], isLoading: loadingSent } = useQuery<FriendRequest[]>({
     queryKey: ["/api/friend-requests/sent"],
   });
 
-  const { data: friendSuggestions = [], isLoading: loadingSuggestions } = useQuery({
+  const { data: friendSuggestions = [], isLoading: loadingSuggestions } = useQuery<User[]>({
     queryKey: ["/api/friend-suggestions"],
   });
 
-  const { data: friends = [] } = useQuery({
+  const { data: friends = [], isLoading: loadingFriends } = useQuery<User[]>({
     queryKey: ["/api/friends"],
+    staleTime: 0, // Force fresh data
+    refetchOnMount: true,
   });
+
+  // Debug logging
+  console.log('Friends data:', friends);
+  console.log('Friends loading:', loadingFriends);
+  console.log('Friends length:', friends.length);
 
   // Mutations
   const sendRequestMutation = useMutation({
@@ -352,8 +359,19 @@ export function FriendRequests() {
               <CardTitle>Your Friends</CardTitle>
             </CardHeader>
             <CardContent>
-              {friends.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">You haven't added any friends yet</p>
+              {loadingFriends ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="bg-gray-200 rounded-lg h-40"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : friends.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">You haven't added any friends yet</p>
+                  <p className="text-xs text-gray-400 mt-2">Debug: Loading: {loadingFriends ? 'Yes' : 'No'}, Data: {JSON.stringify(friends)}</p>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {friends.map((friend: User) => (
