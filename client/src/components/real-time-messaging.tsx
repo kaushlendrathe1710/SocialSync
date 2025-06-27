@@ -135,13 +135,7 @@ export default function RealTimeMessaging() {
           }
         }
         
-        if (message.type === 'online') {
-          setOnlineUsers(prev => [...prev, message.data.userId]);
-        }
-        
-        if (message.type === 'offline') {
-          setOnlineUsers(prev => prev.filter(id => id !== message.data.userId));
-        }
+        // Online/offline status is now handled by the global notification context
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
@@ -1026,10 +1020,10 @@ export default function RealTimeMessaging() {
                   <h3 className="text-lg font-semibold">{selectedConversation.name}</h3>
                   <p className="text-sm text-muted-foreground">@{selectedConversation.username}</p>
                   <div className="flex items-center mt-1">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${onlineUsers.includes(selectedConversation.id) && 
+                    <div className={`w-2 h-2 rounded-full mr-2 ${onlineUsers.has(selectedConversation.id) && 
                       (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
                     <span className="text-xs text-muted-foreground">
-                      {onlineUsers.includes(selectedConversation.id) && 
+                      {onlineUsers.has(selectedConversation.id) && 
                        (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? 'Active now' : 'Offline'}
                     </span>
                   </div>
