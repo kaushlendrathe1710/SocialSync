@@ -68,10 +68,7 @@ export function FriendRequests() {
     refetchOnMount: true,
   });
 
-  // Debug logging
-  console.log('Friends data:', friends);
-  console.log('Friends loading:', loadingFriends);
-  console.log('Friends length:', friends.length);
+
 
   // Mutations
   const sendRequestMutation = useMutation({
@@ -368,10 +365,7 @@ export function FriendRequests() {
                   ))}
                 </div>
               ) : friends.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">You haven't added any friends yet</p>
-                  <p className="text-xs text-gray-400 mt-2">Debug: Loading: {loadingFriends ? 'Yes' : 'No'}, Data: {JSON.stringify(friends)}</p>
-                </div>
+                <p className="text-gray-500 text-center py-8">You haven't added any friends yet</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {friends.map((friend: User) => (
