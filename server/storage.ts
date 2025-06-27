@@ -1305,6 +1305,37 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
+  async getMutualFollowers(userId: number): Promise<User[]> {
+    // Get users who I follow AND who follow me back (mutual follows)
+    const mutualFollowsQuery = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        username: users.username,
+        profilePicture: users.profilePicture,
+        bio: users.bio,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .innerJoin(follows, eq(follows.followingId, users.id))
+      .where(
+        and(
+          eq(follows.followerId, userId), // I follow them
+          exists(
+            db.select().from(follows as any).where(
+              and(
+                eq(follows.followerId, users.id), // They follow me
+                eq(follows.followingId, userId)
+              )
+            )
+          )
+        )
+      );
+
+    return mutualFollowsQuery;
+  }
+
   // Privacy & Safety methods
   async getPrivacySettings(userId: number): Promise<PrivacySettings | undefined> {
     const [settings] = await db
