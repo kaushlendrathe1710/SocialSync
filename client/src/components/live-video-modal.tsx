@@ -225,9 +225,23 @@ export default function LiveVideoModal({ isOpen, onClose }: LiveVideoModalProps)
       }
       
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/live-streams'] });
+      
       toast({
-        title: "Live stream started!",
-        description: "Your live video is now broadcasting",
+        title: "Live stream created!",
+        description: "Your stream is now available in Virtual Rooms",
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              onClose();
+              window.location.href = '/virtual-rooms';
+            }}
+          >
+            View Room
+          </Button>
+        ),
       });
     }
   });
