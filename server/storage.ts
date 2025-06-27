@@ -226,6 +226,7 @@ export interface IStorage {
   // Community methods
   createCommunityGroup(group: InsertCommunityGroup): Promise<CommunityGroup>;
   getCommunityGroups(category?: string, userId?: number): Promise<GroupWithDetails[]>;
+  getGroupById(groupId: number): Promise<GroupWithDetails | null>;
   getGroupMembership(groupId: number, userId: number): Promise<GroupMembership | undefined>;
   joinGroup(groupId: number, userId: number): Promise<GroupMembership>;
   leaveGroup(groupId: number, userId: number): Promise<boolean>;
@@ -1450,6 +1451,30 @@ export class DatabaseStorage implements IStorage {
       membershipStatus: membership?.status || 'none',
       isJoined: !!membership && membership.status === 'active',
     }));
+  }
+
+  async getGroupById(groupId: number): Promise<GroupWithDetails | null> {
+    const result = await db
+      .select({
+        group: communityGroups,
+        creator: users,
+      })
+      .from(communityGroups)
+      .innerJoin(users, eq(communityGroups.creatorId, users.id))
+      .where(eq(communityGroups.id, groupId))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    const { group, creator } = result[0];
+    return {
+      ...group,
+      creator,
+      membershipStatus: 'none',
+      isJoined: false,
+    };
   }
 
   async getGroupMembership(groupId: number, userId: number): Promise<GroupMembership | undefined> {

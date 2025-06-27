@@ -33,7 +33,6 @@ import {
   Clock,
   Volume2
 } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
 
 interface Group {
   id: number;
@@ -56,45 +55,6 @@ interface Group {
   isJoined?: boolean;
 }
 
-interface GroupEvent {
-  id: number;
-  title: string;
-  description: string;
-  eventDate: string;
-  endDate?: string;
-  location?: string;
-  isVirtual: boolean;
-  meetingLink?: string;
-  maxAttendees?: number;
-  currentAttendees: number;
-  coverImage?: string;
-  status: 'active' | 'cancelled' | 'completed';
-  creator: {
-    id: number;
-    name: string;
-    username: string;
-    avatar?: string;
-  };
-  attendeeStatus?: 'going' | 'interested' | 'not_going';
-}
-
-interface GroupFile {
-  id: number;
-  fileName: string;
-  fileUrl: string;
-  fileType: 'document' | 'image' | 'video' | 'audio';
-  fileSize: number;
-  description?: string;
-  downloadCount: number;
-  createdAt: string;
-  uploader: {
-    id: number;
-    name: string;
-    username: string;
-    avatar?: string;
-  };
-}
-
 const groupCategories = [
   { id: 'beauty', name: 'Beauty & Skincare', icon: '💄', color: 'pink' },
   { id: 'wellness', name: 'Health & Wellness', icon: '🧘', color: 'green' },
@@ -114,7 +74,6 @@ export default function GroupsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [newGroup, setNewGroup] = useState({
     name: '',
     description: '',
@@ -130,12 +89,109 @@ export default function GroupsPage() {
   // Fetch specific group if ID is provided
   const { data: currentGroup, isLoading: groupLoading } = useQuery({
     queryKey: ['/api/groups', groupId],
-    queryFn: () => apiRequest('GET', `/api/groups/${groupId}`),
+    queryFn: () => fetch(`/api/groups/${groupId}`).then(res => res.json()),
     enabled: !!groupId,
   });
 
+  // Fetch groups list when not viewing specific group
+  const { data: groups = [], isLoading } = useQuery({
+    queryKey: ['/api/community-groups', activeTab, selectedCategory, searchQuery],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (activeTab === 'my-groups') params.append('my', 'true');
+      if (selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (searchQuery) params.append('search', searchQuery);
+      
+      return fetch(`/api/community-groups?${params}`).then(res => res.json());
+    },
+    enabled: !groupId,
+  });
+
+  // Create group mutation
+  const createGroupMutation = useMutation({
+    mutationFn: async (groupData: FormData) => {
+      return fetch('/api/community-groups', {
+        method: 'POST',
+        body: groupData,
+      }).then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/community-groups'] });
+      setShowCreateModal(false);
+      resetNewGroup();
+      toast({ title: "Group created successfully!" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create group", variant: "destructive" });
+    },
+  });
+
+  // Join group mutation
+  const joinGroupMutation = useMutation({
+    mutationFn: async (groupId: number) => {
+      return fetch(`/api/community-groups/${groupId}/join`, {
+        method: 'POST',
+      }).then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/community-groups'] });
+      toast({ title: "Joined group successfully!" });
+    },
+  });
+
+  const resetNewGroup = () => {
+    setNewGroup({
+      name: '',
+      description: '',
+      category: '',
+      privacy: 'public',
+      tags: [],
+      coverImage: null,
+    });
+  };
+
+  const handleSubmitGroup = () => {
+    if (!newGroup.name || !newGroup.description || !newGroup.category) {
+      toast({ title: "Please fill in all required fields", variant: "destructive" });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', newGroup.name);
+    formData.append('description', newGroup.description);
+    formData.append('category', newGroup.category);
+    formData.append('privacy', newGroup.privacy);
+    formData.append('tags', JSON.stringify(newGroup.tags));
+    if (newGroup.coverImage) {
+      formData.append('coverImage', newGroup.coverImage);
+    }
+
+    createGroupMutation.mutate(formData);
+  };
+
   // If viewing a specific group, render group detail view
-  if (groupId && currentGroup) {
+  if (groupId) {
+    if (groupLoading) {
+      return (
+        <div className="p-6 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading group...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!currentGroup) {
+      return (
+        <div className="p-6 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-muted-foreground">Group not found</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="p-6 space-y-6">
         {/* Group Header */}
@@ -173,7 +229,7 @@ export default function GroupsPage() {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button>
+                <Button onClick={() => joinGroupMutation.mutate(currentGroup.id)}>
                   <UserPlus className="w-4 h-4 mr-2" />
                   Join Group
                 </Button>
@@ -231,652 +287,207 @@ export default function GroupsPage() {
     );
   }
 
-  // Show loading state for specific group
-  if (groupId && groupLoading) {
-    return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading group...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Fetch groups based on tab
-  const { data: groups = [], isLoading } = useQuery({
-    queryKey: ['/api/groups', activeTab, selectedCategory, searchQuery],
-    queryFn: () => {
-      const params = new URLSearchParams();
-      if (activeTab === 'my-groups') params.append('filter', 'joined');
-      if (selectedCategory !== 'all') params.append('category', selectedCategory);
-      if (searchQuery) params.append('search', searchQuery);
-      return fetch(`/api/groups?${params}`).then(res => res.json());
-    },
-  });
-
-  // Fetch group events
-  const { data: groupEvents = [] } = useQuery({
-    queryKey: ['/api/group-events', selectedGroup?.id],
-    enabled: !!selectedGroup,
-  });
-
-  // Fetch group files
-  const { data: groupFiles = [] } = useQuery({
-    queryKey: ['/api/group-files', selectedGroup?.id],
-    enabled: !!selectedGroup,
-  });
-
-  // Create group mutation
-  const createGroupMutation = useMutation({
-    mutationFn: async (groupData: FormData) => {
-      return apiRequest('/api/groups', {
-        method: 'POST',
-        body: groupData,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
-      setShowCreateModal(false);
-      resetNewGroup();
-      toast({
-        title: "Group Created",
-        description: "Your group has been created successfully!",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Creation Failed",
-        description: "Failed to create group. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Join group mutation
-  const joinGroupMutation = useMutation({
-    mutationFn: async (groupId: number) => {
-      return apiRequest(`/api/groups/${groupId}/join`, {
-        method: 'POST',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
-      toast({
-        title: "Joined Group",
-        description: "You have successfully joined the group!",
-      });
-    },
-  });
-
-  // RSVP to event mutation
-  const rsvpEventMutation = useMutation({
-    mutationFn: async ({ eventId, status }: { eventId: number; status: string }) => {
-      return apiRequest(`/api/group-events/${eventId}/rsvp`, {
-        method: 'POST',
-        body: JSON.stringify({ status }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/group-events'] });
-    },
-  });
-
-  const resetNewGroup = () => {
-    setNewGroup({
-      name: '',
-      description: '',
-      category: '',
-      privacy: 'public',
-      tags: [],
-      coverImage: null,
-    });
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setNewGroup({ ...newGroup, coverImage: file });
-    }
-  };
-
-  const handleSubmitGroup = () => {
-    if (!newGroup.name || !newGroup.description || !newGroup.category) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('name', newGroup.name);
-    formData.append('description', newGroup.description);
-    formData.append('category', newGroup.category);
-    formData.append('privacy', newGroup.privacy);
-    formData.append('tags', JSON.stringify(newGroup.tags));
-    if (newGroup.coverImage) {
-      formData.append('coverImage', newGroup.coverImage);
-    }
-
-    createGroupMutation.mutate(formData);
-  };
-
-  const formatFileSize = (bytes: number) => {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    if (bytes === 0) return '0 Byte';
-    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  const getFileIcon = (fileType: string) => {
-    switch (fileType) {
-      case 'image': return <ImageIcon className="w-5 h-5" />;
-      case 'video': return <Video className="w-5 h-5" />;
-      case 'audio': return <Volume2 className="w-5 h-5" />;
-      default: return <FileText className="w-5 h-5" />;
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading Groups...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Main groups list view
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">Groups</h1>
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Group
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New Group</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Group Name *</label>
-                    <Input
-                      placeholder="Enter group name"
-                      value={newGroup.name}
-                      onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Description *</label>
-                    <Textarea
-                      placeholder="Describe your group..."
-                      value={newGroup.description}
-                      onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Category *</label>
-                    <Select value={newGroup.category} onValueChange={(value) => setNewGroup({ ...newGroup, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groupCategories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            <div className="flex items-center space-x-2">
-                              <span>{category.icon}</span>
-                              <span>{category.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Privacy</label>
-                    <Select value={newGroup.privacy} onValueChange={(value: any) => setNewGroup({ ...newGroup, privacy: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="public">Public - Anyone can join</SelectItem>
-                        <SelectItem value="request_to_join">Request to Join - Approval required</SelectItem>
-                        <SelectItem value="private">Private - Invite only</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Cover Image</label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        id="cover-upload"
-                      />
-                      <label htmlFor="cover-upload" className="cursor-pointer">
-                        <ImageIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <span className="text-sm text-gray-600">
-                          {newGroup.coverImage ? newGroup.coverImage.name : 'Click to upload cover image'}
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowCreateModal(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSubmitGroup}
-                      disabled={createGroupMutation.isPending}
-                      className="flex-1"
-                    >
-                      {createGroupMutation.isPending ? 'Creating...' : 'Create Group'}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="discover">Discover</TabsTrigger>
-              <TabsTrigger value="my-groups">My Groups</TabsTrigger>
-              <TabsTrigger value="events">Events</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          {/* Discover Groups */}
-          <TabsContent value="discover" className="space-y-6">
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search groups..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="All Categories" />
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Groups</h1>
+        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Group
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Create New Group</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="Group name"
+                value={newGroup.name}
+                onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+              />
+              <Textarea
+                placeholder="Group description"
+                value={newGroup.description}
+                onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+              />
+              <Select value={newGroup.category} onValueChange={(value) => setNewGroup({ ...newGroup, category: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
                   {groupCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
-                      <div className="flex items-center space-x-2">
-                        <span>{category.icon}</span>
-                        <span>{category.name}</span>
-                      </div>
+                      {category.icon} {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={newGroup.privacy} onValueChange={(value: any) => setNewGroup({ ...newGroup, privacy: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">Public</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                  <SelectItem value="request_to_join">Request to Join</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={handleSubmitGroup} disabled={createGroupMutation.isPending}>
+                {createGroupMutation.isPending ? 'Creating...' : 'Create Group'}
+              </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-            {/* Groups Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Search and Filter */}
+      <div className="flex gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search groups..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-48">
+            <Filter className="w-4 h-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {groupCategories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.icon} {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Groups Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="discover">Discover</TabsTrigger>
+          <TabsTrigger value="my-groups">My Groups</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="discover" className="space-y-4">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <div className="h-32 bg-gray-300 rounded-t-lg"></div>
+                  <CardContent className="p-4">
+                    <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-300 rounded"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {groups.map((group: Group) => (
                 <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                  <div className="relative">
-                    {group.coverImage ? (
-                      <img
-                        src={group.coverImage}
-                        alt={group.name}
-                        className="w-full h-32 object-cover rounded-t-lg"
-                      />
-                    ) : (
-                      <div className="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
-                        <Users className="w-8 h-8 text-white" />
-                      </div>
-                    )}
-                    {group.isVerified && (
-                      <Badge className="absolute top-2 right-2 bg-blue-500">
-                        Verified
-                      </Badge>
-                    )}
-                  </div>
-                  <CardHeader>
+                  {group.coverImage && (
+                    <img src={group.coverImage} alt={group.name} className="w-full h-32 object-cover rounded-t-lg" />
+                  )}
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-lg truncate">{group.name}</h3>
+                      {group.isVerified && <Shield className="w-4 h-4 text-blue-600 flex-shrink-0" />}
+                    </div>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{group.description}</p>
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{group.name}</CardTitle>
-                      <Badge variant="outline">
-                        {groupCategories.find(c => c.id === group.category)?.icon}
-                      </Badge>
-                    </div>
-                    <CardDescription className="line-clamp-2">
-                      {group.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Users className="w-4 h-4" />
-                        <span>{group.memberCount} members</span>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Users className="w-4 h-4 mr-1" />
+                        {group.memberCount} members
                       </div>
-                      <Badge variant={group.privacy === 'public' ? 'default' : 'secondary'}>
-                        {group.privacy === 'public' ? 'Public' : 
-                         group.privacy === 'private' ? 'Private' : 'Request to Join'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center space-x-2 mb-4">
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={group.creator.avatar} />
-                        <AvatarFallback>{group.creator.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm text-gray-600">
-                        Created by {group.creator.name}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {group.tags.slice(0, 3).map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          #{tag}
-                        </Badge>
-                      ))}
-                      {group.tags.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{group.tags.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      {group.membershipStatus === 'member' || group.isJoined ? (
+                      <div className="flex space-x-2">
                         <Button 
-                          className="flex-1" 
-                          onClick={() => setSelectedGroup(group)}
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.location.href = `/groups/${group.id}`}
                         >
                           View Group
                         </Button>
-                      ) : (
                         <Button 
-                          className="flex-1"
+                          size="sm"
                           onClick={() => joinGroupMutation.mutate(group.id)}
-                          disabled={joinGroupMutation.isPending}
+                          disabled={group.isJoined || joinGroupMutation.isPending}
                         >
-                          {group.privacy === 'public' ? 'Join' : 'Request to Join'}
+                          {group.isJoined ? 'Joined' : 'Join'}
                         </Button>
-                      )}
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => {
-                          // Navigate to messages with group context
-                          window.location.href = `/messages?group=${group.id}`;
-                        }}
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
+          )}
+        </TabsContent>
 
-            {/* Empty State */}
-            {groups.length === 0 && (
-              <div className="text-center py-12">
-                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">No Groups Found</h2>
-                <p className="text-gray-600 mb-4">
-                  {searchQuery || selectedCategory !== 'all' 
-                    ? 'Try adjusting your search or filters.' 
-                    : 'Be the first to create a group in your community!'}
-                </p>
-                <Button onClick={() => setShowCreateModal(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Group
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* My Groups */}
-          <TabsContent value="my-groups" className="space-y-6">
-            {/* My Groups Content */}
-            {groups.filter((group: Group) => group.isJoined || group.membershipStatus).length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">No Groups Joined</h2>
-                <p className="text-gray-600 mb-4">
-                  You haven't joined any groups yet. Discover and join groups that interest you!
-                </p>
+        <TabsContent value="my-groups" className="space-y-4">
+          {groups.filter((group: Group) => group.isJoined || group.membershipStatus).length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Groups Yet</h3>
+                <p className="text-gray-500 mb-4">You haven't joined any groups yet. Discover and join groups that interest you!</p>
                 <Button onClick={() => setActiveTab('discover')}>
-                  <Search className="w-4 h-4 mr-2" />
                   Discover Groups
                 </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {groups.filter((group: Group) => group.isJoined || group.membershipStatus).map((group: Group) => (
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {groups.filter((group: Group) => group.isJoined || group.membershipStatus).map((group: Group) => (
                 <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{group.name}</CardTitle>
-                      {group.membershipStatus === 'admin' && (
-                        <Badge variant="outline">
-                          <Crown className="w-3 h-3 mr-1" />
-                          Admin
-                        </Badge>
-                      )}
-                    </div>
-                    <CardDescription>{group.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Users className="w-4 h-4" />
-                        <span>{group.memberCount} members</span>
+                  {group.coverImage && (
+                    <img src={group.coverImage} alt={group.name} className="w-full h-32 object-cover rounded-t-lg" />
+                  )}
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-lg truncate">{group.name}</h3>
+                      <div className="flex items-center space-x-1">
+                        {group.membershipStatus === 'admin' && <Crown className="w-4 h-4 text-yellow-600" />}
+                        {group.isVerified && <Shield className="w-4 h-4 text-blue-600" />}
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        className="flex-1"
-                        onClick={() => setSelectedGroup(group)}
-                      >
-                        View Group
-                      </Button>
-                      {group.membershipStatus === 'admin' && (
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{group.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Users className="w-4 h-4 mr-1" />
+                        {group.memberCount} members
+                      </div>
+                      <div className="flex space-x-2">
                         <Button 
                           variant="outline" 
-                          size="icon"
-                          onClick={() => {
-                            toast({
-                              title: "Group Settings",
-                              description: "Group management features coming soon!",
-                            });
-                          }}
+                          size="sm"
+                          onClick={() => window.location.href = `/groups/${group.id}`}
                         >
-                          <Settings className="w-4 h-4" />
+                          View Group
                         </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Events */}
-          <TabsContent value="events">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {groupEvents.map((event: GroupEvent) => (
-                <Card key={event.id} className="hover:shadow-lg transition-shadow">
-                  {event.coverImage && (
-                    <img
-                      src={event.coverImage}
-                      alt={event.title}
-                      className="w-full h-32 object-cover rounded-t-lg"
-                    />
-                  )}
-                  <CardHeader>
-                    <CardTitle className="text-lg">{event.title}</CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {event.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 mb-4 text-sm text-gray-600">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4" />
-                        <span>{new Date(event.eventDate).toLocaleDateString()}</span>
+                        {group.membershipStatus === 'admin' && (
+                          <Button size="sm" variant="secondary">
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="w-4 h-4" />
-                        <span>{event.isVirtual ? 'Virtual Event' : event.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Users className="w-4 h-4" />
-                        <span>{event.currentAttendees} attending</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant={event.attendeeStatus === 'going' ? 'default' : 'outline'}
-                        onClick={() => rsvpEventMutation.mutate({
-                          eventId: event.id,
-                          status: event.attendeeStatus === 'going' ? 'not_going' : 'going'
-                        })}
-                      >
-                        {event.attendeeStatus === 'going' ? 'Going' : 'Join Event'}
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Group Detail Modal */}
-      {selectedGroup && (
-        <Dialog open={true} onOpenChange={() => setSelectedGroup(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2">
-                <span>{selectedGroup.name}</span>
-                {selectedGroup.isVerified && (
-                  <Badge className="bg-blue-500">Verified</Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="events">Events</TabsTrigger>
-                <TabsTrigger value="files">Files</TabsTrigger>
-                <TabsTrigger value="members">Members</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">About</h3>
-                  <p className="text-gray-600">{selectedGroup.description}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Category</h3>
-                  <Badge variant="outline">
-                    {groupCategories.find(c => c.id === selectedGroup.category)?.name}
-                  </Badge>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Tags</h3>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedGroup.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="events" className="space-y-4">
-                {groupEvents.map((event: GroupEvent) => (
-                  <Card key={event.id}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{event.title}</CardTitle>
-                      <CardDescription>{event.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          {new Date(event.eventDate).toLocaleDateString()} • {event.currentAttendees} attending
-                        </div>
-                        <Button size="sm">View Details</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="files" className="space-y-4">
-                {groupFiles.map((file: GroupFile) => (
-                  <Card key={file.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {getFileIcon(file.fileType)}
-                          <div>
-                            <p className="font-medium">{file.fileName}</p>
-                            <p className="text-sm text-gray-600">
-                              {formatFileSize(file.fileSize)} • {file.downloadCount} downloads
-                            </p>
-                          </div>
-                        </div>
-                        <Button size="sm" variant="outline">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="members" className="space-y-4">
-                <div className="text-center text-gray-600">
-                  Member list coming soon...
-                </div>
-              </TabsContent>
-            </Tabs>
-          </DialogContent>
-        </Dialog>
-      )}
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
