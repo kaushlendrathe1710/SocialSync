@@ -127,6 +127,7 @@ function AppContent() {
           <Switch>
             <Route path="/" component={FeedPage} />
             <Route path="/reels" component={ReelsPage} />
+            <Route path="/reels/:id" component={ReelsPage} />
             <Route path="/status" component={StatusPage} />
             <Route path="/groups" component={GroupsPage} />
             <Route path="/virtual-rooms" component={VirtualRoomsPage} />

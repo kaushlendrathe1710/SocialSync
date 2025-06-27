@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useParams } from 'wouter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,9 @@ interface Reel {
 }
 
 export default function ReelsPage() {
+  const params = useParams();
+  const reelId = params.id ? parseInt(params.id) : null;
+  
   const [currentReelIndex, setCurrentReelIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -75,17 +79,18 @@ export default function ReelsPage() {
   // Fetch reels
   const { data: reels = [], isLoading } = useQuery({
     queryKey: ['/api/reels'],
-  });
+  }) as { data: Reel[], isLoading: boolean };
 
   // Like reel mutation
   const likeReelMutation = useMutation({
     mutationFn: async (reelId: number) => {
-      return apiRequest('POST', `/api/reels/${reelId}/like`, {});
+      const response = await apiRequest('POST', `/api/reels/${reelId}/like`, {});
+      return response;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
       // Fix the like feedback logic
-      const isNowLiked = data?.isLiked !== false; // Default to liked if unclear
+      const isNowLiked = data?.isLiked === true;
       toast({
         title: isNowLiked ? "Liked!" : "Unliked",
         description: isNowLiked ? "Added to your liked reels" : "Removed from liked reels",
@@ -187,7 +192,7 @@ export default function ReelsPage() {
       });
       
       const response = await apiRequest('POST', '/api/reels', reelData);
-      return response.json();
+      return response;
     },
     onSuccess: (data) => {
       console.log("Reel upload successful:", data);
@@ -246,7 +251,7 @@ export default function ReelsPage() {
     }
   };
 
-  // Auto-play current video
+  // Auto-play current video and handle direct reel links
   useEffect(() => {
     Object.values(videoRefs.current).forEach((video, index) => {
       if (video) {
@@ -259,6 +264,16 @@ export default function ReelsPage() {
       }
     });
   }, [currentReelIndex]);
+
+  // Handle direct reel link navigation
+  useEffect(() => {
+    if (reelId && reels.length > 0) {
+      const reelIndex = reels.findIndex((reel: Reel) => reel.id === reelId);
+      if (reelIndex !== -1) {
+        setCurrentReelIndex(reelIndex);
+      }
+    }
+  }, [reelId, reels]);
 
   // Handle file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
