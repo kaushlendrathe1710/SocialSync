@@ -28,6 +28,17 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
+interface NewStatusState {
+  content: string;
+  backgroundColor: string;
+  fontStyle: string;
+  pollOptions: string[];
+  question: string;
+  privacy: string;
+  mediaFile: File | null;
+  mediaFiles: File[];
+}
+
 interface StatusUpdate {
   id: number;
   userId: number;
@@ -56,16 +67,7 @@ interface StatusUpdate {
   userReaction?: string;
 }
 
-interface NewStatus {
-  content: string;
-  backgroundColor: string;
-  fontStyle: string;
-  pollOptions: string[];
-  question: string;
-  privacy: string;
-  mediaFile: File | null;
-  mediaFiles: File[];
-}
+
 
 const backgroundColors = [
   '#4F46E5', '#7C3AED', '#EC4899', '#EF4444', '#F59E0B',
@@ -222,7 +224,7 @@ export default function StatusPage() {
 
   const removePollOption = (index: number) => {
     if (newStatus.pollOptions.length > 2) {
-      const options = newStatus.pollOptions.filter((_, i) => i !== index);
+      const options = newStatus.pollOptions.filter((_: string, i: number) => i !== index);
       setNewStatus({ ...newStatus, pollOptions: options });
     }
   };
@@ -238,7 +240,7 @@ export default function StatusPage() {
       formData.append('fontStyle', newStatus.fontStyle);
     } else if (createType === 'poll') {
       formData.append('content', newStatus.content);
-      formData.append('pollOptions', JSON.stringify(newStatus.pollOptions.filter(opt => opt.trim())));
+      formData.append('pollOptions', JSON.stringify(newStatus.pollOptions.filter((opt: string) => opt.trim())));
     } else if (createType === 'question') {
       formData.append('question', newStatus.question);
     } else if (createType === 'photo' && newStatus.mediaFiles.length > 0) {
@@ -416,7 +418,7 @@ export default function StatusPage() {
                     />
                     <div>
                       <label className="block text-sm font-medium mb-2">Poll Options</label>
-                      {newStatus.pollOptions.map((option, index) => (
+                      {newStatus.pollOptions.map((option: string, index: number) => (
                         <div key={index} className="flex items-center space-x-2 mb-2">
                           <Input
                             placeholder={`Option ${index + 1}`}
