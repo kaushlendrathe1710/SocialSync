@@ -17,7 +17,8 @@ import {
   Calendar,
   Play,
   Camera,
-  UserSquare2
+  UserSquare2,
+  Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -96,6 +97,19 @@ export default function Sidebar() {
               >
                 <Users className={`mr-3 h-5 w-5 ${location === "/friends" ? "text-blue-600" : "text-gray-400"}`} />
                 Friends
+              </button>
+            </Link>
+
+            <Link href="/virtual-rooms">
+              <button 
+                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  location === "/virtual-rooms"
+                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Video className={`mr-3 h-5 w-5 ${location === "/virtual-rooms" ? "text-blue-600" : "text-gray-400"}`} />
+                Virtual Rooms
               </button>
             </Link>
             <Link href="/wellness">
