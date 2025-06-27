@@ -430,7 +430,13 @@ export class DatabaseStorage implements IStorage {
       })
       .from(posts)
       .innerJoin(users, eq(posts.userId, users.id))
-      .where(eq(posts.id, id));
+      .where(and(
+        eq(posts.id, id),
+        or(
+          isNull(posts.expiresAt),
+          gt(posts.expiresAt, new Date())
+        )
+      ));
 
     if (result.length === 0) return undefined;
 
@@ -946,7 +952,13 @@ export class DatabaseStorage implements IStorage {
       })
       .from(posts)
       .innerJoin(users, eq(posts.userId, users.id))
-      .where(sql`LOWER(content) LIKE ${'%' + searchTerm + '%'}`)
+      .where(and(
+        sql`LOWER(content) LIKE ${'%' + searchTerm + '%'}`,
+        or(
+          isNull(posts.expiresAt),
+          gt(posts.expiresAt, new Date())
+        )
+      ))
       .orderBy(desc(posts.createdAt))
       .limit(20);
 
