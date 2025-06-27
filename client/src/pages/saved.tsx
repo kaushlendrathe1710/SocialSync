@@ -46,16 +46,16 @@ export default function SavedPage() {
     enabled: !!user,
   });
 
-  const filteredSavedPosts = savedPosts.filter((post: PostWithUser) => {
+  const filteredSavedPosts = (savedPosts as PostWithUser[])?.filter((post: PostWithUser) => {
     // Search filter
-    const matchesSearch = post.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.user.name?.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (searchQuery && !matchesSearch) return false;
     
     // Date range filter
     if (filterOptions.dateRange !== 'all') {
-      const postDate = new Date(post.createdAt);
+      const postDate = new Date(post.createdAt || new Date());
       const now = new Date();
       const timeDiff = now.getTime() - postDate.getTime();
       const daysDiff = timeDiff / (1000 * 3600 * 24);
@@ -228,7 +228,7 @@ export default function SavedPage() {
   // Update collection counts based on saved posts
   const savedCollections = collections.map(collection => ({
     ...collection,
-    count: collection.name === "All Saved" ? savedPosts.length : Math.floor(savedPosts.length * 0.2)
+    count: collection.name === "All Saved" ? ((savedPosts as PostWithUser[])?.length || 0) : Math.floor(((savedPosts as PostWithUser[])?.length || 0) * 0.2)
   }));
 
   return (
@@ -241,10 +241,10 @@ export default function SavedPage() {
         <p className="text-gray-600">Keep track of posts you want to see again</p>
       </div>
 
-      <Tabs defaultValue="posts" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="posts">
-            Saved Posts ({savedPosts.length})
+            Saved Posts ({(savedPosts as PostWithUser[])?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="collections">Collections</TabsTrigger>
           <TabsTrigger value="search">Search Saved</TabsTrigger>
@@ -302,7 +302,7 @@ export default function SavedPage() {
                 </Card>
               ))}
             </div>
-          ) : savedPosts.length === 0 ? (
+          ) : (savedPosts as PostWithUser[])?.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <Bookmark className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -315,7 +315,7 @@ export default function SavedPage() {
             </Card>
           ) : (
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-4'}>
-              {savedPosts.map((post: PostWithUser) => (
+              {sortedFilteredPosts.map((post: PostWithUser) => (
                 <div key={post.id} className="relative group">
                   {viewMode === 'grid' ? (
                     <Card className="hover:shadow-lg transition-shadow">
@@ -339,7 +339,7 @@ export default function SavedPage() {
                             <Bookmark className="w-4 h-4 fill-current" />
                           </Button>
                         </div>
-                        <p className="text-sm text-gray-700 mb-3 line-clamp-3">{post.text}</p>
+                        <p className="text-sm text-gray-700 mb-3 line-clamp-3">{post.content}</p>
                         
                         {/* Display image if exists */}
                         {post.imageUrl && (
@@ -409,7 +409,15 @@ export default function SavedPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {savedCollections.map((collection) => (
-                  <Card key={collection.id} className="hover:shadow-md transition-shadow cursor-pointer group">
+                  <Card 
+                    key={collection.id} 
+                    className="hover:shadow-md transition-shadow cursor-pointer group"
+                    onClick={() => {
+                      if (collection.name === "All Saved") {
+                        setActiveTab("posts");
+                      }
+                    }}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-3">
