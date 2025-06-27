@@ -39,6 +39,7 @@ export default function ExplorePage() {
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null);
 
   const { data: searchResults, isLoading: searchLoading } = useQuery({
     queryKey: ['/api/search', searchQuery, searchType],
@@ -74,14 +75,27 @@ export default function ExplorePage() {
     setIsPostModalOpen(true);
     setIsVideoPlaying(false);
     setIsVideoMuted(true);
+    setVideoRef(null); // Reset video ref
+    setVideoRef(null); // Reset video ref
   };
 
   const handleVideoToggle = () => {
-    setIsVideoPlaying(!isVideoPlaying);
+    if (videoRef) {
+      if (isVideoPlaying) {
+        videoRef.pause();
+        setIsVideoPlaying(false);
+      } else {
+        videoRef.play();
+        setIsVideoPlaying(true);
+      }
+    }
   };
 
   const handleMuteToggle = () => {
-    setIsVideoMuted(!isVideoMuted);
+    if (videoRef) {
+      videoRef.muted = !isVideoMuted;
+      setIsVideoMuted(!isVideoMuted);
+    }
   };
 
   const handleShare = () => {
@@ -436,29 +450,42 @@ export default function ExplorePage() {
               ) : selectedPost?.videoUrl ? (
                 <div className="relative w-full h-full flex items-center justify-center">
                   <video 
+                    ref={(el) => setVideoRef(el)}
                     src={selectedPost.videoUrl}
                     className="max-w-full max-h-full object-contain"
                     controls={false}
                     muted={isVideoMuted}
-                    autoPlay={isVideoPlaying}
                     loop
+                    onPlay={() => setIsVideoPlaying(true)}
+                    onPause={() => setIsVideoPlaying(false)}
+                    onLoadedData={() => {
+                      // Reset video state when new video loads
+                      setIsVideoPlaying(false);
+                      setIsVideoMuted(true);
+                    }}
                   />
                   {/* Video Controls Overlay */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-20">
                     <div className="flex items-center space-x-4">
                       <Button
                         variant="ghost"
-                        size="sm"
-                        onClick={handleVideoToggle}
-                        className="text-white hover:bg-white hover:bg-opacity-20"
+                        size="lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleVideoToggle();
+                        }}
+                        className="text-white hover:bg-white hover:bg-opacity-20 bg-black bg-opacity-50"
                       >
                         {isVideoPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleMuteToggle}
-                        className="text-white hover:bg-white hover:bg-opacity-20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMuteToggle();
+                        }}
+                        className="text-white hover:bg-white hover:bg-opacity-20 bg-black bg-opacity-50"
                       >
                         {isVideoMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
                       </Button>
