@@ -84,9 +84,11 @@ export default function ReelsPage() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
+      // Fix the like feedback logic
+      const isNowLiked = data?.isLiked !== false; // Default to liked if unclear
       toast({
-        title: data?.isLiked ? "Liked!" : "Unliked",
-        description: data?.isLiked ? "Added to your liked reels" : "Removed from liked reels",
+        title: isNowLiked ? "Liked!" : "Unliked",
+        description: isNowLiked ? "Added to your liked reels" : "Removed from liked reels",
         duration: 1500,
       });
     },
@@ -100,27 +102,52 @@ export default function ReelsPage() {
     },
   });
 
-  // Share reel mutation
-  const shareReelMutation = useMutation({
-    mutationFn: async ({ reelId, platform }: { reelId: number; platform?: string }) => {
-      return apiRequest('POST', `/api/reels/${reelId}/share`, { platform });
-    },
-    onSuccess: (data, variables) => {
+  // Handle actual sharing to platforms
+  const handleShare = async (reelId: number, platform: string) => {
+    const reelUrl = `${window.location.origin}/reels/${reelId}`;
+    const shareText = "Check out this amazing reel!";
+    
+    try {
+      switch (platform) {
+        case 'WhatsApp':
+          window.open(`https://wa.me/?text=${encodeURIComponent(shareText + " " + reelUrl)}`, '_blank');
+          break;
+        case 'Instagram':
+          // Instagram doesn't allow direct sharing via URL, so copy to clipboard
+          await navigator.clipboard.writeText(reelUrl);
+          toast({
+            title: "Link Copied for Instagram",
+            description: "Link copied! Open Instagram and paste in your story or bio.",
+          });
+          return;
+        case 'Twitter':
+          window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(reelUrl)}`, '_blank');
+          break;
+        default:
+          await navigator.clipboard.writeText(reelUrl);
+          toast({
+            title: "Link Copied",
+            description: "Reel link copied to clipboard!",
+          });
+          return;
+      }
+      
+      // Update share count via API
+      await apiRequest('POST', `/api/reels/${reelId}/share`, { platform });
       queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
-      const platform = variables.platform;
+      
       toast({
         title: "Shared Successfully",
-        description: platform ? `Reel shared to ${platform}!` : "Reel shared successfully!",
+        description: `Reel shared to ${platform}!`,
       });
-    },
-    onError: (error: any) => {
+    } catch (error) {
       toast({
         title: "Share Failed",
-        description: error.message || "Failed to share reel",
+        description: "Could not share reel. Please try again.",
         variant: "destructive",
       });
-    },
-  });
+    }
+  };
 
   // Save reel mutation
   const saveReelMutation = useMutation({
@@ -572,34 +599,28 @@ export default function ReelsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem 
-                          onClick={() => shareReelMutation.mutate({ reelId: reel.id, platform: 'WhatsApp' })}
+                          onClick={() => handleShare(reel.id, 'WhatsApp')}
                           className="flex items-center gap-2"
                         >
                           <Send className="w-4 h-4 text-green-600" />
                           Share to WhatsApp
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => shareReelMutation.mutate({ reelId: reel.id, platform: 'Instagram' })}
+                          onClick={() => handleShare(reel.id, 'Instagram')}
                           className="flex items-center gap-2"
                         >
                           <Camera className="w-4 h-4 text-pink-600" />
                           Share to Instagram
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => shareReelMutation.mutate({ reelId: reel.id, platform: 'Twitter' })}
+                          onClick={() => handleShare(reel.id, 'Twitter')}
                           className="flex items-center gap-2"
                         >
                           <Share className="w-4 h-4 text-blue-500" />
                           Share to Twitter
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/reels/${reel.id}`);
-                            toast({
-                              title: "Link Copied",
-                              description: "Reel link copied to clipboard!",
-                            });
-                          }}
+                          onClick={() => handleShare(reel.id, 'copy')}
                           className="flex items-center gap-2"
                         >
                           <Link className="w-4 h-4" />
