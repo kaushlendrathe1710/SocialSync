@@ -212,6 +212,7 @@ export interface IStorage {
   getFriendSuggestions(userId: number, limit?: number): Promise<User[]>;
   areFriends(user1Id: number, user2Id: number): Promise<boolean>;
   getMutualFriends(user1Id: number, user2Id: number): Promise<User[]>;
+  getMutualFollowers(userId: number): Promise<User[]>;
   toggleCloseFriend(userId: number, friendId: number): Promise<boolean>;
 
   // Privacy & Safety methods
