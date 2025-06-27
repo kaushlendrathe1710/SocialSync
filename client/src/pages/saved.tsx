@@ -90,16 +90,17 @@ export default function SavedPage() {
     }
     
     return true;
-  }).sort((a, b) => {
-    // Sort filter
+  });
+
+  const sortedFilteredPosts = filteredSavedPosts.sort((a: PostWithUser, b: PostWithUser) => {
     switch (filterOptions.sortBy) {
       case 'oldest':
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
       case 'most-liked':
         return (b.likesCount || 0) - (a.likesCount || 0);
       case 'newest':
       default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     }
   });
 
