@@ -172,7 +172,7 @@ export default function NotificationsPage() {
               onClick={() => setFilter(option.key)}
             >
               {option.label}
-              {(option.count || 0) > 0 && (
+              {option.count > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {option.count}
                 </Badge>
@@ -197,9 +197,11 @@ export default function NotificationsPage() {
             </Card>
           ))}
         </div>
-      ) : filteredNotifications.length > 0 ? (
-        <div className="space-y-2">
-          {filteredNotifications.map((notification) => (
+      ) : (
+        <>
+          {filteredNotifications.length > 0 ? (
+            <div className="space-y-2">
+              {filteredNotifications.map((notification) => (
             <Card 
               key={notification.id} 
               className={`transition-colors hover:bg-muted/50 cursor-pointer ${
@@ -212,14 +214,26 @@ export default function NotificationsPage() {
                 }
                 
                 // Navigate based on notification type
-                if (notification.type === 'like' || notification.type === 'comment') {
-                  if (notification.post) {
-                    window.location.href = `/posts/${notification.postId}`;
-                  }
+                if (notification.postId) {
+                  // For post-related notifications, navigate to home page
+                  navigate('/');
+                  setTimeout(() => {
+                    const postElement = document.getElementById(`post-${notification.postId}`);
+                    if (postElement) {
+                      postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // Highlight the post briefly
+                      postElement.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                      setTimeout(() => {
+                        postElement.style.backgroundColor = '';
+                      }, 2000);
+                    }
+                  }, 500);
                 } else if (notification.type === 'follow') {
-                  window.location.href = `/profile/${notification.fromUserId}`;
+                  // Navigate to user profile for follow notifications
+                  navigate(`/profile/${notification.fromUserId}`);
                 } else if (notification.type === 'message') {
-                  window.location.href = `/messages/${notification.fromUserId}`;
+                  // Navigate to messages for message notifications
+                  navigate(`/messages/${notification.fromUserId}`);
                 }
               }}
             >
@@ -239,16 +253,25 @@ export default function NotificationsPage() {
                   
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">
-                      <span className="font-medium">
-                        {notification.fromUser.name}
-                      </span>
-                      <span className="ml-1">
-                        {getNotificationMessage(notification).replace(notification.fromUser.name, '')}
-                      </span>
+                      <span className="font-semibold">{notification.fromUser.name}</span>
+                      {' '}
+                      {getNotificationMessage(notification).split(notification.fromUser.name)[1]}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) : 'Recently'}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDistanceToNow(new Date(notification.createdAt!), { addSuffix: true })}
                     </p>
+                    
+                    {/* Action Buttons for specific notification types */}
+                    {notification.type === 'follow' && !notification.isRead && (
+                      <div className="flex space-x-2 mt-2">
+                        <Button size="sm" className="facebook-blue">
+                          Follow back
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          View profile
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -281,26 +304,28 @@ export default function NotificationsPage() {
                   </div>
                 )}
               </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card className="p-8 text-center">
-          <div className="text-muted-foreground">
-            <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-              {getNotificationIcon('default')}
+              </Card>
+              ))}
             </div>
-            <p className="text-lg font-medium mb-2">
-              {filter === 'all' ? 'No notifications yet' : `No ${filter} notifications`}
-            </p>
-            <p>
-              {filter === 'all' 
-                ? "When people interact with your posts, you'll see it here." 
-                : `No ${filter} notifications to show.`
-              }
-            </p>
-          </div>
-        </Card>
+          ) : (
+            <Card className="p-8 text-center">
+              <div className="text-muted-foreground">
+                <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+                  {getNotificationIcon('default')}
+                </div>
+                <p className="text-lg font-medium mb-2">
+                  {filter === 'all' ? 'No notifications yet' : `No ${filter} notifications`}
+                </p>
+                <p>
+                  {filter === 'all' 
+                    ? "When people interact with your posts, you'll see it here." 
+                    : `No ${filter} notifications to show.`
+                  }
+                </p>
+              </div>
+            </Card>
+          )}
+        </>
       )}
       
       {/* Load More */}

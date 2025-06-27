@@ -886,8 +886,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserNotifications(userId: number): Promise<NotificationWithUser[]> {
-    console.log(`Getting notifications for user ${userId}`);
-    
     const result = await db
       .select({
         notification: notifications,
@@ -897,14 +895,6 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(notifications.fromUserId, users.id))
       .where(eq(notifications.userId, userId))
       .orderBy(desc(notifications.createdAt));
-
-    console.log(`Found ${result.length} notifications with JOIN result:`, result.map(r => ({
-      id: r.notification.id,
-      type: r.notification.type,
-      fromUserId: r.notification.fromUserId,
-      fromUserName: r.fromUser?.name,
-      isRead: r.notification.isRead
-    })));
 
     // Get post data where applicable
     const notificationsWithData: NotificationWithUser[] = [];
@@ -924,13 +914,6 @@ export class DatabaseStorage implements IStorage {
         post,
       });
     }
-
-    console.log(`Final notifications data:`, notificationsWithData.map(n => ({
-      id: n.id,
-      type: n.type,
-      fromUser: n.fromUser?.name,
-      hasPost: !!n.post
-    })));
 
     return notificationsWithData;
   }
