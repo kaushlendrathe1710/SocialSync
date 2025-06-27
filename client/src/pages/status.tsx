@@ -176,13 +176,20 @@ export default function StatusPage() {
       question: '',
       privacy: 'public',
       mediaFile: null,
+      mediaFiles: [],
     });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setNewStatus({ ...newStatus, mediaFile: file });
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      if (createType === 'photo' && files.length > 1) {
+        // Multiple images for photo status
+        setNewStatus({ ...newStatus, mediaFiles: files, mediaFile: null });
+      } else {
+        // Single file for other types
+        setNewStatus({ ...newStatus, mediaFile: files[0], mediaFiles: [] });
+      }
     }
   };
 
@@ -222,13 +229,25 @@ export default function StatusPage() {
       formData.append('pollOptions', JSON.stringify(newStatus.pollOptions.filter(opt => opt.trim())));
     } else if (createType === 'question') {
       formData.append('question', newStatus.question);
+    } else if (createType === 'photo' && newStatus.mediaFiles.length > 0) {
+      // Multiple images for photo status
+      newStatus.mediaFiles.forEach((file, index) => {
+        formData.append(`media${index}`, file);
+      });
+      formData.append('mediaCount', newStatus.mediaFiles.length.toString());
+      if (newStatus.content) {
+        formData.append('content', newStatus.content);
+      }
     } else if (newStatus.mediaFile) {
+      // Single file for other types
       formData.append('media', newStatus.mediaFile);
       if (newStatus.content) {
         formData.append('content', newStatus.content);
       }
     }
 
+    console.log('Submitting status with type:', createType);
+    console.log('FormData entries:', Object.fromEntries(formData.entries()));
     createStatusMutation.mutate(formData);
   };
 
