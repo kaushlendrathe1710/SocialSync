@@ -129,7 +129,9 @@ export default function NotificationsPage() {
   console.log('All notifications:', notifications);
   console.log('Filter:', filter);
   console.log('Filtered notifications:', filteredNotifications);
+  console.log('Filtered length:', filteredNotifications.length);
   console.log('Notification types:', notifications?.map(n => n.type));
+  console.log('First notification structure:', notifications?.[0]);
 
   const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
 
