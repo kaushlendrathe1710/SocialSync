@@ -258,6 +258,8 @@ export const notifications = pgTable("notifications", {
   type: text("type").notNull(), // like, comment, follow, message
   fromUserId: integer("from_user_id").notNull(),
   postId: integer("post_id"),
+  reactionType: text("reaction_type"), // emoji reaction type for like notifications
+  metadata: text("metadata"), // JSON for additional notification data
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });

@@ -517,6 +517,33 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(likes).where(eq(likes.userId, userId));
   }
 
+  async getPostReactions(postId: number): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          like: likes,
+          user: users,
+        })
+        .from(likes)
+        .innerJoin(users, eq(likes.userId, users.id))
+        .where(eq(likes.postId, postId))
+        .orderBy(desc(likes.createdAt));
+
+      return result.map(({ like, user }) => ({
+        ...like,
+        user: {
+          id: user.id,
+          name: user.name || user.email?.split('@')[0] || 'User',
+          username: user.username || user.email?.split('@')[0] || 'user',
+          avatar: user.avatar
+        }
+      }));
+    } catch (error) {
+      console.error("Get post reactions error:", error);
+      return [];
+    }
+  }
+
   async updateLike(userId: number, postId: number, reactionType: string): Promise<Like | undefined> {
     const [updated] = await db
       .update(likes)

@@ -743,6 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: 'like',
             fromUserId: userId,
             postId: postId,
+            reactionType: reactionType,
             isRead: false,
           });
         }
@@ -752,6 +753,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("React to post error:", error);
       res.status(500).json({ message: "Failed to react to post" });
+    }
+  });
+
+  // Get post reactions endpoint
+  app.get("/api/posts/:id/reactions", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const reactions = await storage.getPostReactions(postId);
+      res.json(reactions);
+    } catch (error) {
+      console.error("Get post reactions error:", error);
+      res.status(500).json({ message: "Failed to get post reactions" });
     }
   });
 
