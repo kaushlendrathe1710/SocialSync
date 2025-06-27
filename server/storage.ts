@@ -448,20 +448,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPosts(filterUserId?: number, limit = 20, offset = 0, currentUserId?: number): Promise<PostWithUser[]> {
-    const query = db
+    const now = new Date();
+    
+    let baseConditions = [
+      // Filter out expired posts
+      or(
+        isNull(posts.expiresAt),
+        gt(posts.expiresAt, now)
+      )
+    ];
+    
+    // Add user filter if specified
+    if (filterUserId) {
+      baseConditions.push(eq(posts.userId, filterUserId));
+    }
+    
+    const result = await db
       .select({
         post: posts,
         user: users,
       })
       .from(posts)
       .innerJoin(users, eq(posts.userId, users.id))
+      .where(and(...baseConditions))
       .orderBy(desc(posts.createdAt))
       .limit(limit)
       .offset(offset);
-
-    const result = filterUserId 
-      ? await query.where(eq(posts.userId, filterUserId))
-      : await query;
     
     // Get interaction counts and user reactions for each post
     const enrichedPosts = await Promise.all(
