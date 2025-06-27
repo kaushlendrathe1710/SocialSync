@@ -251,6 +251,18 @@ export default function StatusPage() {
     );
   }
 
+  if (error) {
+    console.error("Status error:", error);
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Failed to load status updates</p>
+          <Button onClick={() => window.location.reload()}>Reload</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -501,7 +513,7 @@ export default function StatusPage() {
         </div>
 
         {/* Empty State */}
-        {statusUpdates.length === 0 && (
+        {statusUpdates && statusUpdates.length === 0 && (
           <div className="text-center py-12">
             <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">No Status Updates</h2>
@@ -510,6 +522,14 @@ export default function StatusPage() {
               <Plus className="w-4 h-4 mr-2" />
               Create Status
             </Button>
+          </div>
+        )}
+
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-4 bg-gray-100 rounded text-sm">
+            <p>Status updates count: {statusUpdates?.length || 0}</p>
+            <p>Selected status: {selectedStatus ? selectedStatus.id : 'none'}</p>
           </div>
         )}
       </div>
