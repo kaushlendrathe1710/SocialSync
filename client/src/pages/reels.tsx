@@ -86,23 +86,39 @@ export default function ReelsPage() {
   const likeReelMutation = useMutation({
     mutationFn: async (reelId: number) => {
       const response = await apiRequest('POST', `/api/reels/${reelId}/like`, {});
-      return response;
+      return { ...response, reelId };
     },
-    onSuccess: (data: any, reelId: number) => {
-      // Update local state immediately for smooth UX
+    onMutate: async (reelId: number) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/reels'] });
+      
+      // Snapshot the previous value
+      const previousReels = queryClient.getQueryData(['/api/reels']);
+      
+      // Optimistically update to the new value
       queryClient.setQueryData(['/api/reels'], (oldData: Reel[] | undefined) => {
         if (!oldData) return oldData;
-        return oldData.map(reel => 
-          reel.id === reelId 
-            ? { 
-                ...reel, 
-                isLiked: data.isLiked,
-                likesCount: data.isLiked ? reel.likesCount + 1 : Math.max(0, reel.likesCount - 1)
-              }
-            : reel
-        );
+        return oldData.map(reel => {
+          if (reel.id === reelId) {
+            const newIsLiked = !reel.isLiked;
+            const currentLikesCount = reel.likesCount || 0;
+            const newLikesCount = newIsLiked 
+              ? currentLikesCount + 1 
+              : Math.max(0, currentLikesCount - 1);
+            
+            return { 
+              ...reel, 
+              isLiked: newIsLiked,
+              likesCount: newLikesCount
+            };
+          }
+          return reel;
+        });
       });
       
+      return { previousReels };
+    },
+    onSuccess: (data: any) => {
       // Show appropriate feedback based on action
       const isNowLiked = data?.isLiked === true;
       toast({
@@ -111,7 +127,11 @@ export default function ReelsPage() {
         duration: 1000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, reelId: number, context: any) => {
+      // Rollback on error
+      if (context?.previousReels) {
+        queryClient.setQueryData(['/api/reels'], context.previousReels);
+      }
       console.error("Like error:", error);
       toast({
         title: "Error",
