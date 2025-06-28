@@ -125,6 +125,7 @@ This is a full-stack social media platform built with a React frontend, Express 
 
 ## Changelog
 
+- June 28, 2025: Fixed Reels functionality comprehensively (AN001) - resolved like/unlike feedback always showing "Unliked" by implementing proper response handling with immediate UI updates, enhanced Create Reel feature with improved file validation and upload handling, added Instagram/Facebook-like smooth interactions including double-tap to like with heart animation, improved visual feedback with better button styles and animations, and ensured seamless video playback experience
 - June 27, 2025: Fixed Friends tab display issue (AN029) - resolved Friends tab showing 0 friends despite database containing friendship records by fixing JavaScript initialization error in getFriends function, adding proper TypeScript types, and ensuring React Query properly renders friend data, Puja Keshori now displays correctly in Friends list
 - June 27, 2025: Fixed top navigation search bar functionality (AN028) - resolved issue where search results showed posts but couldn't be opened by adding proper navigation to post detail pages, corrected routing from /post/:id to /posts/:id to match existing routes, search bar now properly opens both users and posts
 - June 27, 2025: Fixed events visibility issue (AN027) - resolved events not visible to other users by removing user ID filter from events API endpoint, all public events now display properly to all users regardless of who created them, verified with 3 active events from different creators

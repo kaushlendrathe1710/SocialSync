@@ -66,6 +66,7 @@ export default function ReelsPage() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showLikeAnimation, setShowLikeAnimation] = useState<{[key: number]: boolean}>({});
   const [newReel, setNewReel] = useState({
     caption: '',
     privacy: 'public',
@@ -230,6 +231,18 @@ export default function ReelsPage() {
       });
     },
   });
+
+  // Handle double-tap to like
+  const handleDoubleTap = (reelId: number) => {
+    // Trigger like animation
+    setShowLikeAnimation(prev => ({ ...prev, [reelId]: true }));
+    setTimeout(() => {
+      setShowLikeAnimation(prev => ({ ...prev, [reelId]: false }));
+    }, 1000);
+    
+    // Like the reel
+    likeReelMutation.mutate(reelId);
+  };
 
   // Handle video play/pause
   const togglePlayPause = (index: number) => {
@@ -505,19 +518,20 @@ export default function ReelsPage() {
             key={reel.id}
             className="relative h-screen snap-start flex items-center justify-center"
           >
-            {/* Video */}
+            {/* Video with double-tap to like */}
             <video
               ref={(el) => {
                 if (el) videoRefs.current[index] = el;
               }}
               src={reel.videoUrl}
-              className="h-full w-auto max-w-full object-cover bg-gray-900"
+              className="h-full w-auto max-w-full object-cover bg-gray-900 cursor-pointer"
               loop
               muted={isMuted}
               playsInline
               autoPlay={index === currentReelIndex}
               preload="metadata"
               onClick={() => togglePlayPause(index)}
+              onDoubleClick={() => handleDoubleTap(reel.id)}
               onError={(e) => {
                 console.error('Video error:', e);
                 console.error('Video src:', reel.videoUrl);
@@ -525,6 +539,13 @@ export default function ReelsPage() {
               onLoadStart={() => console.log('Video loading:', reel.videoUrl)}
               onCanPlay={() => console.log('Video can play:', reel.videoUrl)}
             />
+
+            {/* Double-tap heart animation */}
+            {showLikeAnimation[reel.id] && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <Heart className="w-24 h-24 text-red-500 fill-current animate-ping opacity-80" />
+              </div>
+            )}
 
             {/* Play/Pause Overlay */}
             {!isPlaying && index === currentReelIndex && (
@@ -582,13 +603,13 @@ export default function ReelsPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className={`rounded-full w-12 h-12 ${reel.isLiked ? 'text-red-500' : 'text-white'} hover:bg-white/20 transition-all duration-200 hover:scale-110`}
+                      className={`rounded-full w-14 h-14 ${reel.isLiked ? 'text-red-500 bg-red-500/10' : 'text-white'} hover:bg-white/20 transition-all duration-300 hover:scale-110 active:scale-95`}
                       onClick={() => likeReelMutation.mutate(reel.id)}
                       disabled={likeReelMutation.isPending}
                     >
-                      <Heart className={`w-7 h-7 ${reel.isLiked ? 'fill-current' : ''}`} />
+                      <Heart className={`w-8 h-8 ${reel.isLiked ? 'fill-current animate-pulse' : ''} transition-all duration-300`} />
                     </Button>
-                    <span className="text-xs text-white mt-1 font-medium">{reel.likesCount}</span>
+                    <span className="text-xs text-white mt-1 font-bold">{reel.likesCount}</span>
                   </div>
                   <div className="flex flex-col items-center">
                     <Button
