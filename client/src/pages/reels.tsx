@@ -81,27 +81,40 @@ export default function ReelsPage() {
     queryKey: ['/api/reels'],
   }) as { data: Reel[], isLoading: boolean };
 
-  // Like reel mutation
+  // Like reel mutation with improved feedback
   const likeReelMutation = useMutation({
     mutationFn: async (reelId: number) => {
       const response = await apiRequest('POST', `/api/reels/${reelId}/like`, {});
       return response;
     },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
-      // Fix the like feedback logic
+    onSuccess: (data: any, reelId: number) => {
+      // Update local state immediately for smooth UX
+      queryClient.setQueryData(['/api/reels'], (oldData: Reel[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(reel => 
+          reel.id === reelId 
+            ? { 
+                ...reel, 
+                isLiked: data.isLiked,
+                likesCount: data.isLiked ? reel.likesCount + 1 : Math.max(0, reel.likesCount - 1)
+              }
+            : reel
+        );
+      });
+      
+      // Show appropriate feedback based on action
       const isNowLiked = data?.isLiked === true;
       toast({
-        title: isNowLiked ? "Liked!" : "Unliked",
-        description: isNowLiked ? "Added to your liked reels" : "Removed from liked reels",
-        duration: 1500,
+        title: isNowLiked ? "❤️ Liked!" : "💔 Unliked",
+        description: isNowLiked ? "Added to your favorites" : "Removed from favorites",
+        duration: 1000,
       });
     },
     onError: (error: any) => {
       console.error("Like error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to like reel",
+        description: "Failed to update like status. Please try again.",
         variant: "destructive",
       });
     },
@@ -275,45 +288,50 @@ export default function ReelsPage() {
     }
   }, [reelId, reels]);
 
-  // Handle file upload
+  // Handle file upload with better validation
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    console.log("=== FILE SELECTION ===");
-    console.log("File selected:", file);
-    console.log("File properties:", {
-      name: file?.name,
-      type: file?.type,
-      size: file?.size,
-      lastModified: file?.lastModified
-    });
     
-    if (file && file.type.startsWith('video/')) {
-      console.log("Valid video file selected, storing in ref");
-      selectedVideoFile.current = file;
-      console.log("Ref after assignment:", selectedVideoFile.current);
-      console.log("Ref instanceof File:", selectedVideoFile.current instanceof File);
-      // Force re-render to update UI
-      setNewReel(prev => ({ ...prev, caption: prev.caption }));
-    } else {
-      console.log("Invalid file type or no file selected");
+    if (!file) {
       selectedVideoFile.current = null;
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('video/')) {
       toast({
-        title: "Invalid File",
-        description: "Please select a valid video file.",
+        title: "Invalid File Type",
+        description: "Please select a video file (MP4, MOV, AVI, etc.)",
         variant: "destructive",
       });
+      return;
     }
+
+    // Check file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File Too Large",
+        description: "Video must be smaller than 100MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    selectedVideoFile.current = file;
+    toast({
+      title: "Video Selected",
+      description: `${file.name} is ready to upload`,
+      duration: 2000,
+    });
+    
+    // Force re-render to update UI
+    setNewReel(prev => ({ ...prev, caption: prev.caption }));
   };
 
-  // Submit new reel
+  // Submit new reel with improved handling
   const handleSubmitReel = () => {
-    console.log("=== REEL SUBMISSION ===");
-    console.log("Submit reel called, current state:", newReel);
-    console.log("Selected video file ref:", selectedVideoFile.current);
-    console.log("File instanceof check:", selectedVideoFile.current instanceof File);
-    
-    if (!selectedVideoFile.current || !(selectedVideoFile.current instanceof File)) {
-      console.log("No valid video file selected");
+    if (!selectedVideoFile.current) {
       toast({
         title: "No Video Selected",
         description: "Please select a video to upload.",
@@ -322,33 +340,20 @@ export default function ReelsPage() {
       return;
     }
 
-    const file = selectedVideoFile.current;
-    console.log("Creating FormData with file:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      lastModified: file.lastModified
-    });
+    if (!newReel.caption.trim()) {
+      toast({
+        title: "Caption Required",
+        description: "Please add a caption for your reel.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const formData = new FormData();
-    formData.append('video', file);
-    formData.append('caption', newReel.caption);
+    formData.append('video', selectedVideoFile.current);
+    formData.append('caption', newReel.caption.trim());
     formData.append('privacy', newReel.privacy);
 
-    // Verify FormData contents before sending
-    console.log("=== FORMDATA VERIFICATION ===");
-    formData.forEach((value, key) => {
-      console.log(`FormData ${key}:`, value);
-      if (value instanceof File) {
-        console.log(`${key} file details:`, {
-          name: value.name,
-          type: value.type,
-          size: value.size
-        });
-      }
-    });
-
-    console.log("Calling mutation...");
     createReelMutation.mutate(formData);
   };
 
