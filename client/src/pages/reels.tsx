@@ -86,7 +86,8 @@ export default function ReelsPage() {
   const likeReelMutation = useMutation({
     mutationFn: async (reelId: number) => {
       const response = await apiRequest('POST', `/api/reels/${reelId}/like`, {});
-      return { ...response, reelId };
+      const data = await response.json();
+      return data;
     },
     onMutate: async (reelId: number) => {
       // Cancel any outgoing refetches
@@ -122,7 +123,7 @@ export default function ReelsPage() {
       // Show appropriate feedback based on action
       const isNowLiked = data?.isLiked === true;
       toast({
-        title: isNowLiked ? "❤️ Liked!" : "💔 Unliked",
+        title: isNowLiked ? "❤️ Liked!" : "💔 Unliked", 
         description: isNowLiked ? "Added to your favorites" : "Removed from favorites",
         duration: 1000,
       });
