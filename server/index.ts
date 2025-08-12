@@ -1,8 +1,9 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
-import { registerRoutes } from "./routes-simple";
+import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -12,25 +13,27 @@ app.use(express.json());
 const PgSession = connectPgSimple(session);
 
 // Configure session middleware with PostgreSQL store
-app.use(session({
-  store: new PgSession({
-    pool: pool,
-    tableName: 'session',
-    createTableIfMissing: true,
-  }),
-  secret: process.env.SESSION_SECRET || 'fallback-secret-key-for-development',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to true in production with HTTPS
-    httpOnly: true,
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for persistent login
-  },
-}));
+app.use(
+  session({
+    store: new PgSession({
+      pool: pool,
+      tableName: "session",
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || "fallback-secret-key-for-development",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for persistent login
+    },
+  })
+);
 app.use(express.urlencoded({ extended: false }));
 
 // Serve uploaded files
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static("uploads"));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -85,12 +88,14 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+  server.listen(
+    {
+      port,
+      host: "localhost",
+    },
+    () => {
+      log(`serving on port ${port}`);
+    }
+  );
 })();

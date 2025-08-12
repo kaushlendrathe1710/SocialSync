@@ -1,6 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@shared/schema';
-import { apiRequest } from './queryClient';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { User } from "@shared/schema";
+import { apiRequest } from "./queryClient";
 
 /**
  * Authentication utility functions
@@ -32,8 +38,8 @@ export function isValidUsername(username: string): boolean {
  * Get user initials for avatar fallback
  */
 export function getUserInitials(user: User | null): string {
-  if (!user?.name) return '?';
-  const names = user.name.split(' ');
+  if (!user?.name) return "?";
+  const names = user.name.split(" ");
   if (names.length === 1) {
     return names[0].charAt(0).toUpperCase();
   }
@@ -44,7 +50,7 @@ export function getUserInitials(user: User | null): string {
  * Format user display name
  */
 export function getDisplayName(user: User | null): string {
-  return user?.name || 'Unknown User';
+  return user?.name || "Unknown User";
 }
 
 /**
@@ -65,15 +71,15 @@ export function isVerifiedUser(user: User | null): boolean {
  * Format username with @ prefix
  */
 export function formatUsername(username: string): string {
-  return username.startsWith('@') ? username : `@${username}`;
+  return username.startsWith("@") ? username : `@${username}`;
 }
 
 /**
  * Get user's full name or fallback to username
  */
 export function getUserFullName(user: User | null): string {
-  if (!user) return 'Unknown User';
-  return user.name || user.username || 'Unknown User';
+  if (!user) return "Unknown User";
+  return user.name || user.username || "Unknown User";
 }
 
 interface ImpersonationInfo {
@@ -85,7 +91,13 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   impersonation: ImpersonationInfo | null;
-  login: (email: string, code: string, name?: string, username?: string, verificationToken?: string | null) => Promise<any>;
+  login: (
+    email: string,
+    code: string,
+    name?: string,
+    username?: string,
+    verificationToken?: string | null
+  ) => Promise<any>;
   logout: () => Promise<void>;
   sendOTP: (email: string) => Promise<void>;
   startImpersonation: (userId: number) => Promise<void>;
@@ -97,7 +109,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [impersonation, setImpersonation] = useState<ImpersonationInfo | null>(null);
+  const [impersonation, setImpersonation] = useState<ImpersonationInfo | null>(
+    null
+  );
 
   useEffect(() => {
     checkAuth();
@@ -105,78 +119,89 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const response = await apiRequest('GET', '/api/auth/me');
+      const response = await apiRequest("GET", "/api/auth/me");
       const data = await response.json();
       setUser(data.user);
       setImpersonation(data.impersonation || null);
     } catch (error) {
       // Not authenticated
-      console.log('Not authenticated');
+      console.log("Not authenticated");
     } finally {
       setIsLoading(false);
     }
   };
 
   const sendOTP = async (email: string) => {
-    await apiRequest('POST', '/api/auth/send-otp', { email });
+    await apiRequest("POST", "/api/auth/send-otp", { email });
   };
 
-  const login = async (email: string, code: string, name?: string, username?: string, verificationToken?: string | null) => {
-    const response = await apiRequest('POST', '/api/auth/verify-otp', { 
-      email, 
-      otp: code, 
-      name, 
+  const login = async (
+    email: string,
+    code: string,
+    name?: string,
+    username?: string,
+    verificationToken?: string | null
+  ) => {
+    const response = await apiRequest("POST", "/api/auth/verify-otp", {
+      email,
+      code,
+      name,
       username,
-      verificationToken
+      verificationToken,
     });
     const data = await response.json();
-    
+
     if (data.user) {
       setUser(data.user);
-      
+
       // Auto-redirect admin users to admin dashboard
-      if (data.isAdmin || data.redirectTo === '/admin') {
-        window.location.href = '/admin';
+      if (data.isAdmin || data.redirectTo === "/admin") {
+        window.location.href = "/admin";
       }
     }
-    
+
     return data; // Return the full response for handling in components
   };
 
   const logout = async () => {
-    await apiRequest('POST', '/api/auth/logout');
+    await apiRequest("POST", "/api/auth/logout");
     setUser(null);
     setImpersonation(null);
   };
 
   const startImpersonation = async (userId: number) => {
-    const response = await apiRequest('POST', `/api/admin/impersonate/${userId}`);
+    const response = await apiRequest(
+      "POST",
+      `/api/admin/impersonate/${userId}`
+    );
     const data = await response.json();
     setUser(data.user);
     setImpersonation({
       isImpersonating: true,
-      originalAdmin: data.originalAdmin
+      originalAdmin: data.originalAdmin,
     });
   };
 
   const stopImpersonation = async () => {
-    const response = await apiRequest('POST', '/api/admin/stop-impersonation');
+    const response = await apiRequest("POST", "/api/admin/stop-impersonation");
     const data = await response.json();
     setUser(data.user);
     setImpersonation(null);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isLoading, 
-      impersonation, 
-      login, 
-      logout, 
-      sendOTP, 
-      startImpersonation, 
-      stopImpersonation 
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        impersonation,
+        login,
+        logout,
+        sendOTP,
+        startImpersonation,
+        stopImpersonation,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -185,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuthContext() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthProvider');
+    throw new Error("useAuthContext must be used within an AuthProvider");
   }
   return context;
 }
