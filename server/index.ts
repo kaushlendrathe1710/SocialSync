@@ -39,11 +39,13 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production", // Set to true in production with HTTPS
+      secure:
+        process.env.NODE_ENV === "production" &&
+        process.env.APP_URL?.startsWith("https"), // Only secure if HTTPS
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for persistent login
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Allow localhost
+      sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax", // Use lax for cross-subdomain support
+      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Allow all domains in production
     },
   })
 );
@@ -112,6 +114,15 @@ app.use((req, res, next) => {
     const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
     const host =
       process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
+
+    // Log environment info for debugging
+    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log(`Port: ${port}`);
+    console.log(`Host: ${host}`);
+    console.log(`App URL: ${process.env.APP_URL || "not set"}`);
+    console.log(
+      `Session Secret: ${process.env.SESSION_SECRET ? "set" : "not set"}`
+    );
 
     server.listen(
       {

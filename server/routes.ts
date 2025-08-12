@@ -191,11 +191,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Set session
           req.session.userId = user.id;
 
-          res.json({
-            user,
-            isNewUser: true,
-            message: "Account created successfully",
-            redirectTo: "/feed",
+          // Save session explicitly
+          req.session.save((err) => {
+            if (err) {
+              console.error("Session save error:", err);
+              return res.status(500).json({ message: "Session error" });
+            }
+
+            console.log("Session saved successfully for new user:", user.id);
+            res.json({
+              user,
+              isNewUser: true,
+              message: "Account created successfully",
+              redirectTo: "/",
+            });
           });
         } else {
           // New user but missing details - return needsDetails flag
@@ -214,11 +223,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.markOtpCodeUsed(validOtp.id);
 
       req.session.userId = user.id;
-      res.json({
-        user,
-        isNewUser: false,
-        message: "Login successful",
-        redirectTo: "/feed",
+
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Session error" });
+        }
+
+        console.log("Session saved successfully for user:", user.id);
+        res.json({
+          user,
+          isNewUser: false,
+          message: "Login successful",
+          redirectTo: "/",
+        });
       });
     } catch (error: any) {
       console.error("Verify OTP error:", error);
@@ -246,12 +265,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy(() => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destroy error:", err);
+        return res.status(500).json({ message: "Logout error" });
+      }
+      console.log("Session destroyed successfully");
       res.json({ message: "Logged out successfully" });
     });
   });
 
   app.get("/api/auth/me", async (req, res) => {
+    // Log session info for debugging
+    console.log("Session ID:", req.sessionID);
+    console.log("Session data:", req.session);
+    console.log("User ID in session:", req.session.userId);
+
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }

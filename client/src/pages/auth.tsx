@@ -110,16 +110,16 @@ export default function AuthPage() {
           title: "Welcome back!",
           description: "Successfully logged in",
         });
-        // Redirect to feed page
-        window.location.href = "/feed";
+        // Redirect to home page (main dashboard)
+        window.location.href = "/";
       } else if (data.user) {
         // New user with details provided - logged in successfully
         toast({
           title: "Welcome!",
           description: "Account created successfully",
         });
-        // Redirect to feed page
-        window.location.href = "/feed";
+        // Redirect to home page (main dashboard)
+        window.location.href = "/";
       }
     } catch (error: any) {
       toast({
@@ -160,8 +160,8 @@ export default function AuthPage() {
           title: "Welcome!",
           description: "Account created successfully",
         });
-        // Redirect to feed page
-        window.location.href = "/feed";
+        // Redirect to home page (main dashboard)
+        window.location.href = "/";
       }
     } catch (error: any) {
       toast({

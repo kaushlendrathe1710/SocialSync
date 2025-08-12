@@ -68,9 +68,9 @@ function AppContent() {
     }
   }
 
-  // If user is authenticated and on auth page, redirect to feed
+  // If user is authenticated and on auth page, redirect to home
   if (user && window.location.pathname === "/auth") {
-    window.location.href = "/feed";
+    window.location.href = "/";
     return null;
   }
 

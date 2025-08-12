@@ -121,11 +121,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiRequest("GET", "/api/auth/me");
       const data = await response.json();
+      console.log("Auth check response:", data);
       setUser(data.user);
       setImpersonation(data.impersonation || null);
     } catch (error) {
       // Not authenticated
-      console.log("Not authenticated");
+      console.log("Not authenticated:", error);
+      setUser(null);
+      setImpersonation(null);
     } finally {
       setIsLoading(false);
     }
@@ -153,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (data.user) {
       setUser(data.user);
+      console.log("Login successful, user set:", data.user);
 
       // Auto-redirect admin users to admin dashboard
       if (data.isAdmin || data.redirectTo === "/admin") {
@@ -161,8 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Redirect to specified route
         window.location.href = data.redirectTo;
       } else {
-        // For regular users, redirect to feed page
-        window.location.href = "/feed";
+        // For regular users, redirect to home page (main dashboard)
+        window.location.href = "/";
       }
     }
 
