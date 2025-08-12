@@ -6,11 +6,21 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development npx tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build:client": "vite build",
+    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "cross-env NODE_ENV=production node dist/index.js",
+    "start:dev": "cross-env NODE_ENV=development node dist/index.js",
+    "start:local": "cross-env NODE_ENV=development node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit push",
     "setup-env": "node setup-env.js",
-    "create-env": "node create-env.js"
+    "create-env": "node create-env.js",
+    "deploy:build": "npm run build && npm run db:migrate",
+    "deploy:start": "npm run start",
+    "local:build": "npm run build",
+    "local:start": "npm run start:local",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.830.0",

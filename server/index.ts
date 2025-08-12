@@ -7,7 +7,22 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
+
+// Add security headers for production
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  } else {
+    // Development headers - less restrictive for localhost
+    res.setHeader("X-Content-Type-Options", "nosniff");
+  }
+  next();
+});
+
+app.use(express.json({ limit: "10mb" }));
 
 // Configure PostgreSQL session store
 const PgSession = connectPgSimple(session);
@@ -24,16 +39,23 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true in production with HTTPS
+      secure: process.env.NODE_ENV === "production", // Set to true in production with HTTPS
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for persistent login
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Allow localhost
     },
   })
 );
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
 // Serve uploaded files
 app.use("/uploads", express.static("uploads"));
+
+// Health check endpoint for hosting platforms
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -66,36 +88,63 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  try {
+    const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
-  });
+      res.status(status).json({ message });
+      console.error("Server error:", err);
+    });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-  server.listen(
-    {
-      port,
-      host: "localhost",
-    },
-    () => {
-      log(`serving on port ${port}`);
+    // importantly only setup vite in development and after
+    // setting up all the other routes so the catch-all route
+    // doesn't interfere with the other routes
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
     }
-  );
+
+    // Serve the app on the configured port
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+    const host =
+      process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
+
+    server.listen(
+      {
+        port,
+        host,
+      },
+      () => {
+        log(
+          `🚀 Server running on ${host}:${port} in ${
+            process.env.NODE_ENV || "development"
+          } mode`
+        );
+      }
+    );
+
+    // Graceful shutdown handling
+    process.on("SIGTERM", () => {
+      log("SIGTERM received, shutting down gracefully");
+      server.close(() => {
+        log("Process terminated");
+        process.exit(0);
+      });
+    });
+
+    process.on("SIGINT", () => {
+      log("SIGINT received, shutting down gracefully");
+      server.close(() => {
+        log("Process terminated");
+        process.exit(0);
+      });
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
 })();
