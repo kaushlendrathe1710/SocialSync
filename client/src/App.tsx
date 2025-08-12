@@ -49,20 +49,29 @@ function AppContent() {
   }
 
   // Allow public post viewing without authentication
-  if (!user && window.location.pathname.startsWith('/posts/')) {
+  if (!user && window.location.pathname.startsWith("/posts/")) {
     return <PublicPostPage />;
   }
 
   // Handle unauthenticated users
   if (!user) {
     // Show landing page for home route
-    if (window.location.pathname === '/') {
+    if (window.location.pathname === "/") {
       return <LandingPage />;
     }
     // Show auth page for auth route and all other protected routes
-    if (window.location.pathname === '/auth' || window.location.pathname.startsWith('/')) {
+    if (
+      window.location.pathname === "/auth" ||
+      window.location.pathname.startsWith("/")
+    ) {
       return <AuthPage />;
     }
+  }
+
+  // If user is authenticated and on auth page, redirect to feed
+  if (user && window.location.pathname === "/auth") {
+    window.location.href = "/feed";
+    return null;
   }
 
   // If impersonating, always show the regular user interface regardless of URL
@@ -85,7 +94,10 @@ function AppContent() {
               <Route path="/communities" component={CommunitiesPage} />
               <Route path="/saved" component={SavedPage} />
               <Route path="/settings" component={SettingsPage} />
-              <Route path="/community-guidelines" component={CommunityGuidelinesPage} />
+              <Route
+                path="/community-guidelines"
+                component={CommunityGuidelinesPage}
+              />
               <Route path="/terms" component={TermsOfServicePage} />
               <Route path="/privacy" component={PrivacyPolicyPage} />
               {/* During impersonation, redirect any admin routes to feed */}
@@ -99,12 +111,12 @@ function AppContent() {
   }
 
   // Check if user is admin and automatically redirect or show admin interface
-  const isAdminUser = user.role === 'admin' || user.role === 'super_admin';
-  const isAdminRoute = window.location.pathname.startsWith('/admin');
+  const isAdminUser = user.role === "admin" || user.role === "super_admin";
+  const isAdminRoute = window.location.pathname.startsWith("/admin");
 
   // Auto-redirect admin users to admin dashboard if they're on the main site
-  if (isAdminUser && !isAdminRoute && window.location.pathname === '/') {
-    window.location.href = '/admin';
+  if (isAdminUser && !isAdminRoute && window.location.pathname === "/") {
+    window.location.href = "/admin";
     return null;
   }
 
@@ -146,7 +158,10 @@ function AppContent() {
             <Route path="/events" component={EventsPage} />
             <Route path="/saved" component={SavedPage} />
             <Route path="/settings" component={SettingsPage} />
-            <Route path="/community-guidelines" component={CommunityGuidelinesPage} />
+            <Route
+              path="/community-guidelines"
+              component={CommunityGuidelinesPage}
+            />
             <Route path="/terms" component={TermsOfServicePage} />
             <Route path="/privacy" component={PrivacyPolicyPage} />
             <Route component={NotFound} />

@@ -195,6 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             user,
             isNewUser: true,
             message: "Account created successfully",
+            redirectTo: "/feed",
           });
         } else {
           // New user but missing details - return needsDetails flag
@@ -217,6 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user,
         isNewUser: false,
         message: "Login successful",
+        redirectTo: "/feed",
       });
     } catch (error: any) {
       console.error("Verify OTP error:", error);

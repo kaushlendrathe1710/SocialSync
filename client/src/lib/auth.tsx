@@ -157,6 +157,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Auto-redirect admin users to admin dashboard
       if (data.isAdmin || data.redirectTo === "/admin") {
         window.location.href = "/admin";
+      } else if (data.redirectTo) {
+        // Redirect to specified route
+        window.location.href = data.redirectTo;
+      } else {
+        // For regular users, redirect to feed page
+        window.location.href = "/feed";
       }
     }
 
