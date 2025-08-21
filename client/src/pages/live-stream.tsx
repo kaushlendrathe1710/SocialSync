@@ -6,8 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectGroup,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Video,
   Heart,
@@ -95,6 +105,10 @@ export default function LiveStreamPage() {
   const [setupStep, setSetupStep] = useState<"camera" | "details" | "ready">(
     "camera"
   );
+  const [privacy, setPrivacy] = useState<"public" | "friends" | "private">(
+    "public"
+  );
+  const [createdStreamId, setCreatedStreamId] = useState<number | null>(null);
 
   // Mock stream data for now - in real app this would come from URL params or API
   useEffect(() => {
@@ -537,7 +551,7 @@ export default function LiveStreamPage() {
     }
   };
 
-  const startStreaming = () => {
+  const startStreaming = async () => {
     if (!streamTitle.trim()) {
       toast({
         title: "Stream title required",
@@ -552,9 +566,28 @@ export default function LiveStreamPage() {
       ...stream!,
       title: streamTitle.trim(),
       description: streamDescription.trim() || undefined,
+      privacy,
       startedAt: new Date().toISOString(),
     };
     setStream(updatedStream);
+
+    // Create live stream on server so others can see it
+    try {
+      const res = await apiRequest("POST", "/api/live-streams", {
+        title: updatedStream.title,
+        description: updatedStream.description,
+        privacy,
+      });
+      const json = await res.json();
+      setCreatedStreamId(json.id);
+    } catch (e: any) {
+      console.error("Create live stream failed:", e);
+      toast({
+        title: "Could not publish stream",
+        description: e.message || "Server error while creating live stream",
+        variant: "destructive",
+      });
+    }
 
     setIsStreaming(true);
     setShowSetupModal(false);
@@ -565,8 +598,16 @@ export default function LiveStreamPage() {
     });
   };
 
-  const stopStreaming = () => {
+  const stopStreaming = async () => {
     setIsStreaming(false);
+    // End live stream on server
+    if (createdStreamId) {
+      try {
+        await apiRequest("PUT", `/api/live-streams/${createdStreamId}/end`);
+      } catch (e) {
+        console.warn("End live stream failed:", e);
+      }
+    }
     toast({
       title: "Live stream ended",
       description: "Your broadcast has been stopped.",
@@ -796,6 +837,34 @@ export default function LiveStreamPage() {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {streamDescription.length}/500 characters
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    Privacy
+                  </Label>
+                  <div className="mt-1">
+                    <Select
+                      value={privacy}
+                      onValueChange={(v) => setPrivacy(v as any)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select privacy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Who can watch?</SelectLabel>
+                          <SelectItem value="public">Public</SelectItem>
+                          <SelectItem value="friends">Friends</SelectItem>
+                          <SelectItem value="private">Private</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Public: everyone can see. Friends: your followers/friends
+                    only. Private: only invited users.
                   </p>
                 </div>
               </div>
