@@ -2,13 +2,13 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/auth";
-import { 
-  Home, 
-  Search, 
-  MessageCircle, 
-  Heart, 
-  User, 
-  Users, 
+import {
+  Home,
+  Search,
+  MessageCircle,
+  Heart,
+  User,
+  Users,
   Bookmark,
   Settings,
   LogOut,
@@ -18,7 +18,7 @@ import {
   Play,
   Camera,
   UserSquare2,
-  Video
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -28,12 +28,42 @@ export default function Sidebar() {
 
   const menuItems = [
     { icon: Home, label: "Home", path: "/", active: location === "/" },
-    { icon: Play, label: "Reels", path: "/reels", active: location === "/reels" },
-    { icon: Camera, label: "Status", path: "/status", active: location === "/status" },
-    { icon: Search, label: "Explore", path: "/explore", active: location === "/explore" },
-    { icon: MessageCircle, label: "Messages", path: "/messages", active: location === "/messages" },
-    { icon: Heart, label: "Notifications", path: "/notifications", active: location === "/notifications" },
-    { icon: User, label: "Profile", path: "/profile", active: location === "/profile" },
+    {
+      icon: Play,
+      label: "Reels",
+      path: "/reels",
+      active: location === "/reels",
+    },
+    {
+      icon: Camera,
+      label: "Status",
+      path: "/status",
+      active: location === "/status",
+    },
+    {
+      icon: Search,
+      label: "Explore",
+      path: "/explore",
+      active: location === "/explore",
+    },
+    {
+      icon: MessageCircle,
+      label: "Messages",
+      path: "/messages",
+      active: location === "/messages",
+    },
+    {
+      icon: Heart,
+      label: "Notifications",
+      path: "/notifications",
+      active: location === "/notifications",
+    },
+    {
+      icon: User,
+      label: "Profile",
+      path: "/profile",
+      active: location === "/profile",
+    },
   ];
 
   const handleLogout = async () => {
@@ -59,9 +89,7 @@ export default function Sidebar() {
             <p className="text-sm font-semibold text-gray-900 truncate">
               {user?.name || user?.username}
             </p>
-            <p className="text-xs text-gray-500 truncate">
-              @{user?.username}
-            </p>
+            <p className="text-xs text-gray-500 truncate">@{user?.username}</p>
           </div>
         </div>
       </div>
@@ -69,122 +97,180 @@ export default function Sidebar() {
       {/* Scrollable Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-4">
         <div className="px-2 space-y-1">
-            {menuItems.map((item) => (
-              <Link key={item.path} href={item.path}>
-                <button
-                  className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    item.active
-                      ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+          {menuItems.map((item) => (
+            <Link key={item.path} href={item.path}>
+              <button
+                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  item.active
+                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <item.icon
+                  className={`mr-3 h-5 w-5 ${
+                    item.active ? "text-blue-600" : "text-gray-400"
                   }`}
-                >
-                  <item.icon className={`mr-3 h-5 w-5 ${item.active ? "text-blue-600" : "text-gray-400"}`} />
-                  {item.label}
-                </button>
-              </Link>
-            ))}
-          </div>
-
-          {/* Additional Options */}
-          <div className="px-2 mt-8 space-y-1">
-            <Link href="/friends">
-              <button 
-                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  location === "/friends"
-                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <Users className={`mr-3 h-5 w-5 ${location === "/friends" ? "text-blue-600" : "text-gray-400"}`} />
-                Friends
+                />
+                {item.label}
               </button>
             </Link>
+          ))}
+        </div>
 
-            <Link href="/virtual-rooms">
-              <button 
-                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+        {/* Additional Options */}
+        <div className="px-2 mt-8 space-y-1">
+          <Link href="/friends">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/friends"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Users
+                className={`mr-3 h-5 w-5 ${
+                  location === "/friends" ? "text-blue-600" : "text-gray-400"
+                }`}
+              />
+              Friends
+            </button>
+          </Link>
+
+          <Link href="/virtual-rooms">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/virtual-rooms"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Video
+                className={`mr-3 h-5 w-5 ${
                   location === "/virtual-rooms"
-                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    ? "text-blue-600"
+                    : "text-gray-400"
                 }`}
-              >
-                <Video className={`mr-3 h-5 w-5 ${location === "/virtual-rooms" ? "text-blue-600" : "text-gray-400"}`} />
-                Virtual Rooms
-              </button>
-            </Link>
-            <Link href="/wellness">
-              <button 
-                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  location === "/wellness"
-                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              />
+              Virtual Rooms
+            </button>
+          </Link>
+          <Link href="/live-streams">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/live-streams"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Video
+                className={`mr-3 h-5 w-5 ${
+                  location === "/live-streams"
+                    ? "text-blue-600"
+                    : "text-gray-400"
                 }`}
-              >
-                <Activity className={`mr-3 h-5 w-5 ${location === "/wellness" ? "text-blue-600" : "text-gray-400"}`} />
-                Wellness
-              </button>
-            </Link>
-            <Link href="/groups">
-              <button 
-                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  location === "/groups"
-                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              />
+              Live Streams
+            </button>
+          </Link>
+          <Link href="/wellness">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/wellness"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Activity
+                className={`mr-3 h-5 w-5 ${
+                  location === "/wellness" ? "text-blue-600" : "text-gray-400"
                 }`}
-              >
-                <Users className={`mr-3 h-5 w-5 ${location === "/groups" ? "text-blue-600" : "text-gray-400"}`} />
-                Groups
-              </button>
-            </Link>
-            <Link href="/communities">
-              <button 
-                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+              />
+              Wellness
+            </button>
+          </Link>
+          <Link href="/groups">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/groups"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Users
+                className={`mr-3 h-5 w-5 ${
+                  location === "/groups" ? "text-blue-600" : "text-gray-400"
+                }`}
+              />
+              Groups
+            </button>
+          </Link>
+          <Link href="/communities">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/communities"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Sparkles
+                className={`mr-3 h-5 w-5 ${
                   location === "/communities"
-                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    ? "text-blue-600"
+                    : "text-gray-400"
                 }`}
-              >
-                <Sparkles className={`mr-3 h-5 w-5 ${location === "/communities" ? "text-blue-600" : "text-gray-400"}`} />
-                Communities
-              </button>
-            </Link>
-            <Link href="/events">
-              <button 
-                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  location === "/events"
-                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              />
+              Communities
+            </button>
+          </Link>
+          <Link href="/events">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/events"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Calendar
+                className={`mr-3 h-5 w-5 ${
+                  location === "/events" ? "text-blue-600" : "text-gray-400"
                 }`}
-              >
-                <Calendar className={`mr-3 h-5 w-5 ${location === "/events" ? "text-blue-600" : "text-gray-400"}`} />
-                Events
-              </button>
-            </Link>
-            <Link href="/saved">
-              <button 
-                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  location === "/saved"
-                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              />
+              Events
+            </button>
+          </Link>
+          <Link href="/saved">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/saved"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Bookmark
+                className={`mr-3 h-5 w-5 ${
+                  location === "/saved" ? "text-blue-600" : "text-gray-400"
                 }`}
-              >
-                <Bookmark className={`mr-3 h-5 w-5 ${location === "/saved" ? "text-blue-600" : "text-gray-400"}`} />
-                Saved
-              </button>
-            </Link>
-            <Link href="/settings">
-              <button 
-                className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  location === "/settings"
-                    ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              />
+              Saved
+            </button>
+          </Link>
+          <Link href="/settings">
+            <button
+              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                location === "/settings"
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <Settings
+                className={`mr-3 h-5 w-5 ${
+                  location === "/settings" ? "text-blue-600" : "text-gray-400"
                 }`}
-              >
-                <Settings className={`mr-3 h-5 w-5 ${location === "/settings" ? "text-blue-600" : "text-gray-400"}`} />
-                Settings
-              </button>
-            </Link>
-          </div>
+              />
+              Settings
+            </button>
+          </Link>
+        </div>
       </nav>
 
       {/* Logout Button - Fixed at bottom */}

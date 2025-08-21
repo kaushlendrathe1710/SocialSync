@@ -3191,9 +3191,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
 
-          // Live stream functionality (keeping existing)
-          if (data.type === "join_stream") {
+          // Enhanced Live stream functionality
+          if (
+            data.type === "join_stream" ||
+            data.type === "join_stream_as_host"
+          ) {
             const streamId = parseInt(data.streamId);
+            const userId = data.userId;
 
             if (currentStreamId && liveStreamViewers.has(currentStreamId)) {
               const viewers = liveStreamViewers.get(currentStreamId)!;
@@ -3207,6 +3211,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             liveStreamViewers.get(streamId)!.add(socketId);
             broadcastViewerCount(streamId);
+
+            // Broadcast user joined message
+            if (userId && data.type === "join_stream") {
+              const user = await storage.getUserById(userId);
+              if (user) {
+                broadcastToStream(streamId, {
+                  type: "user_joined",
+                  streamId,
+                  userId: user.id,
+                  username: user.name,
+                  userAvatar: user.avatar,
+                });
+              }
+            }
           }
 
           if (data.type === "leave_stream") {
@@ -3214,8 +3232,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const viewers = liveStreamViewers.get(currentStreamId)!;
               viewers.delete(socketId);
               broadcastViewerCount(currentStreamId);
+
+              // Broadcast user left message if we have user info
+              if (currentUserId) {
+                const user = await storage.getUserById(currentUserId);
+                if (user) {
+                  broadcastToStream(currentStreamId, {
+                    type: "user_left",
+                    streamId: currentStreamId,
+                    userId: user.id,
+                    username: user.name,
+                  });
+                }
+              }
               currentStreamId = null;
             }
+          }
+
+          // Chat message handling
+          if (data.type === "send_chat_message") {
+            const streamId = parseInt(data.streamId);
+            const messageId = `msg_${Date.now()}_${Math.random()
+              .toString(36)
+              .substr(2, 9)}`;
+
+            broadcastToStream(streamId, {
+              type: "chat_message",
+              streamId,
+              messageId,
+              userId: data.userId,
+              username: data.username,
+              userAvatar: data.userAvatar,
+              message: data.message,
+              timestamp: new Date().toISOString(),
+            });
+          }
+
+          // Reaction handling
+          if (data.type === "send_reaction") {
+            const streamId = parseInt(data.streamId);
+
+            broadcastToStream(streamId, {
+              type: "reaction",
+              streamId,
+              userId: data.userId,
+              username: data.username,
+              userAvatar: data.userAvatar,
+              reactionType: data.reactionType,
+              timestamp: new Date().toISOString(),
+            });
           }
         } catch (error) {
           console.error("WebSocket message error:", error);
@@ -3278,6 +3343,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   function broadcastToAllUsers(message: any) {
+    if (!wss) return;
+
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  }
+
+  function broadcastToStream(streamId: number, message: any) {
     if (!wss) return;
 
     wss.clients.forEach((client) => {

@@ -99,6 +99,33 @@ html.text-extra-large {
     @apply border-border;
   }
 
+  /* Custom scrollbar styles for live stream chat */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #dbeafe;
+    border-radius: 10px;
+    border: 1px solid #93c5fd;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #2563eb;
+    border-radius: 10px;
+    border: 1px solid #1d4ed8;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #1d4ed8;
+  }
+
+  /* Firefox scrollbar styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #2563eb #dbeafe;
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
@@ -112,17 +139,27 @@ html.text-extra-large {
   .facebook-blue {
     @apply bg-[hsl(221,44%,41%)] hover:bg-[hsl(221,44%,35%)] text-white;
   }
-  
+
   .facebook-light {
     @apply bg-[hsl(210,36%,96%)] hover:bg-[hsl(210,36%,90%)] text-gray-700;
   }
 
   .instagram-gradient {
-    background: linear-gradient(135deg, hsl(347, 75%, 60%), hsl(36, 95%, 60%), hsl(262, 60%, 55%));
+    background: linear-gradient(
+      135deg,
+      hsl(347, 75%, 60%),
+      hsl(36, 95%, 60%),
+      hsl(262, 60%, 55%)
+    );
   }
 
   .story-gradient {
-    background: linear-gradient(45deg, hsl(347, 75%, 60%), hsl(36, 95%, 60%), hsl(262, 60%, 55%));
+    background: linear-gradient(
+      45deg,
+      hsl(347, 75%, 60%),
+      hsl(36, 95%, 60%),
+      hsl(262, 60%, 55%)
+    );
   }
 
   .nav-item {
@@ -134,7 +171,7 @@ html.text-extra-large {
   }
 
   .nav-item.active::after {
-    content: '';
+    content: "";
     @apply absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-primary rounded-t-full;
   }
 
@@ -179,9 +216,15 @@ html.text-extra-large {
   }
 
   @keyframes heart {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   .animate-bounce-in {
@@ -189,9 +232,17 @@ html.text-extra-large {
   }
 
   @keyframes bounceIn {
-    0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
-    50% { transform: scale(1.1) rotate(5deg); }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0% {
+      transform: scale(0.3) rotate(-10deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.1) rotate(5deg);
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
   }
 
   .glass-effect {
@@ -235,16 +286,22 @@ html.text-extra-large {
   @apply w-2 h-2 bg-gray-400 rounded-full animate-bounce;
 }
 
-.loading-dots div:nth-child(1) { animation-delay: 0ms; }
-.loading-dots div:nth-child(2) { animation-delay: 150ms; }
-.loading-dots div:nth-child(3) { animation-delay: 300ms; }
+.loading-dots div:nth-child(1) {
+  animation-delay: 0ms;
+}
+.loading-dots div:nth-child(2) {
+  animation-delay: 150ms;
+}
+.loading-dots div:nth-child(3) {
+  animation-delay: 300ms;
+}
 
 /* Responsive design improvements */
 @media (max-width: 768px) {
   .nav-item::after {
     @apply hidden;
   }
-  
+
   .message-bubble {
     @apply max-w-[280px];
   }

@@ -10,19 +10,12 @@ import { apiRequest } from "@/lib/queryClient";
 import EnhancedPostCard from "@/components/enhanced-post-card";
 import StoryViewer from "@/components/story-viewer";
 import CreatePostModal from "@/components/create-post-modal";
-import LiveVideoModal from "@/components/live-video-modal";
 import PhotoVideoModal from "@/components/photo-video-modal";
 import FeelingActivityModal from "@/components/feeling-activity-modal";
 import CreateEventModal from "@/components/create-event-modal";
 import CreateRoomModal from "@/components/create-room-modal";
-import { 
-  Plus, 
-  ImageIcon, 
-  Video, 
-  Smile,
-  Users,
-  UserPlus
-} from "lucide-react";
+import LiveStreamViewer from "@/components/live-stream-viewer";
+import { Plus, ImageIcon, Video, Smile, Users, UserPlus } from "lucide-react";
 import { Link } from "wouter";
 import type { PostWithUser, Story, User } from "@shared/schema";
 
@@ -31,13 +24,17 @@ export default function FeedPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
-  const [isLiveVideoModalOpen, setIsLiveVideoModalOpen] = useState(false);
   const [isPhotoVideoModalOpen, setIsPhotoVideoModalOpen] = useState(false);
-  const [isFeelingActivityModalOpen, setIsFeelingActivityModalOpen] = useState(false);
+  const [isFeelingActivityModalOpen, setIsFeelingActivityModalOpen] =
+    useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
-  const [selectedStory, setSelectedStory] = useState<(Story & { user: User }) | null>(null);
+  const [selectedStory, setSelectedStory] = useState<
+    (Story & { user: User }) | null
+  >(null);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
+  const [selectedStream, setSelectedStream] = useState<any>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   // Listen for navigation events
   useEffect(() => {
@@ -49,33 +46,36 @@ export default function FeedPage() {
     const handleOpenCreateEvent = () => setIsCreateEventModalOpen(true);
     const handleOpenCreateRoom = () => setIsCreateRoomModalOpen(true);
 
-    window.addEventListener('openCreatePost', handleOpenCreatePost);
-    window.addEventListener('openCreateStory', handleOpenCreateStory);
-    window.addEventListener('openCreateEvent', handleOpenCreateEvent);
-    window.addEventListener('openCreateRoom', handleOpenCreateRoom);
+    window.addEventListener("openCreatePost", handleOpenCreatePost);
+    window.addEventListener("openCreateStory", handleOpenCreateStory);
+    window.addEventListener("openCreateEvent", handleOpenCreateEvent);
+    window.addEventListener("openCreateRoom", handleOpenCreateRoom);
 
     return () => {
-      window.removeEventListener('openCreatePost', handleOpenCreatePost);
-      window.removeEventListener('openCreateStory', handleOpenCreateStory);
-      window.removeEventListener('openCreateEvent', handleOpenCreateEvent);
-      window.removeEventListener('openCreateRoom', handleOpenCreateRoom);
+      window.removeEventListener("openCreatePost", handleOpenCreatePost);
+      window.removeEventListener("openCreateStory", handleOpenCreateStory);
+      window.removeEventListener("openCreateEvent", handleOpenCreateEvent);
+      window.removeEventListener("openCreateRoom", handleOpenCreateRoom);
     };
   }, []);
 
   const { data: posts = [], isLoading: postsLoading } = useQuery({
-    queryKey: ['/api/posts'],
+    queryKey: ["/api/posts"],
   });
 
   const { data: stories = [] } = useQuery({
-    queryKey: ['/api/stories'],
+    queryKey: ["/api/stories"],
   });
 
   const { data: friendSuggestions = [] } = useQuery({
-    queryKey: ['/api/friend-suggestions'],
+    queryKey: ["/api/friend-suggestions"],
     enabled: !!user,
   });
 
-
+  const { data: liveStreams = [] } = useQuery({
+    queryKey: ["/api/live-streams"],
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
 
   const sendRequestMutation = useMutation({
     mutationFn: async (receiverId: number) => {
@@ -147,20 +147,25 @@ export default function FeedPage() {
                   <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors bg-gray-50">
                     <Plus className="h-8 w-8 text-gray-400" />
                   </div>
-                  <p className="text-xs mt-2 text-muted-foreground font-medium">Create Story</p>
+                  <p className="text-xs mt-2 text-muted-foreground font-medium">
+                    Create Story
+                  </p>
                 </div>
 
                 {/* Stories */}
                 {stories.map((story: any, index: number) => (
-                  <div 
-                    key={story.id} 
+                  <div
+                    key={story.id}
                     className="flex-shrink-0 text-center cursor-pointer"
                     onClick={() => handleStoryClick(story, index)}
                   >
                     <div className="w-20 h-20 rounded-2xl p-1 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500">
                       <div className="w-full h-full rounded-xl bg-white p-1">
                         <Avatar className="w-full h-full">
-                          <AvatarImage src={story.user?.avatar || ""} className="rounded-xl" />
+                          <AvatarImage
+                            src={story.user?.avatar || ""}
+                            className="rounded-xl"
+                          />
                           <AvatarFallback className="bg-blue-100 text-blue-600 text-sm rounded-xl">
                             {getUserInitials(story.user)}
                           </AvatarFallback>
@@ -177,6 +182,62 @@ export default function FeedPage() {
           </Card>
         )}
 
+        {/* Live Streams Section */}
+        {liveStreams.length > 0 && (
+          <Card className="shadow-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-gray-900 flex items-center">
+                  <Video className="w-5 h-5 mr-2 text-red-500" />
+                  Live Now
+                </h4>
+                <Link href="/live-streams">
+                  <Button variant="ghost" size="sm" className="text-blue-600">
+                    See All
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="space-y-3">
+                {liveStreams.slice(0, 3).map((stream: any) => (
+                  <div
+                    key={stream.id}
+                    className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      // Open live stream viewer
+                      setSelectedStream(stream);
+                      setIsViewerOpen(true);
+                    }}
+                  >
+                    <div className="relative">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={stream.user.avatar || undefined} />
+                        <AvatarFallback className="bg-red-500 text-white">
+                          {stream.user.name?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-gray-900 truncate">
+                        {stream.title}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {stream.user.name} • {stream.viewerCount} watching
+                      </p>
+                    </div>
+                    <Button size="sm" className="bg-red-500 hover:bg-red-600">
+                      Join
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Create Post */}
         <div>
@@ -189,33 +250,35 @@ export default function FeedPage() {
                     {getUserInitials(user)}
                   </AvatarFallback>
                 </Avatar>
-                <div 
+                <div
                   className="flex-1 bg-gray-100 rounded-full px-4 py-3 cursor-pointer hover:bg-gray-200 transition-colors"
                   onClick={() => setIsCreatePostModalOpen(true)}
                 >
-                  <span className="text-gray-500">What's on your mind, {user?.name || user?.username}?</span>
+                  <span className="text-gray-500">
+                    What's on your mind, {user?.name || user?.username}?
+                  </span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
-                  onClick={() => setIsLiveVideoModalOpen(true)}
+                  onClick={() => (window.location.href = "/live-stream")}
                 >
                   <Video className="h-5 w-5 mr-2 text-red-500" />
                   Live Video
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
                   onClick={() => setIsPhotoVideoModalOpen(true)}
                 >
                   <ImageIcon className="h-5 w-5 mr-2 text-green-500" />
                   Photo/Video
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
                   onClick={() => setIsFeelingActivityModalOpen(true)}
                 >
@@ -234,10 +297,15 @@ export default function FeedPage() {
               <CardContent className="p-12 text-center">
                 <div className="text-muted-foreground">
                   <Users className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                  <h3 className="text-lg font-medium mb-2 text-gray-900">Welcome to your feed!</h3>
-                  <p className="text-sm text-gray-500 mb-6">Start following people and sharing posts to see content here.</p>
-                  <Button 
-                    className="bg-blue-600 hover:bg-blue-700" 
+                  <h3 className="text-lg font-medium mb-2 text-gray-900">
+                    Welcome to your feed!
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Start following people and sharing posts to see content
+                    here.
+                  </p>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700"
                     onClick={() => setIsCreatePostModalOpen(true)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -258,7 +326,9 @@ export default function FeedPage() {
           <Card className="shadow-sm">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-gray-900">People You May Know</h4>
+                <h4 className="font-semibold text-gray-900">
+                  People You May Know
+                </h4>
                 <Link href="/friends">
                   <Button variant="ghost" size="sm" className="text-blue-600">
                     See All
@@ -269,7 +339,10 @@ export default function FeedPage() {
             <CardContent className="p-4 pt-0">
               <div className="grid grid-cols-2 gap-4">
                 {friendSuggestions.slice(0, 2).map((suggestion: User) => (
-                  <div key={suggestion.id} className="text-center p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                  <div
+                    key={suggestion.id}
+                    className="text-center p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+                  >
                     <Link href={`/profile/${suggestion.id}`}>
                       <Avatar className="h-16 w-16 mx-auto mb-3 cursor-pointer hover:opacity-80">
                         <AvatarImage src={suggestion.avatar || undefined} />
@@ -283,9 +356,11 @@ export default function FeedPage() {
                         {suggestion.name}
                       </h5>
                     </Link>
-                    <p className="text-xs text-muted-foreground mb-3">@{suggestion.username}</p>
-                    <Button 
-                      size="sm" 
+                    <p className="text-xs text-muted-foreground mb-3">
+                      @{suggestion.username}
+                    </p>
+                    <Button
+                      size="sm"
                       className="w-full bg-blue-600 hover:bg-blue-700"
                       onClick={() => sendRequestMutation.mutate(suggestion.id)}
                       disabled={sendRequestMutation.isPending}
@@ -302,38 +377,33 @@ export default function FeedPage() {
       </div>
 
       {/* Modals */}
-      <CreatePostModal 
+      <CreatePostModal
         isOpen={isCreatePostModalOpen}
         onClose={() => setIsCreatePostModalOpen(false)}
       />
-      
-      <LiveVideoModal 
-        isOpen={isLiveVideoModalOpen}
-        onClose={() => setIsLiveVideoModalOpen(false)}
-      />
-      
-      <PhotoVideoModal 
+
+      <PhotoVideoModal
         isOpen={isPhotoVideoModalOpen}
         onClose={() => setIsPhotoVideoModalOpen(false)}
       />
-      
-      <FeelingActivityModal 
+
+      <FeelingActivityModal
         isOpen={isFeelingActivityModalOpen}
         onClose={() => setIsFeelingActivityModalOpen(false)}
       />
-      
-      <CreateEventModal 
+
+      <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}
       />
-      
-      <CreateRoomModal 
+
+      <CreateRoomModal
         isOpen={isCreateRoomModalOpen}
         onClose={() => setIsCreateRoomModalOpen(false)}
       />
-      
+
       {selectedStory && (
-        <StoryViewer 
+        <StoryViewer
           story={selectedStory}
           isOpen={!!selectedStory}
           onClose={closeStoryViewer}
@@ -341,6 +411,12 @@ export default function FeedPage() {
           currentIndex={selectedStoryIndex}
         />
       )}
+
+      <LiveStreamViewer
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        stream={selectedStream}
+      />
     </div>
   );
 }
