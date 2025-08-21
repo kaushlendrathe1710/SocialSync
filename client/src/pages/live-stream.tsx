@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Video,
   Heart,
@@ -580,6 +580,8 @@ export default function LiveStreamPage() {
       });
       const json = await res.json();
       setCreatedStreamId(json.id);
+      // Refresh live streams lists for all open views
+      queryClient.invalidateQueries({ queryKey: ["/api/live-streams"] });
     } catch (e: any) {
       console.error("Create live stream failed:", e);
       toast({
@@ -604,6 +606,7 @@ export default function LiveStreamPage() {
     if (createdStreamId) {
       try {
         await apiRequest("PUT", `/api/live-streams/${createdStreamId}/end`);
+        queryClient.invalidateQueries({ queryKey: ["/api/live-streams"] });
       } catch (e) {
         console.warn("End live stream failed:", e);
       }
