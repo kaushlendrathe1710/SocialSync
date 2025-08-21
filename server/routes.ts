@@ -770,6 +770,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use("/uploads", express.static("uploads"));
 
+  // Live streams endpoints
+  app.post(
+    "/api/live-streams",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      try {
+        const body = z
+          .object({
+            title: z.string().min(1),
+            description: z.string().optional(),
+            privacy: z.enum(["public", "friends", "private"]).optional(),
+          })
+          .parse(req.body);
+
+        const liveStream = await storage.createLiveStream({
+          userId: req.session.userId!,
+          title: body.title.trim(),
+          description: body.description?.trim() || null,
+          privacy: body.privacy || "public",
+        } as any);
+
+        res.json(liveStream);
+      } catch (error) {
+        console.error("Create live stream error:", error);
+        res.status(500).json({ message: "Failed to create live stream" });
+      }
+    }
+  );
+
+  app.get("/api/live-streams", async (_req: Request, res: Response) => {
+    try {
+      const activeStreams = await storage.getActiveLiveStreams();
+      res.json(activeStreams);
+    } catch (error) {
+      console.error("Get live streams error:", error);
+      res.status(500).json({ message: "Failed to get live streams" });
+    }
+  });
+
+  app.put(
+    "/api/live-streams/:id/end",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      try {
+        const streamId = parseInt(req.params.id);
+        const success = await storage.endLiveStream(
+          streamId,
+          req.session.userId!
+        );
+
+        if (!success) {
+          return res
+            .status(404)
+            .json({ message: "Live stream not found or not authorized" });
+        }
+
+        res.json({ message: "Live stream ended successfully" });
+      } catch (error) {
+        console.error("End live stream error:", error);
+        res.status(500).json({ message: "Failed to end live stream" });
+      }
+    }
+  );
+
   const httpServer = createServer(app);
   return httpServer;
 }
