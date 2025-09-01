@@ -108,7 +108,18 @@ import {
   type InsertReel,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, like, or, gt, isNull, sql, inArray } from "drizzle-orm";
+import {
+  eq,
+  and,
+  desc,
+  asc,
+  like,
+  or,
+  gt,
+  isNull,
+  sql,
+  inArray,
+} from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -117,7 +128,10 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined>;
+  updateUser(
+    id: number,
+    updates: Partial<InsertUser>
+  ): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
 
   // OTP methods
@@ -128,14 +142,26 @@ export interface IStorage {
   // Post methods
   createPost(post: InsertPost): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
-  getPosts(userId?: number, limit?: number, offset?: number, currentUserId?: number): Promise<PostWithUser[]>;
-  updatePost(id: number, updates: Partial<InsertPost>): Promise<Post | undefined>;
+  getPosts(
+    userId?: number,
+    limit?: number,
+    offset?: number,
+    currentUserId?: number
+  ): Promise<PostWithUser[]>;
+  updatePost(
+    id: number,
+    updates: Partial<InsertPost>
+  ): Promise<Post | undefined>;
   deletePost(id: number): Promise<boolean>;
 
   // Like methods
   createLike(like: InsertLike): Promise<Like>;
   deleteLike(userId: number, postId: number): Promise<boolean>;
-  updateLike(userId: number, postId: number, reactionType: string): Promise<Like | undefined>;
+  updateLike(
+    userId: number,
+    postId: number,
+    reactionType: string
+  ): Promise<Like | undefined>;
   getUserLikes(userId: number): Promise<Like[]>;
   getPostReactions(postId: number): Promise<(Like & { user: User })[]>;
 
@@ -185,7 +211,11 @@ export interface IStorage {
   getTotalPosts(): Promise<number>;
   getTotalComments(): Promise<number>;
   getActiveUsersToday(): Promise<number>;
-  getAllUsersAdmin(page: number, limit: number, search?: string): Promise<User[]>;
+  getAllUsersAdmin(
+    page: number,
+    limit: number,
+    search?: string
+  ): Promise<User[]>;
   getAllPostsAdmin(page: number, limit: number): Promise<PostWithUser[]>;
   deleteUserAdmin(userId: number): Promise<boolean>;
 
@@ -200,10 +230,23 @@ export interface IStorage {
   incrementPostViewCount(postId: number): Promise<void>;
 
   // Friend request methods
-  sendFriendRequest(senderId: number, receiverId: number, message?: string): Promise<FriendRequest>;
-  respondToFriendRequest(requestId: number, action: 'accept' | 'decline'): Promise<FriendRequest | undefined>;
-  getFriendRequests(userId: number, type: 'sent' | 'received'): Promise<FriendRequestWithUser[]>;
-  getFriendRequestStatus(senderId: number, receiverId: number): Promise<string | null>;
+  sendFriendRequest(
+    senderId: number,
+    receiverId: number,
+    message?: string
+  ): Promise<FriendRequest>;
+  respondToFriendRequest(
+    requestId: number,
+    action: "accept" | "decline"
+  ): Promise<FriendRequest | undefined>;
+  getFriendRequests(
+    userId: number,
+    type: "sent" | "received"
+  ): Promise<FriendRequestWithUser[]>;
+  getFriendRequestStatus(
+    senderId: number,
+    receiverId: number
+  ): Promise<string | null>;
   deleteFriendRequest(requestId: number): Promise<boolean>;
 
   // Friendship methods
@@ -218,26 +261,47 @@ export interface IStorage {
 
   // Privacy & Safety methods
   getPrivacySettings(userId: number): Promise<PrivacySettings | undefined>;
-  updatePrivacySettings(userId: number, settings: Partial<InsertPrivacySettings>): Promise<PrivacySettings>;
-  blockUser(blockerId: number, blockedId: number, reason?: string): Promise<BlockedUser>;
+  updatePrivacySettings(
+    userId: number,
+    settings: Partial<InsertPrivacySettings>
+  ): Promise<PrivacySettings>;
+  blockUser(
+    blockerId: number,
+    blockedId: number,
+    reason?: string
+  ): Promise<BlockedUser>;
   unblockUser(blockerId: number, blockedId: number): Promise<boolean>;
   getBlockedUsers(userId: number): Promise<User[]>;
   isUserBlocked(blockerId: number, blockedId: number): Promise<boolean>;
 
   // Community methods
   createCommunityGroup(group: InsertCommunityGroup): Promise<CommunityGroup>;
-  getCommunityGroups(category?: string, userId?: number): Promise<GroupWithDetails[]>;
+  getCommunityGroups(
+    category?: string,
+    userId?: number
+  ): Promise<GroupWithDetails[]>;
   getGroupById(groupId: number): Promise<GroupWithDetails | null>;
-  getGroupMembership(groupId: number, userId: number): Promise<GroupMembership | undefined>;
+  getGroupMembership(
+    groupId: number,
+    userId: number
+  ): Promise<GroupMembership | undefined>;
   joinGroup(groupId: number, userId: number): Promise<GroupMembership>;
   leaveGroup(groupId: number, userId: number): Promise<boolean>;
   getUserGroups(userId: number): Promise<CommunityGroup[]>;
-  getGroupPosts(groupId: number, userId?: number): Promise<(GroupPost & { user: User })[]>;
+  getGroupPosts(
+    groupId: number,
+    userId?: number
+  ): Promise<(GroupPost & { user: User })[]>;
   createGroupPost(post: InsertGroupPost): Promise<GroupPost>;
 
   // Wellness methods
-  recordWellnessTracking(tracking: InsertWellnessTracking): Promise<WellnessTracking>;
-  getWellnessTracking(userId: number, days?: number): Promise<WellnessTracking[]>;
+  recordWellnessTracking(
+    tracking: InsertWellnessTracking
+  ): Promise<WellnessTracking>;
+  getWellnessTracking(
+    userId: number,
+    days?: number
+  ): Promise<WellnessTracking[]>;
   createHabit(habit: InsertHabitTracking): Promise<HabitTracking>;
   getUserHabits(userId: number): Promise<HabitTracking[]>;
   logHabit(log: InsertHabitLog): Promise<HabitLog>;
@@ -247,9 +311,14 @@ export interface IStorage {
 
   // Beauty & Shopping methods
   createBeautyProduct(product: InsertBeautyProduct): Promise<BeautyProduct>;
-  getBeautyProducts(category?: string, limit?: number): Promise<BeautyProduct[]>;
+  getBeautyProducts(
+    category?: string,
+    limit?: number
+  ): Promise<BeautyProduct[]>;
   createProductReview(review: InsertProductReview): Promise<ProductReview>;
-  getProductReviews(productId: number): Promise<(ProductReview & { user: User })[]>;
+  getProductReviews(
+    productId: number
+  ): Promise<(ProductReview & { user: User })[]>;
   createWishlist(wishlist: InsertWishlist): Promise<Wishlist>;
   getUserWishlists(userId: number): Promise<WishlistWithItems[]>;
   addToWishlist(item: InsertWishlistItem): Promise<WishlistItem>;
@@ -259,19 +328,31 @@ export interface IStorage {
   // Event methods
   createEvent(event: InsertEvent): Promise<Event>;
   getEvents(userId?: number): Promise<EventWithDetails[]>;
-  respondToEvent(eventId: number, userId: number, status: string): Promise<EventAttendee>;
-  getUserEvents(userId: number, type: 'created' | 'attending'): Promise<Event[]>;
+  respondToEvent(
+    eventId: number,
+    userId: number,
+    status: string
+  ): Promise<EventAttendee>;
+  getUserEvents(
+    userId: number,
+    type: "created" | "attending"
+  ): Promise<Event[]>;
 
   // Mentorship methods
   createMentorProfile(profile: InsertMentorProfile): Promise<MentorProfile>;
   getMentors(expertise?: string[]): Promise<MentorWithProfile[]>;
-  requestMentorship(request: InsertMentorshipRequest): Promise<MentorshipRequest>;
-  getMentorshipRequests(userId: number, type: 'sent' | 'received'): Promise<(MentorshipRequest & { mentor: MentorProfile; mentee: User })[]>;
+  requestMentorship(
+    request: InsertMentorshipRequest
+  ): Promise<MentorshipRequest>;
+  getMentorshipRequests(
+    userId: number,
+    type: "sent" | "received"
+  ): Promise<(MentorshipRequest & { mentor: MentorProfile; mentee: User })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
   private reels: any[] = [];
-  
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -288,7 +369,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
     return user;
   }
 
@@ -297,103 +381,142 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined> {
-    const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+  async updateUser(
+    id: number,
+    updates: Partial<InsertUser>
+  ): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
     return user;
   }
 
   async deleteUser(id: number): Promise<boolean> {
     try {
       // Delete all user-related data in proper order (respecting foreign key constraints)
-      
+
       // Delete habit logs first
       await db.delete(habitLogs).where(eq(habitLogs.userId, id));
-      
+
       // Delete habits
       await db.delete(habitTracking).where(eq(habitTracking.userId, id));
-      
+
       // Delete wellness tracking
       await db.delete(wellnessTracking).where(eq(wellnessTracking.userId, id));
-      
+
       // Delete wishlist items and wishlists
-      const userWishlists = await db.select({ id: wishlists.id }).from(wishlists).where(eq(wishlists.userId, id));
+      const userWishlists = await db
+        .select({ id: wishlists.id })
+        .from(wishlists)
+        .where(eq(wishlists.userId, id));
       for (const wishlist of userWishlists) {
-        await db.delete(wishlistItems).where(eq(wishlistItems.wishlistId, wishlist.id));
+        await db
+          .delete(wishlistItems)
+          .where(eq(wishlistItems.wishlistId, wishlist.id));
       }
       await db.delete(wishlists).where(eq(wishlists.userId, id));
-      
+
       // Delete product reviews
       await db.delete(productReviews).where(eq(productReviews.userId, id));
-      
+
       // Delete event attendees
       await db.delete(eventAttendees).where(eq(eventAttendees.userId, id));
-      
+
       // Delete events created by user
       await db.delete(events).where(eq(events.creatorId, id));
-      
+
       // Delete shopping posts
       await db.delete(shoppingPosts).where(eq(shoppingPosts.userId, id));
-      
+
       // Delete group posts and memberships
       await db.delete(groupPosts).where(eq(groupPosts.userId, id));
       await db.delete(groupMemberships).where(eq(groupMemberships.userId, id));
-      
+
       // Delete community groups created by user
       await db.delete(communityGroups).where(eq(communityGroups.creatorId, id));
-      
+
       // Delete blocked users relationships
-      await db.delete(blockedUsers).where(or(eq(blockedUsers.blockerId, id), eq(blockedUsers.blockedId, id)));
-      
+      await db
+        .delete(blockedUsers)
+        .where(
+          or(eq(blockedUsers.blockerId, id), eq(blockedUsers.blockedId, id))
+        );
+
       // Delete privacy settings
       await db.delete(privacySettings).where(eq(privacySettings.userId, id));
-      
+
       // Delete friendships and friend requests
-      await db.delete(friendships).where(or(eq(friendships.user1Id, id), eq(friendships.user2Id, id)));
-      await db.delete(friendRequests).where(or(eq(friendRequests.senderId, id), eq(friendRequests.receiverId, id)));
-      
+      await db
+        .delete(friendships)
+        .where(or(eq(friendships.user1Id, id), eq(friendships.user2Id, id)));
+      await db
+        .delete(friendRequests)
+        .where(
+          or(eq(friendRequests.senderId, id), eq(friendRequests.receiverId, id))
+        );
+
       // Delete mentorship data
-      await db.delete(mentorshipRequests).where(or(eq(mentorshipRequests.menteeId, id), eq(mentorshipRequests.mentorId, id)));
+      await db
+        .delete(mentorshipRequests)
+        .where(
+          or(
+            eq(mentorshipRequests.menteeId, id),
+            eq(mentorshipRequests.mentorId, id)
+          )
+        );
       await db.delete(mentorProfiles).where(eq(mentorProfiles.userId, id));
-      
+
       // Delete post views
       await db.delete(postViews).where(eq(postViews.viewerId, id));
-      
+
       // Delete live streams
       await db.delete(liveStreams).where(eq(liveStreams.userId, id));
-      
+
       // Delete notifications
-      await db.delete(notifications).where(or(eq(notifications.userId, id), eq(notifications.fromUserId, id)));
-      
+      await db
+        .delete(notifications)
+        .where(
+          or(eq(notifications.userId, id), eq(notifications.fromUserId, id))
+        );
+
       // Delete messages
-      await db.delete(messages).where(or(eq(messages.senderId, id), eq(messages.receiverId, id)));
-      
+      await db
+        .delete(messages)
+        .where(or(eq(messages.senderId, id), eq(messages.receiverId, id)));
+
       // Delete stories
       await db.delete(stories).where(eq(stories.userId, id));
-      
+
       // Delete follows
-      await db.delete(follows).where(or(eq(follows.followerId, id), eq(follows.followingId, id)));
-      
+      await db
+        .delete(follows)
+        .where(or(eq(follows.followerId, id), eq(follows.followingId, id)));
+
       // Delete comment likes
       await db.delete(commentLikes).where(eq(commentLikes.userId, id));
-      
+
       // Delete comments
       await db.delete(comments).where(eq(comments.userId, id));
-      
+
       // Delete likes
       await db.delete(likes).where(eq(likes.userId, id));
-      
+
       // Delete posts
       await db.delete(posts).where(eq(posts.userId, id));
-      
+
       // Delete OTP codes
-      await db.delete(otpCodes).where(eq(otpCodes.email, (await this.getUser(id))?.email || ''));
-      
+      await db
+        .delete(otpCodes)
+        .where(eq(otpCodes.email, (await this.getUser(id))?.email || ""));
+
       // Finally delete the user
       const result = await db.delete(users).where(eq(users.id, id));
-      
+
       return true;
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
       return false;
     }
   }
@@ -404,7 +527,10 @@ export class DatabaseStorage implements IStorage {
     return otp;
   }
 
-  async getValidOtpCode(email: string, code: string): Promise<OtpCode | undefined> {
+  async getValidOtpCode(
+    email: string,
+    code: string
+  ): Promise<OtpCode | undefined> {
     const [otp] = await db
       .select()
       .from(otpCodes)
@@ -437,45 +563,52 @@ export class DatabaseStorage implements IStorage {
       })
       .from(posts)
       .innerJoin(users, eq(posts.userId, users.id))
-      .where(and(
-        eq(posts.id, id),
-        or(
-          isNull(posts.expiresAt),
-          gt(posts.expiresAt, new Date())
+      .where(
+        and(
+          eq(posts.id, id),
+          or(isNull(posts.expiresAt), gt(posts.expiresAt, new Date()))
         )
-      ));
+      );
 
     if (result.length === 0) return undefined;
 
     const { post, user } = result[0];
-    
+
     // Get like count
-    const likesResult = await db.select({ count: sql<number>`count(*)` }).from(likes).where(eq(likes.postId, id));
+    const likesResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(likes)
+      .where(eq(likes.postId, id));
     const likesCount = likesResult[0]?.count || 0;
-    
+
     // Get comment count
-    const commentsResult = await db.select({ count: sql<number>`count(*)` }).from(comments).where(eq(comments.postId, id));
+    const commentsResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(comments)
+      .where(eq(comments.postId, id));
     const commentsCount = commentsResult[0]?.count || 0;
-    
+
     return { ...post, user, likesCount, commentsCount };
   }
 
-  async getPosts(filterUserId?: number, limit = 20, offset = 0, currentUserId?: number): Promise<PostWithUser[]> {
+  async getPosts(
+    filterUserId?: number,
+    limit = 20,
+    offset = 0,
+    currentUserId?: number
+  ): Promise<PostWithUser[]> {
     const now = new Date();
-    
+
     let baseConditions = [
       // Filter out expired posts
-      or(
-        isNull(posts.expiresAt),
-        gt(posts.expiresAt, now)
-      )
+      or(isNull(posts.expiresAt), gt(posts.expiresAt, now)),
     ];
-    
+
     // Add user filter if specified
     if (filterUserId) {
       baseConditions.push(eq(posts.userId, filterUserId));
     }
-    
+
     const result = await db
       .select({
         post: posts,
@@ -487,36 +620,55 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(posts.createdAt))
       .limit(limit)
       .offset(offset);
-    
+
     // Get interaction counts and user reactions for each post
     const enrichedPosts = await Promise.all(
       result.map(async ({ post, user }) => {
-        const likesResult = await db.select({ count: sql<number>`count(*)` }).from(likes).where(eq(likes.postId, post.id));
-        const commentsResult = await db.select({ count: sql<number>`count(*)` }).from(comments).where(eq(comments.postId, post.id));
-        
+        const likesResult = await db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(likes)
+          .where(eq(likes.postId, post.id));
+        const commentsResult = await db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(comments)
+          .where(eq(comments.postId, post.id));
+
         // Get current user's reaction if provided
         let userReaction = null;
         if (currentUserId) {
-          const userLike = await db.select().from(likes).where(and(eq(likes.postId, post.id), eq(likes.userId, currentUserId))).limit(1);
+          const userLike = await db
+            .select()
+            .from(likes)
+            .where(
+              and(eq(likes.postId, post.id), eq(likes.userId, currentUserId))
+            )
+            .limit(1);
           userReaction = userLike[0]?.reactionType || null;
         }
-        
+
         return {
           ...post,
           user,
-          likesCount: likesResult[0]?.count || 0,
-          commentsCount: commentsResult[0]?.count || 0,
+          likesCount: Number(likesResult[0]?.count || 0),
+          commentsCount: Number(commentsResult[0]?.count || 0),
           userReaction,
-          isLiked: userReaction === 'like'
+          isLiked: userReaction === "like",
         };
       })
     );
-    
+
     return enrichedPosts;
   }
 
-  async updatePost(id: number, updates: Partial<InsertPost>): Promise<Post | undefined> {
-    const [post] = await db.update(posts).set(updates).where(eq(posts.id, id)).returning();
+  async updatePost(
+    id: number,
+    updates: Partial<InsertPost>
+  ): Promise<Post | undefined> {
+    const [post] = await db
+      .update(posts)
+      .set(updates)
+      .where(eq(posts.id, id))
+      .returning();
     return post;
   }
 
@@ -542,7 +694,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(likes).where(eq(likes.userId, userId));
   }
 
-  async updateLike(userId: number, postId: number, reactionType: string): Promise<Like | undefined> {
+  async updateLike(
+    userId: number,
+    postId: number,
+    reactionType: string
+  ): Promise<Like | undefined> {
     const [updated] = await db
       .update(likes)
       .set({ reactionType })
@@ -567,11 +723,17 @@ export class DatabaseStorage implements IStorage {
 
   // Comment methods
   async createComment(insertComment: InsertComment): Promise<Comment> {
-    const [comment] = await db.insert(comments).values(insertComment).returning();
+    const [comment] = await db
+      .insert(comments)
+      .values(insertComment)
+      .returning();
     return comment;
   }
 
-  async getPostComments(postId: number, currentUserId?: number): Promise<(Comment & { user: User; userReaction?: string })[]> {
+  async getPostComments(
+    postId: number,
+    currentUserId?: number
+  ): Promise<(Comment & { user: User; userReaction?: string })[]> {
     if (currentUserId) {
       // Use LEFT JOIN to get user reactions in single query
       const result = await db
@@ -582,11 +744,16 @@ export class DatabaseStorage implements IStorage {
         })
         .from(comments)
         .innerJoin(users, eq(comments.userId, users.id))
-        .leftJoin(commentReactions, and(
-          eq(commentReactions.commentId, comments.id),
-          eq(commentReactions.userId, currentUserId)
-        ))
-        .where(and(eq(comments.postId, postId), isNull(comments.parentCommentId)))
+        .leftJoin(
+          commentReactions,
+          and(
+            eq(commentReactions.commentId, comments.id),
+            eq(commentReactions.userId, currentUserId)
+          )
+        )
+        .where(
+          and(eq(comments.postId, postId), isNull(comments.parentCommentId))
+        )
         .orderBy(asc(comments.createdAt));
 
       return result.map(({ comment, user, userReaction }) => ({
@@ -603,7 +770,9 @@ export class DatabaseStorage implements IStorage {
         })
         .from(comments)
         .innerJoin(users, eq(comments.userId, users.id))
-        .where(and(eq(comments.postId, postId), isNull(comments.parentCommentId)))
+        .where(
+          and(eq(comments.postId, postId), isNull(comments.parentCommentId))
+        )
         .orderBy(asc(comments.createdAt));
 
       return result.map(({ comment, user }) => ({
@@ -614,7 +783,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCommentReplies(commentId: number, currentUserId?: number): Promise<(Comment & { user: User; userReaction?: string })[]> {
+  async getCommentReplies(
+    commentId: number,
+    currentUserId?: number
+  ): Promise<(Comment & { user: User; userReaction?: string })[]> {
     if (currentUserId) {
       // Use LEFT JOIN to get user reactions in single query
       const result = await db
@@ -625,10 +797,13 @@ export class DatabaseStorage implements IStorage {
         })
         .from(comments)
         .innerJoin(users, eq(comments.userId, users.id))
-        .leftJoin(commentReactions, and(
-          eq(commentReactions.commentId, comments.id),
-          eq(commentReactions.userId, currentUserId)
-        ))
+        .leftJoin(
+          commentReactions,
+          and(
+            eq(commentReactions.commentId, comments.id),
+            eq(commentReactions.userId, currentUserId)
+          )
+        )
         .where(eq(comments.parentCommentId, commentId))
         .orderBy(asc(comments.createdAt));
 
@@ -662,7 +837,10 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount! > 0;
   }
 
-  async updateComment(id: number, content: string): Promise<Comment | undefined> {
+  async updateComment(
+    id: number,
+    content: string
+  ): Promise<Comment | undefined> {
     const [updated] = await db
       .update(comments)
       .set({ content })
@@ -671,7 +849,9 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async createCommentLike(insertCommentLike: InsertCommentLike): Promise<CommentLike> {
+  async createCommentLike(
+    insertCommentLike: InsertCommentLike
+  ): Promise<CommentLike> {
     const [commentLike] = await db
       .insert(commentLikes)
       .values(insertCommentLike)
@@ -689,7 +869,12 @@ export class DatabaseStorage implements IStorage {
   async deleteCommentLike(userId: number, commentId: number): Promise<boolean> {
     const result = await db
       .delete(commentLikes)
-      .where(and(eq(commentLikes.userId, userId), eq(commentLikes.commentId, commentId)));
+      .where(
+        and(
+          eq(commentLikes.userId, userId),
+          eq(commentLikes.commentId, commentId)
+        )
+      );
 
     if (result.rowCount! > 0) {
       // Decrement likes count
@@ -715,7 +900,10 @@ export class DatabaseStorage implements IStorage {
     return follow;
   }
 
-  async deleteFollow(followerId: number, followingId: number): Promise<boolean> {
+  async deleteFollow(
+    followerId: number,
+    followingId: number
+  ): Promise<boolean> {
     const result = await db
       .delete(follows)
       .where(
@@ -768,7 +956,7 @@ export class DatabaseStorage implements IStorage {
 
   async getActiveStories(userId?: number): Promise<(Story & { user: User })[]> {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    
+
     let query = db
       .select({
         story: stories,
@@ -794,11 +982,17 @@ export class DatabaseStorage implements IStorage {
 
   // Message methods
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const [message] = await db.insert(messages).values(insertMessage).returning();
+    const [message] = await db
+      .insert(messages)
+      .values(insertMessage)
+      .returning();
     return message;
   }
 
-  async getConversation(userId1: number, userId2: number): Promise<MessageWithUser[]> {
+  async getConversation(
+    userId1: number,
+    userId2: number
+  ): Promise<MessageWithUser[]> {
     const result = await db
       .select({
         message: messages,
@@ -821,7 +1015,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(users)
         .where(eq(users.id, message.receiverId));
-      
+
       messagesWithUsers.push({
         ...message,
         sender,
@@ -845,23 +1039,28 @@ export class DatabaseStorage implements IStorage {
 
     // Get receiver data and deduplicate conversations
     const conversationMap = new Map<string, MessageWithUser>();
-    
+
     for (const { message, sender } of result) {
       const [receiver] = await db
         .select()
         .from(users)
         .where(eq(users.id, message.receiverId));
-      
+
       // Handle self-messaging case
-      const otherUserId = message.senderId === userId ? message.receiverId : message.senderId;
-      
+      const otherUserId =
+        message.senderId === userId ? message.receiverId : message.senderId;
+
       // For self-messages, use a special key to ensure they appear
-      const conversationKey = message.senderId === message.receiverId 
-        ? `self-${userId}` 
-        : `${Math.min(userId, otherUserId)}-${Math.max(userId, otherUserId)}`;
-      
-      if (!conversationMap.has(conversationKey) || 
-          new Date(message.createdAt!) > new Date(conversationMap.get(conversationKey)!.createdAt!)) {
+      const conversationKey =
+        message.senderId === message.receiverId
+          ? `self-${userId}`
+          : `${Math.min(userId, otherUserId)}-${Math.max(userId, otherUserId)}`;
+
+      if (
+        !conversationMap.has(conversationKey) ||
+        new Date(message.createdAt!) >
+          new Date(conversationMap.get(conversationKey)!.createdAt!)
+      ) {
         conversationMap.set(conversationKey, {
           ...message,
           sender,
@@ -874,7 +1073,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markMessageRead(id: number): Promise<void> {
-    await db.update(messages).set({ readAt: new Date() }).where(eq(messages.id, id));
+    await db
+      .update(messages)
+      .set({ readAt: new Date() })
+      .where(eq(messages.id, id));
   }
 
   async markMessageAsRead(messageId: number, userId: number): Promise<void> {
@@ -886,8 +1088,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Notification methods
-  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
-    const [notification] = await db.insert(notifications).values(insertNotification).returning();
+  async createNotification(
+    insertNotification: InsertNotification
+  ): Promise<Notification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values(insertNotification)
+      .returning();
     return notification;
   }
 
@@ -925,7 +1132,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markNotificationRead(id: number): Promise<void> {
-    await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, id));
+    await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, id));
   }
 
   async markAllNotificationsRead(userId: number): Promise<void> {
@@ -943,8 +1153,8 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(
         or(
-          sql`LOWER(name) LIKE ${'%' + searchTerm + '%'}`,
-          sql`LOWER(username) LIKE ${'%' + searchTerm + '%'}`
+          sql`LOWER(name) LIKE ${"%" + searchTerm + "%"}`,
+          sql`LOWER(username) LIKE ${"%" + searchTerm + "%"}`
         )
       )
       .limit(20);
@@ -959,13 +1169,12 @@ export class DatabaseStorage implements IStorage {
       })
       .from(posts)
       .innerJoin(users, eq(posts.userId, users.id))
-      .where(and(
-        sql`LOWER(content) LIKE ${'%' + searchTerm + '%'}`,
-        or(
-          isNull(posts.expiresAt),
-          gt(posts.expiresAt, new Date())
+      .where(
+        and(
+          sql`LOWER(content) LIKE ${"%" + searchTerm + "%"}`,
+          or(isNull(posts.expiresAt), gt(posts.expiresAt, new Date()))
         )
-      ))
+      )
       .orderBy(desc(posts.createdAt))
       .limit(20);
 
@@ -974,40 +1183,45 @@ export class DatabaseStorage implements IStorage {
 
   // Admin methods
   async getTotalUsers(): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)` }).from(users);
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users);
     return result[0].count;
   }
 
   async getTotalPosts(): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)` }).from(posts);
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts);
     return result[0].count;
   }
 
   async getTotalComments(): Promise<number> {
-    const result = await db.select({ count: sql<number>`count(*)` }).from(comments);
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(comments);
     return result[0].count;
   }
 
   async getActiveUsersToday(): Promise<number> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const result = await db
       .select({ count: sql<number>`count(distinct ${users.id})` })
       .from(users)
       .leftJoin(posts, eq(posts.userId, users.id))
       .leftJoin(comments, eq(comments.userId, users.id))
-      .where(
-        or(
-          gt(posts.createdAt, today),
-          gt(comments.createdAt, today)
-        )
-      );
-    
+      .where(or(gt(posts.createdAt, today), gt(comments.createdAt, today)));
+
     return result[0].count || 0;
   }
 
-  async getAllUsersAdmin(page: number, limit: number, search?: string): Promise<User[]> {
+  async getAllUsersAdmin(
+    page: number,
+    limit: number,
+    search?: string
+  ): Promise<User[]> {
     const offset = (page - 1) * limit;
     let query = db.select().from(users);
 
@@ -1029,7 +1243,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAllPostsAdmin(page: number, limit: number): Promise<PostWithUser[]> {
     const offset = (page - 1) * limit;
-    
+
     const result = await db
       .select({
         post: posts,
@@ -1057,14 +1271,19 @@ export class DatabaseStorage implements IStorage {
     await db.delete(comments).where(eq(comments.userId, userId));
     await db.delete(likes).where(eq(likes.userId, userId));
     await db.delete(posts).where(eq(posts.userId, userId));
-    
+
     const result = await db.delete(users).where(eq(users.id, userId));
     return result.rowCount! > 0;
   }
 
   // Live stream methods
-  async createLiveStream(insertLiveStream: InsertLiveStream): Promise<LiveStream> {
-    const [liveStream] = await db.insert(liveStreams).values(insertLiveStream).returning();
+  async createLiveStream(
+    insertLiveStream: InsertLiveStream
+  ): Promise<LiveStream> {
+    const [liveStream] = await db
+      .insert(liveStreams)
+      .values(insertLiveStream)
+      .returning();
     return liveStream;
   }
 
@@ -1086,15 +1305,14 @@ export class DatabaseStorage implements IStorage {
     try {
       const result = await db
         .update(liveStreams)
-        .set({ 
-          isActive: false, 
-          endedAt: new Date() 
+        .set({
+          isActive: false,
+          endedAt: new Date(),
         })
-        .where(and(
-          eq(liveStreams.id, streamId),
-          eq(liveStreams.userId, userId)
-        ));
-      
+        .where(
+          and(eq(liveStreams.id, streamId), eq(liveStreams.userId, userId))
+        );
+
       return result.rowCount! > 0;
     } catch (error) {
       console.error("End live stream error:", error);
@@ -1113,49 +1331,64 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(postViews)
       .where(eq(postViews.postId, postId));
-    
+
     return result[0]?.count || 0;
   }
 
   async incrementPostViewCount(postId: number): Promise<void> {
     await db
       .update(posts)
-      .set({ 
-        viewsCount: sql`${posts.viewsCount} + 1` 
+      .set({
+        viewsCount: sql`${posts.viewsCount} + 1`,
       })
       .where(eq(posts.id, postId));
   }
 
   // Friend request methods
-  async sendFriendRequest(senderId: number, receiverId: number, message?: string): Promise<FriendRequest> {
-    const [request] = await db.insert(friendRequests).values({
-      senderId,
-      receiverId,
-      message,
-    }).returning();
+  async sendFriendRequest(
+    senderId: number,
+    receiverId: number,
+    message?: string
+  ): Promise<FriendRequest> {
+    const [request] = await db
+      .insert(friendRequests)
+      .values({
+        senderId,
+        receiverId,
+        message,
+      })
+      .returning();
     return request;
   }
 
-  async respondToFriendRequest(requestId: number, action: 'accept' | 'decline'): Promise<FriendRequest | undefined> {
-    const [request] = await db.update(friendRequests)
-      .set({ 
-        status: action === 'accept' ? 'accepted' : 'declined',
-        respondedAt: new Date()
+  async respondToFriendRequest(
+    requestId: number,
+    action: "accept" | "decline"
+  ): Promise<FriendRequest | undefined> {
+    const [request] = await db
+      .update(friendRequests)
+      .set({
+        status: action === "accept" ? "accepted" : "declined",
+        respondedAt: new Date(),
       })
       .where(eq(friendRequests.id, requestId))
       .returning();
 
-    if (request && action === 'accept') {
+    if (request && action === "accept") {
       await this.createFriendship(request.senderId, request.receiverId);
     }
 
     return request;
   }
 
-  async getFriendRequests(userId: number, type: 'sent' | 'received'): Promise<FriendRequestWithUser[]> {
-    const condition = type === 'sent' 
-      ? eq(friendRequests.senderId, userId)
-      : eq(friendRequests.receiverId, userId);
+  async getFriendRequests(
+    userId: number,
+    type: "sent" | "received"
+  ): Promise<FriendRequestWithUser[]> {
+    const condition =
+      type === "sent"
+        ? eq(friendRequests.senderId, userId)
+        : eq(friendRequests.receiverId, userId);
 
     const result = await db
       .select({
@@ -1164,27 +1397,35 @@ export class DatabaseStorage implements IStorage {
         receiver: users,
       })
       .from(friendRequests)
-      .innerJoin(users, type === 'sent' 
-        ? eq(friendRequests.receiverId, users.id)
-        : eq(friendRequests.senderId, users.id))
-      .where(and(condition, eq(friendRequests.status, 'pending')))
+      .innerJoin(
+        users,
+        type === "sent"
+          ? eq(friendRequests.receiverId, users.id)
+          : eq(friendRequests.senderId, users.id)
+      )
+      .where(and(condition, eq(friendRequests.status, "pending")))
       .orderBy(desc(friendRequests.createdAt));
 
     return result.map(({ request, sender, receiver }) => ({
       ...request,
-      sender: type === 'sent' ? { id: userId } as User : sender,
-      receiver: type === 'sent' ? sender : { id: userId } as User,
+      sender: type === "sent" ? ({ id: userId } as User) : sender,
+      receiver: type === "sent" ? sender : ({ id: userId } as User),
     }));
   }
 
-  async getFriendRequestStatus(senderId: number, receiverId: number): Promise<string | null> {
+  async getFriendRequestStatus(
+    senderId: number,
+    receiverId: number
+  ): Promise<string | null> {
     const [request] = await db
       .select({ status: friendRequests.status })
       .from(friendRequests)
-      .where(and(
-        eq(friendRequests.senderId, senderId),
-        eq(friendRequests.receiverId, receiverId)
-      ))
+      .where(
+        and(
+          eq(friendRequests.senderId, senderId),
+          eq(friendRequests.receiverId, receiverId)
+        )
+      )
       .orderBy(desc(friendRequests.createdAt))
       .limit(1);
 
@@ -1192,26 +1433,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteFriendRequest(requestId: number): Promise<boolean> {
-    const result = await db.delete(friendRequests).where(eq(friendRequests.id, requestId));
+    const result = await db
+      .delete(friendRequests)
+      .where(eq(friendRequests.id, requestId));
     return result.rowCount! > 0;
   }
 
   // Friendship methods
-  async createFriendship(user1Id: number, user2Id: number): Promise<Friendship> {
-    const [friendship] = await db.insert(friendships).values({
-      user1Id: Math.min(user1Id, user2Id),
-      user2Id: Math.max(user1Id, user2Id),
-    }).returning();
+  async createFriendship(
+    user1Id: number,
+    user2Id: number
+  ): Promise<Friendship> {
+    const [friendship] = await db
+      .insert(friendships)
+      .values({
+        user1Id: Math.min(user1Id, user2Id),
+        user2Id: Math.max(user1Id, user2Id),
+      })
+      .returning();
     return friendship;
   }
 
   async deleteFriendship(user1Id: number, user2Id: number): Promise<boolean> {
-    const result = await db.delete(friendships).where(
-      and(
-        eq(friendships.user1Id, Math.min(user1Id, user2Id)),
-        eq(friendships.user2Id, Math.max(user1Id, user2Id))
-      )
-    );
+    const result = await db
+      .delete(friendships)
+      .where(
+        and(
+          eq(friendships.user1Id, Math.min(user1Id, user2Id)),
+          eq(friendships.user2Id, Math.max(user1Id, user2Id))
+        )
+      );
     return result.rowCount! > 0;
   }
 
@@ -1220,13 +1471,12 @@ export class DatabaseStorage implements IStorage {
     const friendshipRecords = await db
       .select()
       .from(friendships)
-      .where(or(
-        eq(friendships.user1Id, userId),
-        eq(friendships.user2Id, userId)
-      ));
+      .where(
+        or(eq(friendships.user1Id, userId), eq(friendships.user2Id, userId))
+      );
 
     // Extract friend user IDs
-    const friendIds = friendshipRecords.map((friendship: Friendship) => 
+    const friendIds = friendshipRecords.map((friendship: Friendship) =>
       friendship.user1Id === userId ? friendship.user2Id : friendship.user1Id
     );
 
@@ -1247,9 +1497,10 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(users)
-      .where(and(
-        sql`${users.id} != ${userId}`,
-        sql`${users.id} NOT IN (
+      .where(
+        and(
+          sql`${users.id} != ${userId}`,
+          sql`${users.id} NOT IN (
           SELECT CASE 
             WHEN user1_id = ${userId} THEN user2_id 
             ELSE user1_id 
@@ -1257,13 +1508,14 @@ export class DatabaseStorage implements IStorage {
           FROM friendships 
           WHERE user1_id = ${userId} OR user2_id = ${userId}
         )`,
-        sql`${users.id} NOT IN (
+          sql`${users.id} NOT IN (
           SELECT receiver_id FROM friend_requests WHERE sender_id = ${userId}
         )`,
-        sql`${users.id} NOT IN (
+          sql`${users.id} NOT IN (
           SELECT sender_id FROM friend_requests WHERE receiver_id = ${userId}
         )`
-      ))
+        )
+      )
       .limit(limit);
   }
 
@@ -1271,20 +1523,19 @@ export class DatabaseStorage implements IStorage {
     const [friendship] = await db
       .select()
       .from(friendships)
-      .where(and(
-        eq(friendships.user1Id, Math.min(user1Id, user2Id)),
-        eq(friendships.user2Id, Math.max(user1Id, user2Id))
-      ))
+      .where(
+        and(
+          eq(friendships.user1Id, Math.min(user1Id, user2Id)),
+          eq(friendships.user2Id, Math.max(user1Id, user2Id))
+        )
+      )
       .limit(1);
 
     return !!friendship;
   }
 
   async getMutualFriends(user1Id: number, user2Id: number): Promise<User[]> {
-    const result = await db
-      .select()
-      .from(users)
-      .where(sql`
+    const result = await db.select().from(users).where(sql`
         ${users.id} IN (
           SELECT CASE 
             WHEN f1.user1_id = ${user1Id} THEN f1.user2_id 
@@ -1309,14 +1560,17 @@ export class DatabaseStorage implements IStorage {
     const [friendship] = await db
       .select()
       .from(friendships)
-      .where(and(
-        eq(friendships.user1Id, Math.min(userId, friendId)),
-        eq(friendships.user2Id, Math.max(userId, friendId))
-      ));
+      .where(
+        and(
+          eq(friendships.user1Id, Math.min(userId, friendId)),
+          eq(friendships.user2Id, Math.max(userId, friendId))
+        )
+      );
 
     if (!friendship) return false;
 
-    await db.update(friendships)
+    await db
+      .update(friendships)
       .set({ closeFriend: !friendship.closeFriend })
       .where(eq(friendships.id, friendship.id));
 
@@ -1341,12 +1595,15 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(follows.followerId, userId), // I follow them
           exists(
-            db.select().from(follows as any).where(
-              and(
-                eq(follows.followerId, users.id), // They follow me
-                eq(follows.followingId, userId)
+            db
+              .select()
+              .from(follows as any)
+              .where(
+                and(
+                  eq(follows.followerId, users.id), // They follow me
+                  eq(follows.followingId, userId)
+                )
               )
-            )
           )
         )
       );
@@ -1355,14 +1612,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Privacy & Safety methods
-  async getPrivacySettings(userId: number): Promise<PrivacySettings | undefined> {
+  async getPrivacySettings(
+    userId: number
+  ): Promise<PrivacySettings | undefined> {
     const [settings] = await db
       .select()
       .from(privacySettings)
       .where(eq(privacySettings.userId, userId));
 
     if (!settings) {
-      const [newSettings] = await db.insert(privacySettings)
+      const [newSettings] = await db
+        .insert(privacySettings)
         .values({ userId })
         .returning();
       return newSettings;
@@ -1371,8 +1631,12 @@ export class DatabaseStorage implements IStorage {
     return settings;
   }
 
-  async updatePrivacySettings(userId: number, settings: Partial<InsertPrivacySettings>): Promise<PrivacySettings> {
-    const [updated] = await db.update(privacySettings)
+  async updatePrivacySettings(
+    userId: number,
+    settings: Partial<InsertPrivacySettings>
+  ): Promise<PrivacySettings> {
+    const [updated] = await db
+      .update(privacySettings)
       .set({ ...settings, updatedAt: new Date() })
       .where(eq(privacySettings.userId, userId))
       .returning();
@@ -1380,24 +1644,33 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async blockUser(blockerId: number, blockedId: number, reason?: string): Promise<BlockedUser> {
-    const [blocked] = await db.insert(blockedUsers).values({
-      blockerId,
-      blockedId,
-      reason,
-    }).returning();
+  async blockUser(
+    blockerId: number,
+    blockedId: number,
+    reason?: string
+  ): Promise<BlockedUser> {
+    const [blocked] = await db
+      .insert(blockedUsers)
+      .values({
+        blockerId,
+        blockedId,
+        reason,
+      })
+      .returning();
 
     await this.deleteFriendship(blockerId, blockedId);
     return blocked;
   }
 
   async unblockUser(blockerId: number, blockedId: number): Promise<boolean> {
-    const result = await db.delete(blockedUsers).where(
-      and(
-        eq(blockedUsers.blockerId, blockerId),
-        eq(blockedUsers.blockedId, blockedId)
-      )
-    );
+    const result = await db
+      .delete(blockedUsers)
+      .where(
+        and(
+          eq(blockedUsers.blockerId, blockerId),
+          eq(blockedUsers.blockedId, blockedId)
+        )
+      );
     return result.rowCount! > 0;
   }
 
@@ -1415,22 +1688,32 @@ export class DatabaseStorage implements IStorage {
     const [blocked] = await db
       .select()
       .from(blockedUsers)
-      .where(and(
-        eq(blockedUsers.blockerId, blockerId),
-        eq(blockedUsers.blockedId, blockedId)
-      ))
+      .where(
+        and(
+          eq(blockedUsers.blockerId, blockerId),
+          eq(blockedUsers.blockedId, blockedId)
+        )
+      )
       .limit(1);
 
     return !!blocked;
   }
 
   // Community methods
-  async createCommunityGroup(group: InsertCommunityGroup): Promise<CommunityGroup> {
-    const [newGroup] = await db.insert(communityGroups).values(group).returning();
+  async createCommunityGroup(
+    group: InsertCommunityGroup
+  ): Promise<CommunityGroup> {
+    const [newGroup] = await db
+      .insert(communityGroups)
+      .values(group)
+      .returning();
     return newGroup;
   }
 
-  async getCommunityGroups(category?: string, userId?: number): Promise<GroupWithDetails[]> {
+  async getCommunityGroups(
+    category?: string,
+    userId?: number
+  ): Promise<GroupWithDetails[]> {
     let query = db
       .select({
         group: communityGroups,
@@ -1439,10 +1722,13 @@ export class DatabaseStorage implements IStorage {
       })
       .from(communityGroups)
       .innerJoin(users, eq(communityGroups.creatorId, users.id))
-      .leftJoin(groupMemberships, and(
-        eq(groupMemberships.groupId, communityGroups.id),
-        userId ? eq(groupMemberships.userId, userId) : sql`false`
-      ));
+      .leftJoin(
+        groupMemberships,
+        and(
+          eq(groupMemberships.groupId, communityGroups.id),
+          userId ? eq(groupMemberships.userId, userId) : sql`false`
+        )
+      );
 
     if (category) {
       query = query.where(eq(communityGroups.category, category));
@@ -1453,8 +1739,8 @@ export class DatabaseStorage implements IStorage {
     return result.map(({ group, creator, membership }) => ({
       ...group,
       creator,
-      membershipStatus: membership?.status || 'none',
-      isJoined: !!membership && membership.status === 'active',
+      membershipStatus: membership?.status || "none",
+      isJoined: !!membership && membership.status === "active",
     }));
   }
 
@@ -1477,53 +1763,65 @@ export class DatabaseStorage implements IStorage {
     return {
       ...group,
       creator,
-      membershipStatus: 'none',
+      membershipStatus: "none",
       isJoined: false,
     };
   }
 
-  async getGroupMembership(groupId: number, userId: number): Promise<GroupMembership | undefined> {
+  async getGroupMembership(
+    groupId: number,
+    userId: number
+  ): Promise<GroupMembership | undefined> {
     const [membership] = await db
       .select()
       .from(groupMemberships)
-      .where(and(
-        eq(groupMemberships.groupId, groupId),
-        eq(groupMemberships.userId, userId)
-      ));
-    
+      .where(
+        and(
+          eq(groupMemberships.groupId, groupId),
+          eq(groupMemberships.userId, userId)
+        )
+      );
+
     return membership;
   }
 
   async joinGroup(groupId: number, userId: number): Promise<GroupMembership> {
-    console.log('Storage joinGroup called:', { groupId, userId });
-    
-    const [membership] = await db.insert(groupMemberships).values({
-      groupId,
-      userId,
-      role: 'member',
-      status: 'active'
-    }).returning();
+    console.log("Storage joinGroup called:", { groupId, userId });
 
-    console.log('Membership created:', membership);
+    const [membership] = await db
+      .insert(groupMemberships)
+      .values({
+        groupId,
+        userId,
+        role: "member",
+        status: "active",
+      })
+      .returning();
 
-    await db.update(communityGroups)
+    console.log("Membership created:", membership);
+
+    await db
+      .update(communityGroups)
       .set({ memberCount: sql`${communityGroups.memberCount} + 1` })
       .where(eq(communityGroups.id, groupId));
 
-    console.log('Member count updated for group:', groupId);
+    console.log("Member count updated for group:", groupId);
     return membership;
   }
 
   async leaveGroup(groupId: number, userId: number): Promise<boolean> {
-    const result = await db.delete(groupMemberships).where(
-      and(
-        eq(groupMemberships.groupId, groupId),
-        eq(groupMemberships.userId, userId)
-      )
-    );
+    const result = await db
+      .delete(groupMemberships)
+      .where(
+        and(
+          eq(groupMemberships.groupId, groupId),
+          eq(groupMemberships.userId, userId)
+        )
+      );
 
     if (result.rowCount! > 0) {
-      await db.update(communityGroups)
+      await db
+        .update(communityGroups)
         .set({ memberCount: sql`${communityGroups.memberCount} - 1` })
         .where(eq(communityGroups.id, groupId));
     }
@@ -1535,13 +1833,19 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ group: communityGroups })
       .from(groupMemberships)
-      .innerJoin(communityGroups, eq(groupMemberships.groupId, communityGroups.id))
+      .innerJoin(
+        communityGroups,
+        eq(groupMemberships.groupId, communityGroups.id)
+      )
       .where(eq(groupMemberships.userId, userId));
 
     return result.map(({ group }) => group);
   }
 
-  async getGroupPosts(groupId: number, userId?: number): Promise<(GroupPost & { user: User })[]> {
+  async getGroupPosts(
+    groupId: number,
+    userId?: number
+  ): Promise<(GroupPost & { user: User })[]> {
     const result = await db
       .select({
         post: groupPosts,
@@ -1561,18 +1865,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Wellness methods
-  async recordWellnessTracking(tracking: InsertWellnessTracking): Promise<WellnessTracking> {
+  async recordWellnessTracking(
+    tracking: InsertWellnessTracking
+  ): Promise<WellnessTracking> {
     // Check if a record already exists for this user and date
-    const trackingDate = tracking.date instanceof Date ? tracking.date : new Date(tracking.date);
-    const dateString = trackingDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+    const trackingDate =
+      tracking.date instanceof Date ? tracking.date : new Date(tracking.date);
+    const dateString = trackingDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+
     const existingRecord = await db
       .select()
       .from(wellnessTracking)
-      .where(and(
-        eq(wellnessTracking.userId, tracking.userId),
-        sql`DATE(${wellnessTracking.date}) = ${dateString}`
-      ))
+      .where(
+        and(
+          eq(wellnessTracking.userId, tracking.userId),
+          sql`DATE(${wellnessTracking.date}) = ${dateString}`
+        )
+      )
       .limit(1);
 
     if (existingRecord.length > 0) {
@@ -1594,25 +1903,33 @@ export class DatabaseStorage implements IStorage {
       return updatedRecord;
     } else {
       // Create new record
-      const [record] = await db.insert(wellnessTracking).values({
-        ...tracking,
-        date: trackingDate
-      }).returning();
+      const [record] = await db
+        .insert(wellnessTracking)
+        .values({
+          ...tracking,
+          date: trackingDate,
+        })
+        .returning();
       return record;
     }
   }
 
-  async getWellnessTracking(userId: number, days = 30): Promise<WellnessTracking[]> {
+  async getWellnessTracking(
+    userId: number,
+    days = 30
+  ): Promise<WellnessTracking[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
     return await db
       .select()
       .from(wellnessTracking)
-      .where(and(
-        eq(wellnessTracking.userId, userId),
-        gt(wellnessTracking.date, startDate)
-      ))
+      .where(
+        and(
+          eq(wellnessTracking.userId, userId),
+          gt(wellnessTracking.date, startDate)
+        )
+      )
       .orderBy(desc(wellnessTracking.date));
   }
 
@@ -1625,26 +1942,27 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(habitTracking)
-      .where(and(
-        eq(habitTracking.userId, userId),
-        eq(habitTracking.isActive, true)
-      ))
+      .where(
+        and(eq(habitTracking.userId, userId), eq(habitTracking.isActive, true))
+      )
       .orderBy(desc(habitTracking.createdAt));
   }
 
   async logHabit(log: InsertHabitLog): Promise<HabitLog> {
     // Check if a log already exists for this habit and date
     const logDate = log.date instanceof Date ? log.date : new Date(log.date);
-    const dateString = logDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+    const dateString = logDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+
     const existingLog = await db
       .select()
       .from(habitLogs)
-      .where(and(
-        eq(habitLogs.habitId, log.habitId),
-        eq(habitLogs.userId, log.userId),
-        sql`DATE(${habitLogs.date}) = ${dateString}`
-      ))
+      .where(
+        and(
+          eq(habitLogs.habitId, log.habitId),
+          eq(habitLogs.userId, log.userId),
+          sql`DATE(${habitLogs.date}) = ${dateString}`
+        )
+      )
       .limit(1);
 
     let resultLog: HabitLog;
@@ -1659,16 +1977,22 @@ export class DatabaseStorage implements IStorage {
       resultLog = updatedLog;
     } else {
       // Create new log
-      const [newLog] = await db.insert(habitLogs).values({
-        ...log,
-        date: logDate
-      }).returning();
+      const [newLog] = await db
+        .insert(habitLogs)
+        .values({
+          ...log,
+          date: logDate,
+        })
+        .returning();
       resultLog = newLog;
     }
 
     // Calculate and update streak count
     if (log.completed) {
-      const newStreak = await this.calculateHabitStreak(log.habitId, log.userId);
+      const newStreak = await this.calculateHabitStreak(
+        log.habitId,
+        log.userId
+      );
       await this.updateHabitStreak(log.habitId, newStreak);
     } else {
       // If marking as incomplete, reset streak to 0
@@ -1685,10 +2009,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(habitLogs)
-      .where(and(
-        eq(habitLogs.habitId, habitId),
-        gt(habitLogs.date, startDate)
-      ))
+      .where(and(eq(habitLogs.habitId, habitId), gt(habitLogs.date, startDate)))
       .orderBy(desc(habitLogs.date));
   }
 
@@ -1696,15 +2017,18 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(habitLogs)
-      .where(and(
-        eq(habitLogs.userId, userId),
-        sql`DATE(${habitLogs.date}) = ${date}`
-      ))
+      .where(
+        and(
+          eq(habitLogs.userId, userId),
+          sql`DATE(${habitLogs.date}) = ${date}`
+        )
+      )
       .orderBy(desc(habitLogs.date));
   }
 
   async updateHabitStreak(habitId: number, streak: number): Promise<void> {
-    await db.update(habitTracking)
+    await db
+      .update(habitTracking)
       .set({ streakCount: streak })
       .where(eq(habitTracking.id, habitId));
   }
@@ -1714,11 +2038,13 @@ export class DatabaseStorage implements IStorage {
     const logs = await db
       .select()
       .from(habitLogs)
-      .where(and(
-        eq(habitLogs.habitId, habitId),
-        eq(habitLogs.userId, userId),
-        eq(habitLogs.completed, true)
-      ))
+      .where(
+        and(
+          eq(habitLogs.habitId, habitId),
+          eq(habitLogs.userId, userId),
+          eq(habitLogs.completed, true)
+        )
+      )
       .orderBy(desc(habitLogs.date));
 
     if (logs.length === 0) return 0;
@@ -1729,14 +2055,14 @@ export class DatabaseStorage implements IStorage {
 
     // Start from today and count backwards for consecutive days
     let currentDate = new Date(today);
-    
+
     for (let i = 0; i < logs.length; i++) {
       const logDate = new Date(logs[i].date);
       logDate.setHours(0, 0, 0, 0);
-      
+
       const expectedDate = new Date(currentDate);
       expectedDate.setDate(expectedDate.getDate() - streak);
-      
+
       if (logDate.getTime() === expectedDate.getTime()) {
         streak++;
       } else if (logDate.getTime() < expectedDate.getTime()) {
@@ -1749,25 +2075,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Beauty & Shopping methods
-  async createBeautyProduct(product: InsertBeautyProduct): Promise<BeautyProduct> {
-    const [newProduct] = await db.insert(beautyProducts).values(product).returning();
+  async createBeautyProduct(
+    product: InsertBeautyProduct
+  ): Promise<BeautyProduct> {
+    const [newProduct] = await db
+      .insert(beautyProducts)
+      .values(product)
+      .returning();
     return newProduct;
   }
 
-  async getBeautyProducts(category?: string, limit = 50): Promise<BeautyProduct[]> {
+  async getBeautyProducts(
+    category?: string,
+    limit = 50
+  ): Promise<BeautyProduct[]> {
     let query = db.select().from(beautyProducts);
 
     if (category) {
       query = query.where(eq(beautyProducts.category, category));
     }
 
-    return await query
-      .orderBy(desc(beautyProducts.averageRating))
-      .limit(limit);
+    return await query.orderBy(desc(beautyProducts.averageRating)).limit(limit);
   }
 
-  async createProductReview(review: InsertProductReview): Promise<ProductReview> {
-    const [newReview] = await db.insert(productReviews).values(review).returning();
+  async createProductReview(
+    review: InsertProductReview
+  ): Promise<ProductReview> {
+    const [newReview] = await db
+      .insert(productReviews)
+      .values(review)
+      .returning();
 
     const reviews = await db
       .select({ rating: productReviews.rating })
@@ -1775,20 +2112,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(productReviews.productId, review.productId));
 
     const avgRating = Math.round(
-      reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length * 100
+      (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 100
     );
 
-    await db.update(beautyProducts)
-      .set({ 
+    await db
+      .update(beautyProducts)
+      .set({
         averageRating: avgRating,
-        reviewCount: reviews.length
+        reviewCount: reviews.length,
       })
       .where(eq(beautyProducts.id, review.productId));
 
     return newReview;
   }
 
-  async getProductReviews(productId: number): Promise<(ProductReview & { user: User })[]> {
+  async getProductReviews(
+    productId: number
+  ): Promise<(ProductReview & { user: User })[]> {
     const result = await db
       .select({
         review: productReviews,
@@ -1803,7 +2143,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWishlist(wishlist: InsertWishlist): Promise<Wishlist> {
-    const [newWishlist] = await db.insert(wishlists).values(wishlist).returning();
+    const [newWishlist] = await db
+      .insert(wishlists)
+      .values(wishlist)
+      .returning();
     return newWishlist;
   }
 
@@ -1823,12 +2166,18 @@ export class DatabaseStorage implements IStorage {
           product: beautyProducts,
         })
         .from(wishlistItems)
-        .leftJoin(beautyProducts, eq(wishlistItems.productId, beautyProducts.id))
+        .leftJoin(
+          beautyProducts,
+          eq(wishlistItems.productId, beautyProducts.id)
+        )
         .where(eq(wishlistItems.wishlistId, wishlist.id));
 
       result.push({
         ...wishlist,
-        items: items.map(({ item, product }) => ({ ...item, product: product || undefined })),
+        items: items.map(({ item, product }) => ({
+          ...item,
+          product: product || undefined,
+        })),
         user: { id: userId } as User,
       });
     }
@@ -1846,7 +2195,9 @@ export class DatabaseStorage implements IStorage {
     return newPost;
   }
 
-  async getShoppingPosts(userId?: number): Promise<(ShoppingPost & { user: User })[]> {
+  async getShoppingPosts(
+    userId?: number
+  ): Promise<(ShoppingPost & { user: User })[]> {
     let query = db
       .select({
         post: shoppingPosts,
@@ -1889,20 +2240,28 @@ export class DatabaseStorage implements IStorage {
     return result.map(({ event, creator }) => ({
       ...event,
       creator,
-      attendeeStatus: 'none',
+      attendeeStatus: "none",
       attendeeCount: event.currentAttendees || 0,
     }));
   }
 
-  async respondToEvent(eventId: number, userId: number, status: string): Promise<EventAttendee> {
-    const [attendee] = await db.insert(eventAttendees).values({
-      eventId,
-      userId,
-      status,
-    }).returning();
+  async respondToEvent(
+    eventId: number,
+    userId: number,
+    status: string
+  ): Promise<EventAttendee> {
+    const [attendee] = await db
+      .insert(eventAttendees)
+      .values({
+        eventId,
+        userId,
+        status,
+      })
+      .returning();
 
-    if (status === 'going') {
-      await db.update(events)
+    if (status === "going") {
+      await db
+        .update(events)
         .set({ currentAttendees: sql`${events.currentAttendees} + 1` })
         .where(eq(events.id, eventId));
     }
@@ -1913,22 +2272,28 @@ export class DatabaseStorage implements IStorage {
   // Saved posts methods
   async savePost(userId: number, postId: number): Promise<void> {
     try {
-      await db.insert(savedPosts).values({
-        userId,
-        postId,
-      }).onConflictDoNothing();
+      await db
+        .insert(savedPosts)
+        .values({
+          userId,
+          postId,
+        })
+        .onConflictDoNothing();
     } catch (error) {
-      console.error('Save post error:', error);
+      console.error("Save post error:", error);
       throw error;
     }
   }
 
   async unsavePost(userId: number, postId: number): Promise<void> {
     try {
-      await db.delete(savedPosts)
-        .where(and(eq(savedPosts.userId, userId), eq(savedPosts.postId, postId)));
+      await db
+        .delete(savedPosts)
+        .where(
+          and(eq(savedPosts.userId, userId), eq(savedPosts.postId, postId))
+        );
     } catch (error) {
-      console.error('Unsave post error:', error);
+      console.error("Unsave post error:", error);
       throw error;
     }
   }
@@ -1956,13 +2321,16 @@ export class DatabaseStorage implements IStorage {
         savedAt: savedAt?.toISOString(),
       }));
     } catch (error) {
-      console.error('Get saved posts error:', error);
+      console.error("Get saved posts error:", error);
       throw error;
     }
   }
 
-  async getUserEvents(userId: number, type: 'created' | 'attending'): Promise<Event[]> {
-    if (type === 'created') {
+  async getUserEvents(
+    userId: number,
+    type: "created" | "attending"
+  ): Promise<Event[]> {
+    if (type === "created") {
       return await db
         .select()
         .from(events)
@@ -1973,10 +2341,12 @@ export class DatabaseStorage implements IStorage {
         .select({ event: events })
         .from(eventAttendees)
         .innerJoin(events, eq(eventAttendees.eventId, events.id))
-        .where(and(
-          eq(eventAttendees.userId, userId),
-          eq(eventAttendees.status, 'going')
-        ))
+        .where(
+          and(
+            eq(eventAttendees.userId, userId),
+            eq(eventAttendees.status, "going")
+          )
+        )
         .orderBy(asc(events.startDate));
 
       return result.map(({ event }) => event);
@@ -1984,8 +2354,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Mentorship methods
-  async createMentorProfile(profile: InsertMentorProfile): Promise<MentorProfile> {
-    const [newProfile] = await db.insert(mentorProfiles).values(profile).returning();
+  async createMentorProfile(
+    profile: InsertMentorProfile
+  ): Promise<MentorProfile> {
+    const [newProfile] = await db
+      .insert(mentorProfiles)
+      .values(profile)
+      .returning();
     return newProfile;
   }
 
@@ -2006,13 +2381,21 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async requestMentorship(request: InsertMentorshipRequest): Promise<MentorshipRequest> {
-    const [newRequest] = await db.insert(mentorshipRequests).values(request).returning();
+  async requestMentorship(
+    request: InsertMentorshipRequest
+  ): Promise<MentorshipRequest> {
+    const [newRequest] = await db
+      .insert(mentorshipRequests)
+      .values(request)
+      .returning();
     return newRequest;
   }
 
-  async getMentorshipRequests(userId: number, type: 'sent' | 'received'): Promise<(MentorshipRequest & { mentor: MentorProfile; mentee: User })[]> {
-    if (type === 'sent') {
+  async getMentorshipRequests(
+    userId: number,
+    type: "sent" | "received"
+  ): Promise<(MentorshipRequest & { mentor: MentorProfile; mentee: User })[]> {
+    if (type === "sent") {
       const result = await db
         .select({
           request: mentorshipRequests,
@@ -2020,7 +2403,10 @@ export class DatabaseStorage implements IStorage {
           mentee: users,
         })
         .from(mentorshipRequests)
-        .innerJoin(mentorProfiles, eq(mentorshipRequests.mentorId, mentorProfiles.id))
+        .innerJoin(
+          mentorProfiles,
+          eq(mentorshipRequests.mentorId, mentorProfiles.id)
+        )
         .innerJoin(users, eq(mentorProfiles.userId, users.id))
         .where(eq(mentorshipRequests.menteeId, userId))
         .orderBy(desc(mentorshipRequests.createdAt));
@@ -2045,7 +2431,10 @@ export class DatabaseStorage implements IStorage {
           mentee: users,
         })
         .from(mentorshipRequests)
-        .innerJoin(mentorProfiles, eq(mentorshipRequests.mentorId, mentorProfiles.id))
+        .innerJoin(
+          mentorProfiles,
+          eq(mentorshipRequests.mentorId, mentorProfiles.id)
+        )
         .innerJoin(users, eq(mentorshipRequests.menteeId, users.id))
         .where(eq(mentorshipRequests.mentorId, mentorProfile.id))
         .orderBy(desc(mentorshipRequests.createdAt));
@@ -2075,33 +2464,38 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(users, eq(posts.userId, users.id))
         .leftJoin(likes, eq(likes.postId, posts.id))
         .leftJoin(comments, eq(comments.postId, posts.id))
-        .where(and(
-          eq(posts.privacy, 'public'),
-          or(
-            isNull(posts.expiresAt),
-            gt(posts.expiresAt, new Date())
+        .where(
+          and(
+            eq(posts.privacy, "public"),
+            or(isNull(posts.expiresAt), gt(posts.expiresAt, new Date()))
           )
-        ))
+        )
         .groupBy(posts.id, users.id)
-        .orderBy(desc(sql`COALESCE(COUNT(DISTINCT ${likes.id}), 0) + COALESCE(COUNT(DISTINCT ${comments.id}), 0) + COALESCE(${posts.viewsCount}, 0)`))
+        .orderBy(
+          desc(
+            sql`COALESCE(COUNT(DISTINCT ${likes.id}), 0) + COALESCE(COUNT(DISTINCT ${comments.id}), 0) + COALESCE(${posts.viewsCount}, 0)`
+          )
+        )
         .limit(limit);
 
-      return result.map(({ post, user, likesCount, commentsCount, viewsCount }) => ({
-        id: post.id,
-        content: post.content,
-        imageUrl: post.imageUrl,
-        videoUrl: post.videoUrl,
-        createdAt: post.createdAt,
-        user: {
-          id: user.id,
-          name: user.name || user.email?.split('@')[0] || 'User',
-          username: user.username || user.email?.split('@')[0] || 'user',
-          avatar: user.avatar
-        },
-        likesCount: Number(likesCount),
-        commentsCount: Number(commentsCount),
-        viewsCount: Number(viewsCount)
-      }));
+      return result.map(
+        ({ post, user, likesCount, commentsCount, viewsCount }) => ({
+          id: post.id,
+          content: post.content,
+          imageUrl: post.imageUrl,
+          videoUrl: post.videoUrl,
+          createdAt: post.createdAt,
+          user: {
+            id: user.id,
+            name: user.name || user.email?.split("@")[0] || "User",
+            username: user.username || user.email?.split("@")[0] || "user",
+            avatar: user.avatar,
+          },
+          likesCount: Number(likesCount),
+          commentsCount: Number(commentsCount),
+          viewsCount: Number(viewsCount),
+        })
+      );
     } catch (error) {
       console.error("Get public posts error:", error);
       return [];
@@ -2111,25 +2505,22 @@ export class DatabaseStorage implements IStorage {
   async getPlatformStats(): Promise<any> {
     try {
       // Get platform statistics for landing page
-      const [
-        usersResult,
-        postsResult,
-        activeTodayResult,
-        communitiesResult
-      ] = await Promise.all([
-        db.select({ count: sql<number>`COUNT(*)` }).from(users),
-        db.select({ count: sql<number>`COUNT(*)` }).from(posts),
-        db.select({ count: sql<number>`COUNT(DISTINCT ${posts.userId})` })
-          .from(posts)
-          .where(sql`DATE(${posts.createdAt}) = CURRENT_DATE`),
-        db.select({ count: sql<number>`COUNT(*)` }).from(communityGroups)
-      ]);
+      const [usersResult, postsResult, activeTodayResult, communitiesResult] =
+        await Promise.all([
+          db.select({ count: sql<number>`COUNT(*)` }).from(users),
+          db.select({ count: sql<number>`COUNT(*)` }).from(posts),
+          db
+            .select({ count: sql<number>`COUNT(DISTINCT ${posts.userId})` })
+            .from(posts)
+            .where(sql`DATE(${posts.createdAt}) = CURRENT_DATE`),
+          db.select({ count: sql<number>`COUNT(*)` }).from(communityGroups),
+        ]);
 
       return {
         totalUsers: Number(usersResult[0]?.count || 0),
         totalPosts: Number(postsResult[0]?.count || 0),
         activeToday: Number(activeTodayResult[0]?.count || 0),
-        totalCommunities: Number(communitiesResult[0]?.count || 0)
+        totalCommunities: Number(communitiesResult[0]?.count || 0),
       };
     } catch (error) {
       console.error("Get platform stats error:", error);
@@ -2137,7 +2528,7 @@ export class DatabaseStorage implements IStorage {
         totalUsers: 0,
         totalPosts: 0,
         activeToday: 0,
-        totalCommunities: 0
+        totalCommunities: 0,
       };
     }
   }
@@ -2147,7 +2538,7 @@ export class DatabaseStorage implements IStorage {
   async getReels(userId?: number): Promise<any[]> {
     try {
       console.log("Getting reels from database");
-      
+
       const result = await db
         .select({
           reel: reels,
@@ -2161,11 +2552,11 @@ export class DatabaseStorage implements IStorage {
         ...reel,
         user: {
           id: user.id,
-          name: user.name || user.email?.split('@')[0] || 'User',
-          username: user.username || user.email?.split('@')[0] || 'user',
-          avatar: user.avatar || '/uploads/default-avatar.jpg'
+          name: user.name || user.email?.split("@")[0] || "User",
+          username: user.username || user.email?.split("@")[0] || "user",
+          avatar: user.avatar || "/uploads/default-avatar.jpg",
         },
-        isLiked: false // You can implement like tracking later
+        isLiked: false, // You can implement like tracking later
       }));
     } catch (error) {
       console.error("Get reels error:", error);
@@ -2178,34 +2569,36 @@ export class DatabaseStorage implements IStorage {
       const insertData: InsertReel = {
         userId: data.userId,
         videoUrl: data.videoUrl,
-        thumbnailUrl: data.videoUrl.replace('.mp4', '-thumb.jpg'),
+        thumbnailUrl: data.videoUrl.replace(".mp4", "-thumb.jpg"),
         caption: data.caption,
         duration: data.duration || 30,
-        privacy: data.privacy || 'public',
+        privacy: data.privacy || "public",
         musicId: data.musicId || null,
         effects: data.effects || [],
       };
 
       const [reel] = await db.insert(reels).values(insertData).returning();
-      
+
       const user = await this.getUser(data.userId);
-      
+
       const reelWithUser = {
         ...reel,
         user: {
           id: data.userId,
-          name: user?.name || user?.email?.split('@')[0] || 'User',
-          username: user?.username || user?.email?.split('@')[0] || 'user',
-          avatar: user?.avatar || '/uploads/default-avatar.jpg'
+          name: user?.name || user?.email?.split("@")[0] || "User",
+          username: user?.username || user?.email?.split("@")[0] || "user",
+          avatar: user?.avatar || "/uploads/default-avatar.jpg",
         },
-        music: data.musicId ? {
-          id: data.musicId,
-          title: 'Selected Track',
-          artist: 'Music Library'
-        } : null,
-        isLiked: false
+        music: data.musicId
+          ? {
+              id: data.musicId,
+              title: "Selected Track",
+              artist: "Music Library",
+            }
+          : null,
+        isLiked: false,
       };
-      
+
       console.log("Reel saved to database:", reel.id);
       return reelWithUser;
     } catch (error) {
@@ -2220,23 +2613,27 @@ export class DatabaseStorage implements IStorage {
       const [existingLike] = await db
         .select()
         .from(likes)
-        .where(and(
-          eq(likes.userId, userId),
-          eq(likes.postId, reelId), // Using postId for reels too
-          eq(likes.reactionType, 'like')
-        ))
+        .where(
+          and(
+            eq(likes.userId, userId),
+            eq(likes.postId, reelId), // Using postId for reels too
+            eq(likes.reactionType, "like")
+          )
+        )
         .limit(1);
 
       if (existingLike) {
         // Unlike the reel
         await db
           .delete(likes)
-          .where(and(
-            eq(likes.userId, userId),
-            eq(likes.postId, reelId),
-            eq(likes.reactionType, 'like')
-          ));
-        
+          .where(
+            and(
+              eq(likes.userId, userId),
+              eq(likes.postId, reelId),
+              eq(likes.reactionType, "like")
+            )
+          );
+
         // Decrease likes count in reels table if it exists
         try {
           await db
@@ -2246,17 +2643,17 @@ export class DatabaseStorage implements IStorage {
         } catch (e) {
           // Reels table might not exist yet, ignore error
         }
-        
+
         return false; // Now unliked
       } else {
         // Like the reel
         await db.insert(likes).values({
           userId,
           postId: reelId,
-          reactionType: 'like',
+          reactionType: "like",
           createdAt: new Date(),
         });
-        
+
         // Increase likes count in reels table if it exists
         try {
           await db
@@ -2266,7 +2663,7 @@ export class DatabaseStorage implements IStorage {
         } catch (e) {
           // Reels table might not exist yet, ignore error
         }
-        
+
         return true; // Now liked
       }
     } catch (error) {
@@ -2278,11 +2675,41 @@ export class DatabaseStorage implements IStorage {
   async getReelMusic(): Promise<any[]> {
     try {
       return [
-        { id: 1, title: 'Trending Beat', artist: 'Music Library', duration: 30, category: 'trending' },
-        { id: 2, title: 'Chill Vibes', artist: 'Music Library', duration: 45, category: 'chill' },
-        { id: 3, title: 'Upbeat Energy', artist: 'Music Library', duration: 60, category: 'energetic' },
-        { id: 4, title: 'Acoustic Dreams', artist: 'Music Library', duration: 90, category: 'acoustic' },
-        { id: 5, title: 'Electronic Pulse', artist: 'Music Library', duration: 30, category: 'electronic' }
+        {
+          id: 1,
+          title: "Trending Beat",
+          artist: "Music Library",
+          duration: 30,
+          category: "trending",
+        },
+        {
+          id: 2,
+          title: "Chill Vibes",
+          artist: "Music Library",
+          duration: 45,
+          category: "chill",
+        },
+        {
+          id: 3,
+          title: "Upbeat Energy",
+          artist: "Music Library",
+          duration: 60,
+          category: "energetic",
+        },
+        {
+          id: 4,
+          title: "Acoustic Dreams",
+          artist: "Music Library",
+          duration: 90,
+          category: "acoustic",
+        },
+        {
+          id: 5,
+          title: "Electronic Pulse",
+          artist: "Music Library",
+          duration: 30,
+          category: "electronic",
+        },
       ];
     } catch (error) {
       console.error("Get reel music error:", error);
@@ -2298,15 +2725,15 @@ export class DatabaseStorage implements IStorage {
         {
           id: 1,
           userId: 1,
-          type: 'photo',
-          content: 'Loving this new lipstick shade! What do you think?',
-          mediaUrl: '/uploads/status1.jpg',
+          type: "photo",
+          content: "Loving this new lipstick shade! What do you think?",
+          mediaUrl: "/uploads/status1.jpg",
           backgroundColor: null,
           fontStyle: null,
           pollOptions: null,
           pollVotes: null,
           question: null,
-          privacy: 'public',
+          privacy: "public",
           viewsCount: 45,
           reactionsCount: 12,
           expiresAt: new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString(),
@@ -2314,24 +2741,28 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date().toISOString(),
           user: {
             id: 1,
-            name: 'Beauty Guru',
-            username: 'beautyguru',
-            avatar: '/uploads/avatar1.jpg'
+            name: "Beauty Guru",
+            username: "beautyguru",
+            avatar: "/uploads/avatar1.jpg",
           },
-          hasViewed: false
+          hasViewed: false,
         },
         {
           id: 2,
           userId: 2,
-          type: 'poll',
-          content: 'Which skincare routine is better for oily skin?',
+          type: "poll",
+          content: "Which skincare routine is better for oily skin?",
           mediaUrl: null,
-          backgroundColor: '#4F46E5',
-          fontStyle: 'font-bold',
-          pollOptions: ['Morning cleanse + toner', 'Double cleanse method', 'Oil cleansing only'],
+          backgroundColor: "#4F46E5",
+          fontStyle: "font-bold",
+          pollOptions: [
+            "Morning cleanse + toner",
+            "Double cleanse method",
+            "Oil cleansing only",
+          ],
           pollVotes: [15, 23, 8],
           question: null,
-          privacy: 'public',
+          privacy: "public",
           viewsCount: 67,
           reactionsCount: 8,
           expiresAt: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
@@ -2339,12 +2770,12 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
           user: {
             id: 2,
-            name: 'Skincare Expert',
-            username: 'skincareexpert',
-            avatar: '/uploads/avatar2.jpg'
+            name: "Skincare Expert",
+            username: "skincareexpert",
+            avatar: "/uploads/avatar2.jpg",
           },
-          hasViewed: true
-        }
+          hasViewed: true,
+        },
       ];
     } catch (error) {
       console.error("Get status updates error:", error);
@@ -2365,7 +2796,7 @@ export class DatabaseStorage implements IStorage {
         pollOptions: data.pollOptions,
         pollVotes: data.pollVotes,
         question: data.question,
-        privacy: data.privacy || 'public',
+        privacy: data.privacy || "public",
         viewsCount: 0,
         reactionsCount: 0,
         expiresAt: data.expiresAt,
@@ -2373,13 +2804,13 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date().toISOString(),
         user: {
           id: data.userId,
-          name: 'Current User',
-          username: 'currentuser',
-          avatar: '/uploads/default-avatar.jpg'
+          name: "Current User",
+          username: "currentuser",
+          avatar: "/uploads/default-avatar.jpg",
         },
-        hasViewed: false
+        hasViewed: false,
       };
-      
+
       return newStatus;
     } catch (error) {
       console.error("Create status update error:", error);
@@ -2396,12 +2827,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async reactToStatus(statusId: number, userId: number, reaction: string): Promise<any> {
+  async reactToStatus(
+    statusId: number,
+    userId: number,
+    reaction: string
+  ): Promise<any> {
     try {
       return {
         success: true,
         reaction: reaction,
-        reactionCount: Math.floor(Math.random() * 50) + 1
+        reactionCount: Math.floor(Math.random() * 50) + 1,
       };
     } catch (error) {
       console.error("React to status error:", error);
@@ -2418,30 +2853,35 @@ export class DatabaseStorage implements IStorage {
           id: 1,
           groupId: 1,
           creatorId: 1,
-          title: 'Virtual Skincare Workshop',
-          description: 'Join us for an interactive skincare workshop where we\'ll discuss routines for different skin types.',
-          eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+          title: "Virtual Skincare Workshop",
+          description:
+            "Join us for an interactive skincare workshop where we'll discuss routines for different skin types.",
+          eventDate: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+          ).toISOString(),
+          endDate: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000
+          ).toISOString(),
           location: null,
           isVirtual: true,
-          meetingLink: 'https://meet.example.com/skincare-workshop',
+          meetingLink: "https://meet.example.com/skincare-workshop",
           maxAttendees: 50,
           currentAttendees: 23,
-          coverImage: '/uploads/event1.jpg',
-          status: 'active',
+          coverImage: "/uploads/event1.jpg",
+          status: "active",
           createdAt: new Date().toISOString(),
           creator: {
             id: 1,
-            name: 'Beauty Guru',
-            username: 'beautyguru',
-            avatar: '/uploads/avatar1.jpg'
+            name: "Beauty Guru",
+            username: "beautyguru",
+            avatar: "/uploads/avatar1.jpg",
           },
           group: {
             id: 1,
-            name: 'Skincare Enthusiasts'
+            name: "Skincare Enthusiasts",
           },
-          attendeeStatus: 'interested'
-        }
+          attendeeStatus: "interested",
+        },
       ];
     } catch (error) {
       console.error("Get group events error:", error);
@@ -2465,21 +2905,21 @@ export class DatabaseStorage implements IStorage {
         maxAttendees: data.maxAttendees,
         currentAttendees: 0,
         coverImage: data.coverImage,
-        status: 'active',
+        status: "active",
         createdAt: new Date().toISOString(),
         creator: {
           id: data.creatorId,
-          name: 'Event Creator',
-          username: 'creator',
-          avatar: '/uploads/default-avatar.jpg'
+          name: "Event Creator",
+          username: "creator",
+          avatar: "/uploads/default-avatar.jpg",
         },
         group: {
           id: data.groupId,
-          name: 'Group Name'
+          name: "Group Name",
         },
-        attendeeStatus: null
+        attendeeStatus: null,
       };
-      
+
       return newEvent;
     } catch (error) {
       console.error("Create group event error:", error);
@@ -2487,14 +2927,18 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async rsvpGroupEvent(eventId: number, userId: number, status: string): Promise<any> {
+  async rsvpGroupEvent(
+    eventId: number,
+    userId: number,
+    status: string
+  ): Promise<any> {
     try {
       return {
         success: true,
         eventId: eventId,
         userId: userId,
         status: status,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error("RSVP group event error:", error);
@@ -2516,12 +2960,12 @@ export class DatabaseStorage implements IStorage {
         uploadedAt: new Date().toISOString(),
         uploader: {
           id: data.uploaderId,
-          name: 'File Uploader',
-          username: 'uploader',
-          avatar: '/uploads/default-avatar.jpg'
-        }
+          name: "File Uploader",
+          username: "uploader",
+          avatar: "/uploads/default-avatar.jpg",
+        },
       };
-      
+
       return newFile;
     } catch (error) {
       console.error("Upload group file error:", error);
@@ -2536,19 +2980,19 @@ export class DatabaseStorage implements IStorage {
           id: 1,
           groupId: groupId,
           uploaderId: 1,
-          fileName: 'skincare-routine-guide.pdf',
-          fileUrl: '/uploads/skincare-guide.pdf',
-          fileType: 'document',
+          fileName: "skincare-routine-guide.pdf",
+          fileUrl: "/uploads/skincare-guide.pdf",
+          fileType: "document",
           fileSize: 2048576,
-          description: 'Complete skincare routine guide for beginners',
+          description: "Complete skincare routine guide for beginners",
           uploadedAt: new Date().toISOString(),
           uploader: {
             id: 1,
-            name: 'Beauty Expert',
-            username: 'expert',
-            avatar: '/uploads/avatar1.jpg'
-          }
-        }
+            name: "Beauty Expert",
+            username: "expert",
+            avatar: "/uploads/avatar1.jpg",
+          },
+        },
       ];
     } catch (error) {
       console.error("Get group files error:", error);

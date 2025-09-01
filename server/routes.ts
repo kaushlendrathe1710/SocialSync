@@ -355,7 +355,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 20;
       const offset = parseInt(req.query.offset as string) || 0;
 
-      const posts = await storage.getPosts(userId, limit, offset);
+      // Include currentUserId so storage can compute userReaction
+      const posts = await storage.getPosts(
+        userId,
+        limit,
+        offset,
+        req.session.userId
+      );
 
       // Add isLiked flag for authenticated user
       if (req.session.userId) {
@@ -370,6 +376,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: "Failed to get posts" });
+    }
+  });
+
+  // React to post endpoint (supports multiple emoji reactions)
+  app.post("/api/posts/:id/react", requireAuth, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const userId = req.session.userId;
+      const { reactionType } = req.body as { reactionType?: string };
+
+      const validReactions = [
+        "like",
+        "love",
+        "laugh",
+        "wow",
+        "sad",
+        "angry",
+        "heart_eyes",
+        "kiss",
+        "wink",
+        "cool",
+        "thinking",
+        "thumbs_down",
+        "clap",
+        "fire",
+        "party",
+        "shocked",
+        "confused",
+        "sleepy",
+      ];
+
+      if (!reactionType || !validReactions.includes(reactionType)) {
+        return res.status(400).json({ message: "Invalid reaction type" });
+      }
+
+      const userLikes = await storage.getUserLikes(userId);
+      const existingReaction = userLikes.find((like) => like.postId === postId);
+
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      if (existingReaction) {
+        if (existingReaction.reactionType === reactionType) {
+          // Toggle off
+          await storage.deleteLike(userId, postId);
+          return res.json({ reacted: false, reactionType: null });
+        } else {
+          // Change reaction
+          await storage.updateLike(userId, postId, reactionType);
+          return res.json({ reacted: true, reactionType });
+        }
+      } else {
+        // New reaction
+        await storage.createLike({ userId, postId, reactionType });
+        return res.json({ reacted: true, reactionType });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to react to post" });
+    }
+  });
+
+  // Get post reactions endpoint
+  app.get("/api/posts/:id/reactions", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const reactions = await storage.getPostReactions(postId);
+      res.json(reactions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get post reactions" });
     }
   });
 
