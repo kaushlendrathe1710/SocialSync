@@ -152,7 +152,7 @@ if (!fs.existsSync(uploadsDir)) {
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit for cloud storage
+    fileSize: 100 * 1024 * 1024, // 100MB limit for cloud storage
   },
   fileFilter: (req, file, cb) => {
     // Accept images and videos including MKV

@@ -22,7 +22,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "100mb" }));
 
 // Configure PostgreSQL session store
 const PgSession = connectPgSimple(session);
@@ -49,7 +49,7 @@ app.use(
     },
   })
 );
-app.use(express.urlencoded({ extended: false, limit: "10mb" }));
+app.use(express.urlencoded({ extended: false, limit: "100mb" }));
 
 // Serve uploaded files
 app.use("/uploads", express.static("uploads"));
