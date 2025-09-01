@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useEffect, useRef } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface UsePostViewTrackingOptions {
   postId: number;
@@ -7,33 +7,56 @@ interface UsePostViewTrackingOptions {
   delay?: number; // Delay in milliseconds before tracking view
 }
 
-export function usePostViewTracking({ 
-  postId, 
-  threshold = 0.5, 
-  delay = 1000 
+export function usePostViewTracking({
+  postId,
+  threshold = 0.5,
+  delay = 1000,
 }: UsePostViewTrackingOptions) {
   const elementRef = useRef<HTMLDivElement>(null);
   const hasTracked = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const queryClient = useQueryClient();
 
   const trackViewMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(`/api/posts/${postId}/view`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to track view');
+        throw new Error("Failed to track view");
       }
-      
+
       return response.json();
     },
+    onSuccess: () => {
+      // Optimistically bump the views cache immediately
+      queryClient.setQueryData<{ views: number } | undefined>(
+        [`/api/posts/${postId}/views`],
+        (prev) => ({ views: (prev?.views ?? 0) + 1 })
+      );
+      queryClient.setQueryData<any[] | undefined>(["/api/posts"], (prev) => {
+        if (!Array.isArray(prev)) return prev;
+        return prev.map((p) =>
+          p?.id === postId
+            ? { ...p, viewsCount: Number(p?.viewsCount ?? 0) + 1 }
+            : p
+        );
+      });
+
+      // Refresh the views API so UI updates immediately
+      queryClient.invalidateQueries({
+        queryKey: [`/api/posts/${postId}/views`],
+      });
+      // Also update aggregated posts list which includes viewsCount
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    },
     onError: (error) => {
-      console.error('View tracking error:', error);
+      console.error("View tracking error:", error);
     },
   });
 
@@ -67,7 +90,7 @@ export function usePostViewTracking({
       },
       {
         threshold: threshold,
-        rootMargin: '0px',
+        rootMargin: "0px",
       }
     );
 

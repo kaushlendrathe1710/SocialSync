@@ -519,8 +519,9 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
               return {
                 ...p,
                 userReaction: reactionType,
-                likesCount:
-                  currentReaction ? currentLikesCount : currentLikesCount + 1,
+                likesCount: currentReaction
+                  ? currentLikesCount
+                  : currentLikesCount + 1,
               };
             }
           }
@@ -1046,7 +1047,7 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
             <div className="flex items-center space-x-1 text-gray-500">
               <Eye className="h-4 w-4" />
               <span className="text-sm">
-                {(viewData as any)?.viewCount || currentPost.viewsCount || 0}
+                {(viewData as any)?.views ?? currentPost.viewsCount ?? 0}
               </span>
             </div>
           </div>
