@@ -18,9 +18,11 @@ import {
   comments,
   likes,
   postViews,
+  posts,
+  users,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import multer from "multer";
 import path from "path";
@@ -212,6 +214,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
       });
+    }
+  });
+
+  // Debug endpoint to check posts in database
+  app.get("/api/debug/posts", async (req: Request, res: Response) => {
+    try {
+      const allPosts = await db
+        .select({
+          id: posts.id,
+          userId: posts.userId,
+          content: posts.content,
+          privacy: posts.privacy,
+          imageUrl: posts.imageUrl,
+          videoUrl: posts.videoUrl,
+          createdAt: posts.createdAt,
+          username: users.username,
+        })
+        .from(posts)
+        .innerJoin(users, eq(posts.userId, users.id))
+        .orderBy(desc(posts.createdAt))
+        .limit(20);
+
+      res.json({
+        totalPosts: allPosts.length,
+        posts: allPosts,
+      });
+    } catch (error) {
+      console.error("Debug posts error:", error);
+      res.status(500).json({ error: "Failed to get debug posts" });
     }
   });
 
@@ -717,7 +748,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const post = await storage.createPost(postData);
+      console.log(`[createPost] Post created successfully:`, {
+        id: post.id,
+        userId: post.userId,
+        privacy: post.privacy,
+        content: post.content?.substring(0, 50),
+        hasMedia: !!(post.imageUrl || post.videoUrl),
+      });
+
       const postWithUser = await storage.getPost(post.id);
+      console.log(`[createPost] Post with user data:`, {
+        id: postWithUser?.id,
+        username: postWithUser?.user?.username,
+        privacy: postWithUser?.privacy,
+      });
 
       res.json(postWithUser);
     } catch (error) {

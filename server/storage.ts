@@ -607,7 +607,50 @@ export class DatabaseStorage implements IStorage {
     // Add user filter if specified
     if (filterUserId) {
       baseConditions.push(eq(posts.userId, filterUserId));
+      console.log(
+        `[getPosts] Filtering posts for specific user: ${filterUserId}`
+      );
+    } else {
+      // If no specific user filter, apply privacy filtering for feed
+      if (currentUserId) {
+        // For authenticated users, show:
+        // 1. Public posts from all users
+        // 2. Posts from users they follow
+        // 3. Their own posts (regardless of privacy)
+
+        console.log(
+          `[getPosts] Getting posts for authenticated user: ${currentUserId}`
+        );
+
+        // Get users that the current user follows
+        const followingUsers = await db
+          .select({ followingId: follows.followingId })
+          .from(follows)
+          .where(eq(follows.followerId, currentUserId));
+
+        const followingIds = followingUsers.map((f) => f.followingId);
+        console.log(
+          `[getPosts] User follows ${followingIds.length} users:`,
+          followingIds
+        );
+
+        baseConditions.push(
+          or(
+            eq(posts.privacy, "public"),
+            inArray(posts.userId, followingIds),
+            eq(posts.userId, currentUserId)
+          )
+        );
+      } else {
+        // For unauthenticated users, only show public posts
+        console.log(
+          `[getPosts] Getting posts for unauthenticated user - showing only public posts`
+        );
+        baseConditions.push(eq(posts.privacy, "public"));
+      }
     }
+
+    console.log(`[getPosts] Base conditions:`, baseConditions.length);
 
     const result = await db
       .select({
@@ -620,6 +663,17 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(posts.createdAt))
       .limit(limit)
       .offset(offset);
+
+    console.log(`[getPosts] Found ${result.length} posts in database`);
+    if (result.length > 0) {
+      console.log(`[getPosts] Sample post:`, {
+        id: result[0].post.id,
+        userId: result[0].post.userId,
+        privacy: result[0].post.privacy,
+        content: result[0].post.content?.substring(0, 50),
+        user: result[0].user.username,
+      });
+    }
 
     // Get interaction counts and user reactions for each post
     const enrichedPosts = await Promise.all(
@@ -657,6 +711,7 @@ export class DatabaseStorage implements IStorage {
       })
     );
 
+    console.log(`[getPosts] Returning ${enrichedPosts.length} enriched posts`);
     return enrichedPosts;
   }
 

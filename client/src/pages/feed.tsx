@@ -61,6 +61,20 @@ export default function FeedPage() {
 
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: ["/api/posts"],
+    onSuccess: (data) => {
+      console.log(`[Feed] Posts loaded:`, data?.length || 0);
+      if (data && data.length > 0) {
+        console.log(`[Feed] Sample post:`, {
+          id: data[0].id,
+          username: data[0].user?.username,
+          content: data[0].content?.substring(0, 50),
+          hasMedia: !!(data[0].imageUrl || data[0].videoUrl),
+        });
+      }
+    },
+    onError: (error) => {
+      console.error(`[Feed] Error loading posts:`, error);
+    },
   });
 
   const { data: stories = [] } = useQuery({
