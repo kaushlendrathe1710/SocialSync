@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { z } from "zod";
 import {
@@ -68,6 +69,14 @@ const transporter = nodemailer.createTransport({
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
+// Live stream viewer tracking
+const liveStreamViewers = new Map<number, Set<string>>(); // streamId -> Set of viewer socket IDs
+const liveStreamHosts = new Map<number, WebSocket>(); // streamId -> host WebSocket
+const streamSockets = new Map<
+  WebSocket,
+  { streamId: number; userId: number; isHost: boolean }
+>(); // WebSocket -> stream info
 
 // Send OTP via email
 async function sendOtpEmail(
@@ -948,5 +957,405 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   const httpServer = createServer(app);
+
+  // Set up WebSocket server for live streaming
+  let wss: WebSocketServer | null = null;
+  try {
+    wss = new WebSocketServer({
+      server: httpServer,
+      path: "/ws",
+    });
+    console.log("WebSocket server initialized successfully");
+  } catch (error) {
+    console.warn("Failed to initialize WebSocket server:", error);
+    console.log("Continuing without WebSocket support...");
+  }
+
+  if (wss) {
+    wss.on("connection", (ws: WebSocket, req) => {
+      let currentStreamId: number | null = null;
+      let socketId: string = Math.random().toString(36).substring(7);
+      let currentUserId: number | null = null;
+      let isHost = false;
+
+      console.log("New WebSocket connection established");
+
+      ws.on("message", (message) => {
+        try {
+          const data = JSON.parse(message.toString());
+          console.log("WebSocket message received:", data.type);
+
+          switch (data.type) {
+            case "join_stream":
+              currentStreamId = data.streamId;
+              currentUserId = data.userId;
+              isHost = false;
+
+              if (!liveStreamViewers.has(currentStreamId)) {
+                liveStreamViewers.set(currentStreamId, new Set());
+              }
+              liveStreamViewers.get(currentStreamId)!.add(socketId);
+              streamSockets.set(ws, {
+                streamId: currentStreamId,
+                userId: currentUserId,
+                isHost: false,
+              });
+
+              // Broadcast viewer count update
+              broadcastViewerCountUpdate(currentStreamId);
+
+              // Notify other viewers that someone joined
+              broadcastToStream(
+                currentStreamId,
+                {
+                  type: "user_joined",
+                  streamId: currentStreamId,
+                  userId: currentUserId,
+                  username: data.username || `User ${currentUserId}`,
+                  userAvatar: data.userAvatar,
+                },
+                ws
+              );
+
+              console.log(
+                `User ${currentUserId} joined stream ${currentStreamId}`
+              );
+              break;
+
+            case "join_stream_as_host":
+              currentStreamId = data.streamId;
+              currentUserId = data.userId;
+              isHost = true;
+
+              liveStreamHosts.set(currentStreamId, ws);
+              streamSockets.set(ws, {
+                streamId: currentStreamId,
+                userId: currentUserId,
+                isHost: true,
+              });
+
+              if (!liveStreamViewers.has(currentStreamId)) {
+                liveStreamViewers.set(currentStreamId, new Set());
+              }
+              liveStreamViewers.get(currentStreamId)!.add(socketId);
+
+              // Broadcast viewer count update
+              broadcastViewerCountUpdate(currentStreamId);
+
+              console.log(
+                `Host ${currentUserId} started stream ${currentStreamId}`
+              );
+              break;
+
+            case "leave_stream":
+              if (currentStreamId) {
+                if (isHost) {
+                  // Host is leaving, end the stream
+                  liveStreamHosts.delete(currentStreamId);
+                  broadcastToStream(currentStreamId, {
+                    type: "stream_ended",
+                    streamId: currentStreamId,
+                  });
+                } else {
+                  // Viewer is leaving
+                  if (liveStreamViewers.has(currentStreamId)) {
+                    liveStreamViewers.get(currentStreamId)!.delete(socketId);
+                    if (liveStreamViewers.get(currentStreamId)!.size === 0) {
+                      liveStreamViewers.delete(currentStreamId);
+                    }
+                  }
+
+                  // Notify other viewers that someone left
+                  broadcastToStream(
+                    currentStreamId,
+                    {
+                      type: "user_left",
+                      streamId: currentStreamId,
+                      userId: currentUserId,
+                    },
+                    ws
+                  );
+
+                  // Broadcast viewer count update
+                  broadcastViewerCountUpdate(currentStreamId);
+                }
+              }
+              break;
+
+            case "send_chat_message":
+              if (currentStreamId && currentUserId) {
+                const messageId = Date.now().toString();
+                const messageData = {
+                  type: "chat_message",
+                  streamId: currentStreamId,
+                  messageId,
+                  userId: currentUserId,
+                  username: data.username || `User ${currentUserId}`,
+                  userAvatar: data.userAvatar,
+                  message: data.message,
+                  timestamp: new Date().toISOString(),
+                };
+
+                // Broadcast to all viewers in the stream
+                broadcastToStream(currentStreamId, messageData);
+              }
+              break;
+
+            case "send_reaction":
+              if (currentStreamId && currentUserId) {
+                const reactionData = {
+                  type: "reaction",
+                  streamId: currentStreamId,
+                  userId: currentUserId,
+                  username: data.username || `User ${currentUserId}`,
+                  userAvatar: data.userAvatar,
+                  reactionType: data.reactionType,
+                };
+
+                // Broadcast to all viewers in the stream
+                broadcastToStream(currentStreamId, reactionData);
+              }
+              break;
+
+            // WebRTC signaling messages
+            case "request-offer":
+              if (currentStreamId && !isHost) {
+                // Viewer requests offer from host
+                const hostWs = liveStreamHosts.get(currentStreamId);
+                if (hostWs) {
+                  hostWs.send(
+                    JSON.stringify({
+                      type: "create-offer",
+                      streamId: currentStreamId,
+                      targetUserId: currentUserId,
+                    })
+                  );
+                }
+              }
+              break;
+
+            case "create-offer":
+              if (currentStreamId && isHost) {
+                // Host creates offer for specific viewer
+                const targetUserId = data.targetUserId;
+                if (targetUserId) {
+                  // Find the viewer's WebSocket and send create-offer message
+                  wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN && client !== ws) {
+                      const streamInfo = streamSockets.get(client);
+                      if (
+                        streamInfo &&
+                        streamInfo.streamId === currentStreamId &&
+                        streamInfo.userId === targetUserId
+                      ) {
+                        client.send(
+                          JSON.stringify({
+                            type: "create-offer",
+                            streamId: currentStreamId,
+                            fromUserId: currentUserId,
+                          })
+                        );
+                      }
+                    }
+                  });
+                }
+              }
+              break;
+
+            case "offer":
+              if (currentStreamId) {
+                if (isHost) {
+                  // Host's offer goes to specific viewer
+                  const targetUserId = data.targetUserId;
+                  if (targetUserId) {
+                    // Find the viewer's WebSocket
+                    wss.clients.forEach((client) => {
+                      if (
+                        client.readyState === WebSocket.OPEN &&
+                        client !== ws
+                      ) {
+                        const streamInfo = streamSockets.get(client);
+                        if (
+                          streamInfo &&
+                          streamInfo.streamId === currentStreamId &&
+                          streamInfo.userId === targetUserId
+                        ) {
+                          client.send(
+                            JSON.stringify({
+                              type: "offer",
+                              streamId: currentStreamId,
+                              offer: data.offer,
+                              fromUserId: currentUserId,
+                            })
+                          );
+                        }
+                      }
+                    });
+                  }
+                } else {
+                  // Forward offer from viewer to host
+                  const hostWs = liveStreamHosts.get(currentStreamId);
+                  if (hostWs) {
+                    hostWs.send(
+                      JSON.stringify({
+                        type: "offer",
+                        streamId: currentStreamId,
+                        offer: data.offer,
+                        fromUserId: currentUserId,
+                      })
+                    );
+                  }
+                }
+              }
+              break;
+
+            case "answer":
+              if (currentStreamId) {
+                if (isHost) {
+                  // Forward answer from host to all viewers
+                  broadcastToStream(
+                    currentStreamId,
+                    {
+                      type: "answer",
+                      streamId: currentStreamId,
+                      answer: data.answer,
+                      fromUserId: currentUserId,
+                    },
+                    ws
+                  );
+                } else {
+                  // Forward answer from viewer to host
+                  const hostWs = liveStreamHosts.get(currentStreamId);
+                  if (hostWs) {
+                    hostWs.send(
+                      JSON.stringify({
+                        type: "answer",
+                        streamId: currentStreamId,
+                        answer: data.answer,
+                        fromUserId: currentUserId,
+                      })
+                    );
+                  }
+                }
+              }
+              break;
+
+            case "ice-candidate":
+              if (currentStreamId) {
+                // Forward ICE candidate to the other peer
+                if (isHost) {
+                  // Host's ICE candidate goes to all viewers
+                  broadcastToStream(
+                    currentStreamId,
+                    {
+                      type: "ice-candidate",
+                      streamId: currentStreamId,
+                      candidate: data.candidate,
+                      fromUserId: currentUserId,
+                    },
+                    ws
+                  );
+                } else {
+                  // Viewer's ICE candidate goes to host
+                  const hostWs = liveStreamHosts.get(currentStreamId);
+                  if (hostWs) {
+                    hostWs.send(
+                      JSON.stringify({
+                        type: "ice-candidate",
+                        streamId: currentStreamId,
+                        candidate: data.candidate,
+                        fromUserId: currentUserId,
+                      })
+                    );
+                  }
+                }
+              }
+              break;
+
+            default:
+              console.log("Unknown WebSocket message type:", data.type);
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      });
+
+      ws.on("close", () => {
+        console.log("WebSocket connection closed");
+
+        if (currentStreamId) {
+          if (isHost) {
+            // Host disconnected, end the stream
+            liveStreamHosts.delete(currentStreamId);
+            broadcastToStream(currentStreamId, {
+              type: "stream_ended",
+              streamId: currentStreamId,
+            });
+          } else {
+            // Viewer disconnected
+            if (liveStreamViewers.has(currentStreamId)) {
+              liveStreamViewers.get(currentStreamId)!.delete(socketId);
+              if (liveStreamViewers.get(currentStreamId)!.size === 0) {
+                liveStreamViewers.delete(currentStreamId);
+              }
+            }
+
+            // Notify other viewers that someone left
+            if (currentUserId) {
+              broadcastToStream(
+                currentStreamId,
+                {
+                  type: "user_left",
+                  streamId: currentStreamId,
+                  userId: currentUserId,
+                },
+                ws
+              );
+            }
+
+            // Broadcast viewer count update
+            broadcastViewerCountUpdate(currentStreamId);
+          }
+        }
+
+        streamSockets.delete(ws);
+      });
+
+      ws.on("error", (error) => {
+        console.error("WebSocket error:", error);
+      });
+    });
+  }
+
+  // Helper function to broadcast to all viewers in a stream
+  function broadcastToStream(
+    streamId: number,
+    data: any,
+    excludeWs?: WebSocket
+  ) {
+    if (wss) {
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN && client !== excludeWs) {
+          const streamInfo = streamSockets.get(client);
+          if (streamInfo && streamInfo.streamId === streamId) {
+            client.send(JSON.stringify(data));
+          }
+        }
+      });
+    }
+  }
+
+  // Helper function to broadcast viewer count updates
+  function broadcastViewerCountUpdate(streamId: number) {
+    const viewerCount = liveStreamViewers.get(streamId)?.size || 0;
+    const updateData = {
+      type: "viewer_count_update",
+      streamId,
+      viewerCount,
+    };
+
+    broadcastToStream(streamId, updateData);
+  }
+
   return httpServer;
 }

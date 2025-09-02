@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import LiveStreamViewer from "@/components/live-stream-viewer";
+import WebRTCLiveStreamViewer from "@/components/webrtc-live-stream-viewer";
 import {
   Video,
   Eye,
@@ -295,7 +295,7 @@ export default function LiveStreamsPage() {
       )}
 
       {/* Live Stream Viewer Modal */}
-      <LiveStreamViewer
+      <WebRTCLiveStreamViewer
         isOpen={isViewerOpen}
         onClose={handleCloseViewer}
         stream={selectedStream}
