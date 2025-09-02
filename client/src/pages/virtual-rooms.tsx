@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import WebRTCLiveStreamViewer from "@/components/webrtc-live-stream-viewer";
+import WorkingLiveStreamViewer from "@/components/working-live-stream-viewer";
 
 interface VirtualRoom {
   id: number;
@@ -218,7 +218,7 @@ export default function VirtualRoomsPage() {
       )}
 
       {/* Live Stream Viewer */}
-      <WebRTCLiveStreamViewer
+      <WorkingLiveStreamViewer
         isOpen={!!selectedRoom}
         onClose={handleCloseViewer}
         stream={selectedRoom}
