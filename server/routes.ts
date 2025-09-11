@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { z } from "zod";
 import {
@@ -13,6 +14,8 @@ import {
   insertStorySchema,
   insertMessageSchema,
   insertNotificationSchema,
+  insertFriendRequestSchema,
+  insertFriendshipSchema,
 } from "@shared/schema";
 import nodemailer from "nodemailer";
 import multer from "multer";
@@ -68,6 +71,14 @@ const transporter = nodemailer.createTransport({
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
+// Live stream viewer tracking
+const liveStreamViewers = new Map<number, Set<string>>(); // streamId -> Set of viewer socket IDs
+const liveStreamHosts = new Map<number, WebSocket>(); // streamId -> host WebSocket
+const streamSockets = new Map<
+  WebSocket,
+  { streamId: number; userId: number; isHost: boolean }
+>(); // WebSocket -> stream info
 
 // Send OTP via email
 async function sendOtpEmail(
@@ -414,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userLikes = await storage.getUserLikes(userId);
       const existingReaction = userLikes.find((like) => like.postId === postId);
 
-      const post = await storage.getPost(postId);
+      const post = await storage.getPost(postId, req.session.userId);
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
@@ -485,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const post = await storage.createPost(postData);
-        const postWithUser = await storage.getPost(post.id);
+        const postWithUser = await storage.getPost(post.id, req.session.userId);
 
         res.json(postWithUser);
       } catch (error) {
@@ -498,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/posts/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const post = await storage.getPost(id);
+      const post = await storage.getPost(id, req.session.userId);
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
@@ -518,7 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/posts/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const post = await storage.getPost(id);
+      const post = await storage.getPost(id, req.session.userId);
 
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
@@ -592,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createLike({ userId, postId });
 
         // Create notification for like
-        const post = await storage.getPost(postId);
+        const post = await storage.getPost(postId, userId);
         if (post && post.userId !== userId) {
           await storage.createNotification({
             userId: post.userId,
@@ -635,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Create notification for comment
-      const post = await storage.getPost(postId);
+      const post = await storage.getPost(postId, req.session.userId);
       if (post && post.userId !== req.session.userId) {
         await storage.createNotification({
           userId: post.userId,
@@ -947,6 +958,628 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Friend Request Routes
+  app.post("/api/friend-requests", requireAuth, async (req, res) => {
+    try {
+      const { receiverId, message } = z
+        .object({
+          receiverId: z.number(),
+          message: z.string().optional(),
+        })
+        .parse(req.body);
+
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      if (receiverId === userId) {
+        return res
+          .status(400)
+          .json({ error: "Cannot send friend request to yourself" });
+      }
+
+      // Check if users exist
+      const [sender, receiver] = await Promise.all([
+        storage.getUserById(userId),
+        storage.getUserById(receiverId),
+      ]);
+
+      if (!sender || !receiver) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check if friendship already exists
+      const existingFriendship = await storage.getFriendship(
+        userId,
+        receiverId
+      );
+      if (existingFriendship) {
+        return res.status(400).json({ error: "Already friends" });
+      }
+
+      // Check if there's already a pending request
+      const existingRequest = await storage.getFriendRequest(
+        userId,
+        receiverId
+      );
+      if (existingRequest) {
+        return res.status(400).json({ error: "Friend request already sent" });
+      }
+
+      // Create friend request
+      const friendRequest = await storage.createFriendRequest({
+        senderId: userId,
+        receiverId,
+        message: message || null,
+      });
+
+      // Create notification
+      await storage.createNotification({
+        userId: receiverId,
+        type: "friend_request",
+        fromUserId: userId,
+        metadata: JSON.stringify({ requestId: friendRequest.id }),
+      });
+
+      res.json(friendRequest);
+    } catch (error) {
+      console.error("Error creating friend request:", error);
+      res.status(500).json({ error: "Failed to send friend request" });
+    }
+  });
+
+  app.get("/api/friend-requests/received", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const requests = await storage.getReceivedFriendRequests(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching received friend requests:", error);
+      res.status(500).json({ error: "Failed to fetch friend requests" });
+    }
+  });
+
+  app.get("/api/friend-requests/sent", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const requests = await storage.getSentFriendRequests(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching sent friend requests:", error);
+      res.status(500).json({ error: "Failed to fetch sent friend requests" });
+    }
+  });
+
+  app.put("/api/friend-requests/:id", requireAuth, async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const { action } = z
+        .object({
+          action: z.enum(["accept", "decline"]),
+        })
+        .parse(req.body);
+
+      const request = await storage.getFriendRequestById(requestId);
+      if (!request) {
+        return res.status(404).json({ error: "Friend request not found" });
+      }
+
+      if (request.receiverId !== req.session.userId) {
+        return res
+          .status(403)
+          .json({ error: "Not authorized to respond to this request" });
+      }
+
+      if (request.status !== "pending") {
+        return res.status(400).json({ error: "Request already responded to" });
+      }
+
+      if (action === "accept") {
+        // Create friendship
+        await storage.createFriendship({
+          user1Id: request.senderId,
+          user2Id: request.receiverId,
+        });
+
+        // Create notification for sender
+        await storage.createNotification({
+          userId: request.senderId,
+          type: "friend_request_accepted",
+          fromUserId: req.session.userId,
+        });
+      }
+
+      // Update request status
+      await storage.updateFriendRequestStatus(
+        requestId,
+        action === "accept" ? "accepted" : "declined"
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error responding to friend request:", error);
+      res.status(500).json({ error: "Failed to respond to friend request" });
+    }
+  });
+
+  app.delete("/api/friend-requests/:id", requireAuth, async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const request = await storage.getFriendRequestById(requestId);
+
+      if (!request) {
+        return res.status(404).json({ error: "Friend request not found" });
+      }
+
+      if (request.senderId !== req.session.userId) {
+        return res
+          .status(403)
+          .json({ error: "Not authorized to cancel this request" });
+      }
+
+      await storage.deleteFriendRequest(requestId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error canceling friend request:", error);
+      res.status(500).json({ error: "Failed to cancel friend request" });
+    }
+  });
+
+  // Friends Routes
+  app.get("/api/friends", requireAuth, async (req, res) => {
+    try {
+      const friends = await storage.getUserFriends(req.session.userId);
+      res.json(friends);
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+      res.status(500).json({ error: "Failed to fetch friends" });
+    }
+  });
+
+  app.delete("/api/friends/:id", requireAuth, async (req, res) => {
+    try {
+      const friendId = parseInt(req.params.id);
+
+      if (friendId === req.session.userId) {
+        return res.status(400).json({ error: "Cannot unfriend yourself" });
+      }
+
+      const friendship = await storage.getFriendship(
+        req.session.userId,
+        friendId
+      );
+      if (!friendship) {
+        return res.status(404).json({ error: "Friendship not found" });
+      }
+
+      await storage.deleteFriendship(friendship.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing friend:", error);
+      res.status(500).json({ error: "Failed to remove friend" });
+    }
+  });
+
+  // Friend Suggestions Route
+  app.get("/api/friend-suggestions", requireAuth, async (req, res) => {
+    try {
+      const suggestions = await storage.getFriendSuggestions(
+        req.session.userId
+      );
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error fetching friend suggestions:", error);
+      res.status(500).json({ error: "Failed to fetch friend suggestions" });
+    }
+  });
+
   const httpServer = createServer(app);
+
+  // Set up WebSocket server for live streaming
+  let wss: WebSocketServer | null = null;
+  try {
+    wss = new WebSocketServer({
+      server: httpServer,
+      path: "/ws",
+    });
+    console.log("WebSocket server initialized successfully");
+  } catch (error) {
+    console.warn("Failed to initialize WebSocket server:", error);
+    console.log("Continuing without WebSocket support...");
+  }
+
+  if (wss) {
+    wss.on("connection", (ws: WebSocket, req) => {
+      let currentStreamId: number | null = null;
+      let socketId: string = Math.random().toString(36).substring(7);
+      let currentUserId: number | null = null;
+      let isHost = false;
+
+      console.log("New WebSocket connection established");
+
+      ws.on("message", (message) => {
+        try {
+          const data = JSON.parse(message.toString());
+          console.log("WebSocket message received:", data.type);
+
+          switch (data.type) {
+            case "join_stream":
+              currentStreamId = data.streamId;
+              currentUserId = data.userId;
+              isHost = false;
+
+              if (!liveStreamViewers.has(currentStreamId)) {
+                liveStreamViewers.set(currentStreamId, new Set());
+              }
+              liveStreamViewers.get(currentStreamId)!.add(socketId);
+              streamSockets.set(ws, {
+                streamId: currentStreamId,
+                userId: currentUserId,
+                isHost: false,
+              });
+
+              // Broadcast viewer count update
+              broadcastViewerCountUpdate(currentStreamId);
+
+              // Notify other viewers that someone joined
+              broadcastToStream(
+                currentStreamId,
+                {
+                  type: "user_joined",
+                  streamId: currentStreamId,
+                  userId: currentUserId,
+                  username: data.username || `User ${currentUserId}`,
+                  userAvatar: data.userAvatar,
+                },
+                ws
+              );
+
+              console.log(
+                `User ${currentUserId} joined stream ${currentStreamId}`
+              );
+              break;
+
+            case "join_stream_as_host":
+              currentStreamId = data.streamId;
+              currentUserId = data.userId;
+              isHost = true;
+
+              liveStreamHosts.set(currentStreamId, ws);
+              streamSockets.set(ws, {
+                streamId: currentStreamId,
+                userId: currentUserId,
+                isHost: true,
+              });
+
+              if (!liveStreamViewers.has(currentStreamId)) {
+                liveStreamViewers.set(currentStreamId, new Set());
+              }
+              liveStreamViewers.get(currentStreamId)!.add(socketId);
+
+              // Broadcast viewer count update
+              broadcastViewerCountUpdate(currentStreamId);
+
+              console.log(
+                `Host ${currentUserId} started stream ${currentStreamId}`
+              );
+              break;
+
+            case "leave_stream":
+              if (currentStreamId) {
+                if (isHost) {
+                  // Host is leaving, end the stream
+                  liveStreamHosts.delete(currentStreamId);
+                  broadcastToStream(currentStreamId, {
+                    type: "stream_ended",
+                    streamId: currentStreamId,
+                  });
+                } else {
+                  // Viewer is leaving
+                  if (liveStreamViewers.has(currentStreamId)) {
+                    liveStreamViewers.get(currentStreamId)!.delete(socketId);
+                    if (liveStreamViewers.get(currentStreamId)!.size === 0) {
+                      liveStreamViewers.delete(currentStreamId);
+                    }
+                  }
+
+                  // Notify other viewers that someone left
+                  broadcastToStream(
+                    currentStreamId,
+                    {
+                      type: "user_left",
+                      streamId: currentStreamId,
+                      userId: currentUserId,
+                    },
+                    ws
+                  );
+
+                  // Broadcast viewer count update
+                  broadcastViewerCountUpdate(currentStreamId);
+                }
+              }
+              break;
+
+            case "send_chat_message":
+              if (currentStreamId && currentUserId) {
+                const messageId = Date.now().toString();
+                const messageData = {
+                  type: "chat_message",
+                  streamId: currentStreamId,
+                  messageId,
+                  userId: currentUserId,
+                  username: data.username || `User ${currentUserId}`,
+                  userAvatar: data.userAvatar,
+                  message: data.message,
+                  timestamp: new Date().toISOString(),
+                };
+
+                // Broadcast to all viewers in the stream
+                broadcastToStream(currentStreamId, messageData);
+              }
+              break;
+
+            case "send_reaction":
+              if (currentStreamId && currentUserId) {
+                const reactionData = {
+                  type: "reaction",
+                  streamId: currentStreamId,
+                  userId: currentUserId,
+                  username: data.username || `User ${currentUserId}`,
+                  userAvatar: data.userAvatar,
+                  reactionType: data.reactionType,
+                };
+
+                // Broadcast to all viewers in the stream
+                broadcastToStream(currentStreamId, reactionData);
+              }
+              break;
+
+            // WebRTC signaling messages
+            case "request-offer":
+              if (currentStreamId && !isHost) {
+                // Viewer requests offer from host
+                const hostWs = liveStreamHosts.get(currentStreamId);
+                if (hostWs) {
+                  hostWs.send(
+                    JSON.stringify({
+                      type: "create-offer",
+                      streamId: currentStreamId,
+                      targetUserId: currentUserId,
+                    })
+                  );
+                }
+              }
+              break;
+
+            case "create-offer":
+              if (currentStreamId && isHost) {
+                // Host creates offer for specific viewer
+                const targetUserId = data.targetUserId;
+                if (targetUserId) {
+                  // Find the viewer's WebSocket and send create-offer message
+                  wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN && client !== ws) {
+                      const streamInfo = streamSockets.get(client);
+                      if (
+                        streamInfo &&
+                        streamInfo.streamId === currentStreamId &&
+                        streamInfo.userId === targetUserId
+                      ) {
+                        client.send(
+                          JSON.stringify({
+                            type: "create-offer",
+                            streamId: currentStreamId,
+                            fromUserId: currentUserId,
+                          })
+                        );
+                      }
+                    }
+                  });
+                }
+              }
+              break;
+
+            case "offer":
+              if (currentStreamId) {
+                if (isHost) {
+                  // Host's offer goes to specific viewer
+                  const targetUserId = data.targetUserId;
+                  if (targetUserId) {
+                    // Find the viewer's WebSocket
+                    wss.clients.forEach((client) => {
+                      if (
+                        client.readyState === WebSocket.OPEN &&
+                        client !== ws
+                      ) {
+                        const streamInfo = streamSockets.get(client);
+                        if (
+                          streamInfo &&
+                          streamInfo.streamId === currentStreamId &&
+                          streamInfo.userId === targetUserId
+                        ) {
+                          client.send(
+                            JSON.stringify({
+                              type: "offer",
+                              streamId: currentStreamId,
+                              offer: data.offer,
+                              fromUserId: currentUserId,
+                            })
+                          );
+                        }
+                      }
+                    });
+                  }
+                } else {
+                  // Forward offer from viewer to host
+                  const hostWs = liveStreamHosts.get(currentStreamId);
+                  if (hostWs) {
+                    hostWs.send(
+                      JSON.stringify({
+                        type: "offer",
+                        streamId: currentStreamId,
+                        offer: data.offer,
+                        fromUserId: currentUserId,
+                      })
+                    );
+                  }
+                }
+              }
+              break;
+
+            case "answer":
+              if (currentStreamId) {
+                if (isHost) {
+                  // Forward answer from host to all viewers
+                  broadcastToStream(
+                    currentStreamId,
+                    {
+                      type: "answer",
+                      streamId: currentStreamId,
+                      answer: data.answer,
+                      fromUserId: currentUserId,
+                    },
+                    ws
+                  );
+                } else {
+                  // Forward answer from viewer to host
+                  const hostWs = liveStreamHosts.get(currentStreamId);
+                  if (hostWs) {
+                    hostWs.send(
+                      JSON.stringify({
+                        type: "answer",
+                        streamId: currentStreamId,
+                        answer: data.answer,
+                        fromUserId: currentUserId,
+                      })
+                    );
+                  }
+                }
+              }
+              break;
+
+            case "ice-candidate":
+              if (currentStreamId) {
+                // Forward ICE candidate to the other peer
+                if (isHost) {
+                  // Host's ICE candidate goes to all viewers
+                  broadcastToStream(
+                    currentStreamId,
+                    {
+                      type: "ice-candidate",
+                      streamId: currentStreamId,
+                      candidate: data.candidate,
+                      fromUserId: currentUserId,
+                    },
+                    ws
+                  );
+                } else {
+                  // Viewer's ICE candidate goes to host
+                  const hostWs = liveStreamHosts.get(currentStreamId);
+                  if (hostWs) {
+                    hostWs.send(
+                      JSON.stringify({
+                        type: "ice-candidate",
+                        streamId: currentStreamId,
+                        candidate: data.candidate,
+                        fromUserId: currentUserId,
+                      })
+                    );
+                  }
+                }
+              }
+              break;
+
+            default:
+              console.log("Unknown WebSocket message type:", data.type);
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      });
+
+      ws.on("close", () => {
+        console.log("WebSocket connection closed");
+
+        if (currentStreamId) {
+          if (isHost) {
+            // Host disconnected, end the stream
+            liveStreamHosts.delete(currentStreamId);
+            broadcastToStream(currentStreamId, {
+              type: "stream_ended",
+              streamId: currentStreamId,
+            });
+          } else {
+            // Viewer disconnected
+            if (liveStreamViewers.has(currentStreamId)) {
+              liveStreamViewers.get(currentStreamId)!.delete(socketId);
+              if (liveStreamViewers.get(currentStreamId)!.size === 0) {
+                liveStreamViewers.delete(currentStreamId);
+              }
+            }
+
+            // Notify other viewers that someone left
+            if (currentUserId) {
+              broadcastToStream(
+                currentStreamId,
+                {
+                  type: "user_left",
+                  streamId: currentStreamId,
+                  userId: currentUserId,
+                },
+                ws
+              );
+            }
+
+            // Broadcast viewer count update
+            broadcastViewerCountUpdate(currentStreamId);
+          }
+        }
+
+        streamSockets.delete(ws);
+      });
+
+      ws.on("error", (error) => {
+        console.error("WebSocket error:", error);
+      });
+    });
+  }
+
+  // Helper function to broadcast to all viewers in a stream
+  function broadcastToStream(
+    streamId: number,
+    data: any,
+    excludeWs?: WebSocket
+  ) {
+    if (wss) {
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN && client !== excludeWs) {
+          const streamInfo = streamSockets.get(client);
+          if (streamInfo && streamInfo.streamId === streamId) {
+            client.send(JSON.stringify(data));
+          }
+        }
+      });
+    }
+  }
+
+  // Helper function to broadcast viewer count updates
+  function broadcastViewerCountUpdate(streamId: number) {
+    const viewerCount = liveStreamViewers.get(streamId)?.size || 0;
+    const updateData = {
+      type: "viewer_count_update",
+      streamId,
+      viewerCount,
+    };
+
+    broadcastToStream(streamId, updateData);
+  }
+
   return httpServer;
 }
