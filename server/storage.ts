@@ -143,7 +143,10 @@ export interface IStorage {
 
   // Post methods
   createPost(post: InsertPost): Promise<Post>;
-  getPost(id: number): Promise<PostWithUser | undefined>;
+  getPost(
+    id: number,
+    currentUserId?: number
+  ): Promise<PostWithUser | undefined>;
   getPosts(
     userId?: number,
     limit?: number,
@@ -557,7 +560,10 @@ export class DatabaseStorage implements IStorage {
     return post;
   }
 
-  async getPost(id: number): Promise<PostWithUser | undefined> {
+  async getPost(
+    id: number,
+    currentUserId?: number
+  ): Promise<PostWithUser | undefined> {
     const result = await db
       .select({
         post: posts,
@@ -575,6 +581,24 @@ export class DatabaseStorage implements IStorage {
     if (result.length === 0) return undefined;
 
     const { post, user } = result[0];
+
+    // Check privacy settings if currentUserId is provided
+    if (currentUserId && post.privacy === "friends") {
+      // Check if current user is friends with the post author
+      const friendship = await this.getFriendship(currentUserId, post.userId);
+      if (!friendship) {
+        // Not friends, don't show the post
+        return undefined;
+      }
+    } else if (currentUserId && post.privacy === "private") {
+      // Only the author can see private posts
+      if (post.userId !== currentUserId) {
+        return undefined;
+      }
+    } else if (!currentUserId && post.privacy !== "public") {
+      // Unauthenticated users can only see public posts
+      return undefined;
+    }
 
     // Get like count
     const likesResult = await db
@@ -636,10 +660,30 @@ export class DatabaseStorage implements IStorage {
           followingIds
         );
 
+        // Get users that the current user is friends with
+        const friends = await this.getUserFriends(currentUserId);
+        const friendIds = friends.map((f) => f.id);
+        console.log(
+          `[getPosts] User has ${friendIds.length} friends:`,
+          friendIds
+        );
+
+        // Combine following and friends for broader visibility
+        const connectedUserIds = [...new Set([...followingIds, ...friendIds])];
+        console.log(
+          `[getPosts] Total connected users: ${connectedUserIds.length}`,
+          connectedUserIds
+        );
+
         baseConditions.push(
           or(
+            // Public posts from all users
             eq(posts.privacy, "public"),
-            inArray(posts.userId, followingIds),
+            // Posts from connected users (follows + friends) regardless of privacy
+            inArray(posts.userId, connectedUserIds),
+            // Friends-only posts from friends
+            and(eq(posts.privacy, "friends"), inArray(posts.userId, friendIds)),
+            // User's own posts (regardless of privacy)
             eq(posts.userId, currentUserId)
           )
         );

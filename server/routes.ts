@@ -425,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userLikes = await storage.getUserLikes(userId);
       const existingReaction = userLikes.find((like) => like.postId === postId);
 
-      const post = await storage.getPost(postId);
+      const post = await storage.getPost(postId, req.session.userId);
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
@@ -496,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const post = await storage.createPost(postData);
-        const postWithUser = await storage.getPost(post.id);
+        const postWithUser = await storage.getPost(post.id, req.session.userId);
 
         res.json(postWithUser);
       } catch (error) {
@@ -509,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/posts/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const post = await storage.getPost(id);
+      const post = await storage.getPost(id, req.session.userId);
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
@@ -529,7 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/posts/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const post = await storage.getPost(id);
+      const post = await storage.getPost(id, req.session.userId);
 
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
@@ -603,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createLike({ userId, postId });
 
         // Create notification for like
-        const post = await storage.getPost(postId);
+        const post = await storage.getPost(postId, userId);
         if (post && post.userId !== userId) {
           await storage.createNotification({
             userId: post.userId,
@@ -646,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Create notification for comment
-      const post = await storage.getPost(postId);
+      const post = await storage.getPost(postId, req.session.userId);
       if (post && post.userId !== req.session.userId) {
         await storage.createNotification({
           userId: post.userId,
