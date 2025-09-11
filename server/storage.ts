@@ -119,6 +119,8 @@ import {
   isNull,
   sql,
   inArray,
+  ne,
+  notInArray,
 } from "drizzle-orm";
 
 export interface IStorage {
@@ -3051,6 +3053,353 @@ export class DatabaseStorage implements IStorage {
       ];
     } catch (error) {
       console.error("Get group files error:", error);
+      return [];
+    }
+  }
+
+  // Friend Request Methods
+  async createFriendRequest(data: {
+    senderId: number;
+    receiverId: number;
+    message?: string | null;
+  }): Promise<any> {
+    try {
+      const result = await db
+        .insert(friendRequests)
+        .values({
+          senderId: data.senderId,
+          receiverId: data.receiverId,
+          message: data.message || null,
+          status: "pending",
+          createdAt: new Date(),
+        })
+        .returning();
+
+      const request = result[0];
+
+      // Get sender and receiver details
+      const [sender, receiver] = await Promise.all([
+        this.getUserById(data.senderId),
+        this.getUserById(data.receiverId),
+      ]);
+
+      return {
+        ...request,
+        sender: {
+          id: sender?.id,
+          name: sender?.name,
+          username: sender?.username,
+          avatar: sender?.avatar,
+        },
+        receiver: {
+          id: receiver?.id,
+          name: receiver?.name,
+          username: receiver?.username,
+          avatar: receiver?.avatar,
+        },
+      };
+    } catch (error) {
+      console.error("Create friend request error:", error);
+      throw error;
+    }
+  }
+
+  async getFriendRequest(senderId: number, receiverId: number): Promise<any> {
+    try {
+      const result = await db
+        .select()
+        .from(friendRequests)
+        .where(
+          and(
+            eq(friendRequests.senderId, senderId),
+            eq(friendRequests.receiverId, receiverId),
+            eq(friendRequests.status, "pending")
+          )
+        )
+        .limit(1);
+
+      return result[0] || null;
+    } catch (error) {
+      console.error("Get friend request error:", error);
+      return null;
+    }
+  }
+
+  async getFriendRequestById(requestId: number): Promise<any> {
+    try {
+      const result = await db
+        .select()
+        .from(friendRequests)
+        .where(eq(friendRequests.id, requestId))
+        .limit(1);
+
+      return result[0] || null;
+    } catch (error) {
+      console.error("Get friend request by ID error:", error);
+      return null;
+    }
+  }
+
+  async getReceivedFriendRequests(userId: number): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          id: friendRequests.id,
+          senderId: friendRequests.senderId,
+          receiverId: friendRequests.receiverId,
+          message: friendRequests.message,
+          status: friendRequests.status,
+          createdAt: friendRequests.createdAt,
+          respondedAt: friendRequests.respondedAt,
+          senderName: users.name,
+          senderUsername: users.username,
+          senderAvatar: users.avatar,
+        })
+        .from(friendRequests)
+        .innerJoin(users, eq(friendRequests.senderId, users.id))
+        .where(
+          and(
+            eq(friendRequests.receiverId, userId),
+            eq(friendRequests.status, "pending")
+          )
+        )
+        .orderBy(desc(friendRequests.createdAt));
+
+      return result.map((row) => ({
+        id: row.id,
+        senderId: row.senderId,
+        receiverId: row.receiverId,
+        message: row.message,
+        status: row.status,
+        createdAt: row.createdAt,
+        respondedAt: row.respondedAt,
+        sender: {
+          id: row.senderId,
+          name: row.senderName,
+          username: row.senderUsername,
+          avatar: row.senderAvatar,
+        },
+        receiver: {
+          id: row.receiverId,
+          name: "Current User",
+          username: "current_user",
+          avatar: null,
+        },
+      }));
+    } catch (error) {
+      console.error("Get received friend requests error:", error);
+      return [];
+    }
+  }
+
+  async getSentFriendRequests(userId: number): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          id: friendRequests.id,
+          senderId: friendRequests.senderId,
+          receiverId: friendRequests.receiverId,
+          message: friendRequests.message,
+          status: friendRequests.status,
+          createdAt: friendRequests.createdAt,
+          respondedAt: friendRequests.respondedAt,
+          receiverName: users.name,
+          receiverUsername: users.username,
+          receiverAvatar: users.avatar,
+        })
+        .from(friendRequests)
+        .innerJoin(users, eq(friendRequests.receiverId, users.id))
+        .where(
+          and(
+            eq(friendRequests.senderId, userId),
+            eq(friendRequests.status, "pending")
+          )
+        )
+        .orderBy(desc(friendRequests.createdAt));
+
+      return result.map((row) => ({
+        id: row.id,
+        senderId: row.senderId,
+        receiverId: row.receiverId,
+        message: row.message,
+        status: row.status,
+        createdAt: row.createdAt,
+        respondedAt: row.respondedAt,
+        sender: {
+          id: row.senderId,
+          name: "Current User",
+          username: "current_user",
+          avatar: null,
+        },
+        receiver: {
+          id: row.receiverId,
+          name: row.receiverName,
+          username: row.receiverUsername,
+          avatar: row.receiverAvatar,
+        },
+      }));
+    } catch (error) {
+      console.error("Get sent friend requests error:", error);
+      return [];
+    }
+  }
+
+  async updateFriendRequestStatus(
+    requestId: number,
+    status: string
+  ): Promise<void> {
+    try {
+      await db
+        .update(friendRequests)
+        .set({
+          status,
+          respondedAt: new Date(),
+        })
+        .where(eq(friendRequests.id, requestId));
+    } catch (error) {
+      console.error("Update friend request status error:", error);
+      throw error;
+    }
+  }
+
+  async deleteFriendRequest(requestId: number): Promise<void> {
+    try {
+      await db.delete(friendRequests).where(eq(friendRequests.id, requestId));
+    } catch (error) {
+      console.error("Delete friend request error:", error);
+      throw error;
+    }
+  }
+
+  // Friendship Methods
+  async createFriendship(data: {
+    user1Id: number;
+    user2Id: number;
+    closeFriend?: boolean;
+  }): Promise<any> {
+    try {
+      // Ensure consistent ordering (smaller ID first)
+      const [user1Id, user2Id] =
+        data.user1Id < data.user2Id
+          ? [data.user1Id, data.user2Id]
+          : [data.user2Id, data.user1Id];
+
+      const result = await db
+        .insert(friendships)
+        .values({
+          user1Id,
+          user2Id,
+          closeFriend: data.closeFriend || false,
+          createdAt: new Date(),
+        })
+        .returning();
+
+      return result[0];
+    } catch (error) {
+      console.error("Create friendship error:", error);
+      throw error;
+    }
+  }
+
+  async getFriendship(user1Id: number, user2Id: number): Promise<any> {
+    try {
+      // Check both possible orderings
+      const [result1, result2] = await Promise.all([
+        db
+          .select()
+          .from(friendships)
+          .where(
+            and(
+              eq(friendships.user1Id, user1Id),
+              eq(friendships.user2Id, user2Id)
+            )
+          )
+          .limit(1),
+        db
+          .select()
+          .from(friendships)
+          .where(
+            and(
+              eq(friendships.user1Id, user2Id),
+              eq(friendships.user2Id, user1Id)
+            )
+          )
+          .limit(1),
+      ]);
+
+      return result1[0] || result2[0] || null;
+    } catch (error) {
+      console.error("Get friendship error:", error);
+      return null;
+    }
+  }
+
+  async getUserFriends(userId: number): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          username: users.username,
+          avatar: users.avatar,
+          bio: users.bio,
+        })
+        .from(friendships)
+        .innerJoin(
+          users,
+          or(
+            and(
+              eq(friendships.user1Id, userId),
+              eq(friendships.user2Id, users.id)
+            ),
+            and(
+              eq(friendships.user2Id, userId),
+              eq(friendships.user1Id, users.id)
+            )
+          )
+        )
+        .where(ne(users.id, userId))
+        .orderBy(users.name);
+
+      return result;
+    } catch (error) {
+      console.error("Get user friends error:", error);
+      return [];
+    }
+  }
+
+  async deleteFriendship(friendshipId: number): Promise<void> {
+    try {
+      await db.delete(friendships).where(eq(friendships.id, friendshipId));
+    } catch (error) {
+      console.error("Delete friendship error:", error);
+      throw error;
+    }
+  }
+
+  async getFriendSuggestions(userId: number): Promise<any[]> {
+    try {
+      // Get users who are not already friends and not the current user
+      const friends = await this.getUserFriends(userId);
+      const friendIds = friends.map((f) => f.id);
+      friendIds.push(userId);
+
+      const result = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          username: users.username,
+          avatar: users.avatar,
+          bio: users.bio,
+        })
+        .from(users)
+        .where(notInArray(users.id, friendIds))
+        .orderBy(desc(users.createdAt))
+        .limit(20);
+
+      return result;
+    } catch (error) {
+      console.error("Get friend suggestions error:", error);
       return [];
     }
   }

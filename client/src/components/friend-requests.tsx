@@ -1,14 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { UserPlus, UserCheck, UserX, Users, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  UserPlus,
+  UserCheck,
+  UserX,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Trash2,
+  Search,
+} from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -44,22 +61,39 @@ interface User {
 
 export function FriendRequests() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [requestMessages, setRequestMessages] = useState<Record<number, string>>({});
+  const [requestMessages, setRequestMessages] = useState<
+    Record<number, string>
+  >({});
   const [showSendDialog, setShowSendDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch friend requests
-  const { data: receivedRequests = [], isLoading: loadingReceived } = useQuery<FriendRequest[]>({
+  const { data: receivedRequests = [], isLoading: loadingReceived } = useQuery<
+    FriendRequest[]
+  >({
     queryKey: ["/api/friend-requests/received"],
   });
 
-  const { data: sentRequests = [], isLoading: loadingSent } = useQuery<FriendRequest[]>({
+  const { data: sentRequests = [], isLoading: loadingSent } = useQuery<
+    FriendRequest[]
+  >({
     queryKey: ["/api/friend-requests/sent"],
   });
 
-  const { data: friendSuggestions = [], isLoading: loadingSuggestions } = useQuery<User[]>({
-    queryKey: ["/api/friend-suggestions"],
+  const { data: friendSuggestions = [], isLoading: loadingSuggestions } =
+    useQuery<User[]>({
+      queryKey: ["/api/friend-suggestions"],
+    });
+
+  // Search users query
+  const { data: searchResults = [], isLoading: loadingSearch } = useQuery<
+    User[]
+  >({
+    queryKey: ["/api/users/search", searchQuery],
+    enabled: searchQuery.length > 2,
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   const { data: friends = [], isLoading: loadingFriends } = useQuery<User[]>({
@@ -68,23 +102,58 @@ export function FriendRequests() {
     refetchOnMount: true,
   });
 
+  // Get current user info
+  const { data: currentUser } = useQuery<User>({
+    queryKey: ["/api/auth/me"],
+  });
 
+  // Remove friend mutation
+  const removeFriendMutation = useMutation({
+    mutationFn: async (friendId: number) => {
+      return apiRequest("DELETE", `/api/friends/${friendId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Friend removed",
+        description: "Friend has been removed successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove friend",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Mutations
   const sendRequestMutation = useMutation({
-    mutationFn: async ({ receiverId, message }: { receiverId: number; message?: string }) => {
-      return apiRequest("POST", "/api/friend-requests", { receiverId, message });
+    mutationFn: async ({
+      receiverId,
+      message,
+    }: {
+      receiverId: number;
+      message?: string;
+    }) => {
+      return apiRequest("POST", "/api/friend-requests", {
+        receiverId,
+        message,
+      });
     },
     onSuccess: () => {
       toast({
         title: "Friend request sent",
         description: "Your friend request has been sent successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/friend-requests/sent"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/friend-requests/sent"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/friend-suggestions"] });
       setShowSendDialog(false);
       if (selectedUser) {
-        setRequestMessages(prev => ({ ...prev, [selectedUser.id]: "" }));
+        setRequestMessages((prev) => ({ ...prev, [selectedUser.id]: "" }));
       }
       setSelectedUser(null);
     },
@@ -98,17 +167,29 @@ export function FriendRequests() {
   });
 
   const respondToRequestMutation = useMutation({
-    mutationFn: async ({ requestId, action }: { requestId: number; action: 'accept' | 'decline' }) => {
+    mutationFn: async ({
+      requestId,
+      action,
+    }: {
+      requestId: number;
+      action: "accept" | "decline";
+    }) => {
       return apiRequest("PUT", `/api/friend-requests/${requestId}`, { action });
     },
     onSuccess: (_, { action }) => {
       toast({
-        title: action === 'accept' ? "Friend request accepted" : "Friend request declined",
-        description: action === 'accept' 
-          ? "You are now friends!" 
-          : "Friend request has been declined.",
+        title:
+          action === "accept"
+            ? "Friend request accepted"
+            : "Friend request declined",
+        description:
+          action === "accept"
+            ? "You are now friends!"
+            : "Friend request has been declined.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/friend-requests/received"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/friend-requests/received"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
     },
     onError: (error: any) => {
@@ -127,7 +208,7 @@ export function FriendRequests() {
 
   const handleConfirmSendRequest = () => {
     if (!selectedUser) return;
-    
+
     const message = requestMessages[selectedUser.id] || "";
     sendRequestMutation.mutate({
       receiverId: selectedUser.id,
@@ -135,15 +216,29 @@ export function FriendRequests() {
     });
   };
 
-  const handleRespondToRequest = (requestId: number, action: 'accept' | 'decline') => {
+  const handleRespondToRequest = (
+    requestId: number,
+    action: "accept" | "decline"
+  ) => {
     respondToRequestMutation.mutate({ requestId, action });
+  };
+
+  const handleRemoveFriend = (friendId: number) => {
+    if (window.confirm("Are you sure you want to remove this friend?")) {
+      removeFriendMutation.mutate(friendId);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Users className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">Friends & Connections</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Users className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">Friends & Connections</h1>
+        </div>
+        {currentUser && (
+          <div className="text-sm text-gray-600">{friends.length} friends</div>
+        )}
       </div>
 
       <Tabs defaultValue="suggestions" className="w-full">
@@ -177,7 +272,18 @@ export function FriendRequests() {
               <CardTitle>People You May Know</CardTitle>
             </CardHeader>
             <CardContent>
-              {loadingSuggestions ? (
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search for users to add as friends..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              {loadingSuggestions || loadingSearch ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...Array(6)].map((_, i) => (
                     <div key={i} className="animate-pulse">
@@ -185,23 +291,40 @@ export function FriendRequests() {
                     </div>
                   ))}
                 </div>
-              ) : friendSuggestions.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No friend suggestions available</p>
+              ) : (searchQuery.length > 2 ? searchResults : friendSuggestions)
+                  .length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  {searchQuery.length > 2
+                    ? "No users found matching your search"
+                    : "No friend suggestions available"}
+                </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {friendSuggestions.map((user: User) => (
+                  {(searchQuery.length > 2
+                    ? searchResults
+                    : friendSuggestions
+                  ).map((user: User) => (
                     <Card key={user.id} className="p-4">
                       <div className="flex flex-col items-center text-center space-y-3">
-                        <Link href={`/profile/${user.id}`} className="flex flex-col items-center space-y-2 cursor-pointer hover:opacity-80">
+                        <Link
+                          href={`/profile/${user.id}`}
+                          className="flex flex-col items-center space-y-2 cursor-pointer hover:opacity-80"
+                        >
                           <Avatar className="h-16 w-16">
                             <AvatarImage src={user.avatar || undefined} />
-                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>
+                              {user.name.charAt(0)}
+                            </AvatarFallback>
                           </Avatar>
                           <div>
                             <h3 className="font-semibold">{user.name}</h3>
-                            <p className="text-sm text-gray-500">@{user.username}</p>
+                            <p className="text-sm text-gray-500">
+                              @{user.username}
+                            </p>
                             {user.bio && (
-                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">{user.bio}</p>
+                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                                {user.bio}
+                              </p>
                             )}
                           </div>
                         </Link>
@@ -232,7 +355,10 @@ export function FriendRequests() {
               {loadingReceived ? (
                 <div className="space-y-4">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse flex items-center space-x-4">
+                    <div
+                      key={i}
+                      className="animate-pulse flex items-center space-x-4"
+                    >
                       <div className="bg-gray-200 rounded-full h-12 w-12"></div>
                       <div className="flex-1 space-y-2">
                         <div className="bg-gray-200 h-4 rounded w-1/4"></div>
@@ -242,25 +368,46 @@ export function FriendRequests() {
                   ))}
                 </div>
               ) : receivedRequests.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No pending friend requests</p>
+                <p className="text-gray-500 text-center py-8">
+                  No pending friend requests
+                </p>
               ) : (
                 <div className="space-y-4">
                   {receivedRequests.map((request: FriendRequest) => (
-                    <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div
+                      key={request.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
                       <div className="flex items-center space-x-4">
-                        <Link href={`/profile/${request.sender.id}`} className="cursor-pointer hover:opacity-80">
+                        <Link
+                          href={`/profile/${request.sender.id}`}
+                          className="cursor-pointer hover:opacity-80"
+                        >
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={request.sender.avatar || undefined} />
-                            <AvatarFallback>{request.sender.name.charAt(0)}</AvatarFallback>
+                            <AvatarImage
+                              src={request.sender.avatar || undefined}
+                            />
+                            <AvatarFallback>
+                              {request.sender.name.charAt(0)}
+                            </AvatarFallback>
                           </Avatar>
                         </Link>
                         <div>
-                          <Link href={`/profile/${request.sender.id}`} className="cursor-pointer hover:opacity-80">
-                            <h3 className="font-semibold">{request.sender.name}</h3>
-                            <p className="text-sm text-gray-500">@{request.sender.username}</p>
+                          <Link
+                            href={`/profile/${request.sender.id}`}
+                            className="cursor-pointer hover:opacity-80"
+                          >
+                            <h3 className="font-semibold">
+                              {request.sender.name}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              @{request.sender.username}
+                            </p>
                           </Link>
                           {request.message && (
-                            <p className="text-sm text-gray-600 mt-1 italic">"{request.message}"</p>
+                            <p className="text-sm text-gray-600 mt-1 italic">
+                              "{request.message}"
+                            </p>
                           )}
                           <p className="text-xs text-gray-400">
                             {new Date(request.createdAt).toLocaleDateString()}
@@ -269,7 +416,9 @@ export function FriendRequests() {
                       </div>
                       <div className="flex space-x-2">
                         <Button
-                          onClick={() => handleRespondToRequest(request.id, 'accept')}
+                          onClick={() =>
+                            handleRespondToRequest(request.id, "accept")
+                          }
                           disabled={respondToRequestMutation.isPending}
                           size="sm"
                         >
@@ -277,7 +426,9 @@ export function FriendRequests() {
                           Accept
                         </Button>
                         <Button
-                          onClick={() => handleRespondToRequest(request.id, 'decline')}
+                          onClick={() =>
+                            handleRespondToRequest(request.id, "decline")
+                          }
                           disabled={respondToRequestMutation.isPending}
                           variant="outline"
                           size="sm"
@@ -303,7 +454,10 @@ export function FriendRequests() {
               {loadingSent ? (
                 <div className="space-y-4">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse flex items-center space-x-4">
+                    <div
+                      key={i}
+                      className="animate-pulse flex items-center space-x-4"
+                    >
                       <div className="bg-gray-200 rounded-full h-12 w-12"></div>
                       <div className="flex-1 space-y-2">
                         <div className="bg-gray-200 h-4 rounded w-1/4"></div>
@@ -313,32 +467,57 @@ export function FriendRequests() {
                   ))}
                 </div>
               ) : sentRequests.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No sent friend requests</p>
+                <p className="text-gray-500 text-center py-8">
+                  No sent friend requests
+                </p>
               ) : (
                 <div className="space-y-4">
                   {sentRequests.map((request: FriendRequest) => (
-                    <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div
+                      key={request.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
                       <div className="flex items-center space-x-4">
-                        <Link href={`/profile/${request.receiver.id}`} className="cursor-pointer hover:opacity-80">
+                        <Link
+                          href={`/profile/${request.receiver.id}`}
+                          className="cursor-pointer hover:opacity-80"
+                        >
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={request.receiver.avatar || undefined} />
-                            <AvatarFallback>{request.receiver.name.charAt(0)}</AvatarFallback>
+                            <AvatarImage
+                              src={request.receiver.avatar || undefined}
+                            />
+                            <AvatarFallback>
+                              {request.receiver.name.charAt(0)}
+                            </AvatarFallback>
                           </Avatar>
                         </Link>
                         <div>
-                          <Link href={`/profile/${request.receiver.id}`} className="cursor-pointer hover:opacity-80">
-                            <h3 className="font-semibold">{request.receiver.name}</h3>
-                            <p className="text-sm text-gray-500">@{request.receiver.username}</p>
+                          <Link
+                            href={`/profile/${request.receiver.id}`}
+                            className="cursor-pointer hover:opacity-80"
+                          >
+                            <h3 className="font-semibold">
+                              {request.receiver.name}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              @{request.receiver.username}
+                            </p>
                           </Link>
                           {request.message && (
-                            <p className="text-sm text-gray-600 mt-1 italic">"{request.message}"</p>
+                            <p className="text-sm text-gray-600 mt-1 italic">
+                              "{request.message}"
+                            </p>
                           )}
                           <p className="text-xs text-gray-400">
-                            Sent {new Date(request.createdAt).toLocaleDateString()}
+                            Sent{" "}
+                            {new Date(request.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
-                      <Badge variant="secondary" className="flex items-center gap-1">
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
                         <Clock className="h-3 w-3" />
                         Pending
                       </Badge>
@@ -365,29 +544,54 @@ export function FriendRequests() {
                   ))}
                 </div>
               ) : friends.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">You haven't added any friends yet</p>
+                <p className="text-gray-500 text-center py-8">
+                  You haven't added any friends yet
+                </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {friends.map((friend: User) => (
                     <Card key={friend.id} className="p-4">
                       <div className="flex flex-col items-center text-center space-y-3">
-                        <Link href={`/profile/${friend.id}`} className="flex flex-col items-center space-y-2 cursor-pointer hover:opacity-80">
+                        <Link
+                          href={`/profile/${friend.id}`}
+                          className="flex flex-col items-center space-y-2 cursor-pointer hover:opacity-80"
+                        >
                           <Avatar className="h-16 w-16">
                             <AvatarImage src={friend.avatar || undefined} />
-                            <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>
+                              {friend.name.charAt(0)}
+                            </AvatarFallback>
                           </Avatar>
                           <div>
                             <h3 className="font-semibold">{friend.name}</h3>
-                            <p className="text-sm text-gray-500">@{friend.username}</p>
+                            <p className="text-sm text-gray-500">
+                              @{friend.username}
+                            </p>
                             {friend.bio && (
-                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">{friend.bio}</p>
+                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                                {friend.bio}
+                              </p>
                             )}
                           </div>
                         </Link>
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <UserCheck className="h-3 w-3" />
-                          Friends
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className="flex items-center gap-1"
+                          >
+                            <UserCheck className="h-3 w-3" />
+                            Friends
+                          </Badge>
+                          <Button
+                            onClick={() => handleRemoveFriend(friend.id)}
+                            disabled={removeFriendMutation.isPending}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -413,7 +617,9 @@ export function FriendRequests() {
                 </Avatar>
                 <div>
                   <h3 className="font-semibold">{selectedUser.name}</h3>
-                  <p className="text-sm text-gray-500">@{selectedUser.username}</p>
+                  <p className="text-sm text-gray-500">
+                    @{selectedUser.username}
+                  </p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -422,10 +628,12 @@ export function FriendRequests() {
                   id="message"
                   placeholder="Say something nice..."
                   value={requestMessages[selectedUser.id] || ""}
-                  onChange={(e) => setRequestMessages(prev => ({ 
-                    ...prev, 
-                    [selectedUser.id]: e.target.value 
-                  }))}
+                  onChange={(e) =>
+                    setRequestMessages((prev) => ({
+                      ...prev,
+                      [selectedUser.id]: e.target.value,
+                    }))
+                  }
                   rows={3}
                 />
               </div>
@@ -440,7 +648,9 @@ export function FriendRequests() {
                   onClick={handleConfirmSendRequest}
                   disabled={sendRequestMutation.isPending}
                 >
-                  {sendRequestMutation.isPending ? "Sending..." : "Send Request"}
+                  {sendRequestMutation.isPending
+                    ? "Sending..."
+                    : "Send Request"}
                 </Button>
               </div>
             </div>
