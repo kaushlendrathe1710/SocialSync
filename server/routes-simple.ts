@@ -3791,6 +3791,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  app.put(
+    "/api/status/:id",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      try {
+        const { id } = req.params;
+        const statusId = parseInt(id);
+        const updates = req.body || {};
+
+        const updated = await storage.updateStatusUpdate(
+          statusId,
+          req.session.userId!,
+          updates
+        );
+        res.json(updated);
+      } catch (error) {
+        console.error("Update status error:", error);
+        res.status(500).json({ message: "Failed to update status" });
+      }
+    }
+  );
+
+  app.delete(
+    "/api/status/:id",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      try {
+        const { id } = req.params;
+        const statusId = parseInt(id);
+
+        const ok = await storage.deleteStatusUpdate(
+          statusId,
+          req.session.userId!
+        );
+        if (!ok) return res.status(404).json({ message: "Not found" });
+        res.json({ success: true });
+      } catch (error) {
+        console.error("Delete status error:", error);
+        res.status(500).json({ message: "Failed to delete status" });
+      }
+    }
+  );
+
   app.post(
     "/api/status/:id/vote",
     requireAuth,
