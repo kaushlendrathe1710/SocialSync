@@ -726,6 +726,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const status = await storage.createStatusUpdate(statusData);
+      // Broadcast via WebSocket if available
+      try {
+        if (wss) {
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(
+                JSON.stringify({ type: "status_created", data: status })
+              );
+            }
+          });
+        }
+      } catch {}
       res.json(status);
     } catch (error: any) {
       console.error("Create status error:", error);
@@ -755,6 +767,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.userId!,
         reaction
       );
+      // Notify creator via WebSocket and create notification
+      try {
+        const status = await storage.getStatusById(statusId);
+        if (status && status.userId && status.userId !== req.session.userId) {
+          // Create notification record
+          await storage.createNotification({
+            userId: status.userId,
+            type: "status_reaction",
+            fromUserId: req.session.userId!,
+            postId: undefined,
+            isRead: false,
+          });
+
+          if (wss) {
+            wss.clients.forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(
+                  JSON.stringify({
+                    type: "new_notification",
+                    data: {
+                      message: "Someone reacted to your status",
+                      statusId,
+                    },
+                  })
+                );
+              }
+            });
+          }
+        }
+      } catch {}
       res.json(result);
     } catch (error) {
       console.error("React to status error:", error);

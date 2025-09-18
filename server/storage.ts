@@ -29,6 +29,7 @@ import {
   shoppingPosts,
   events,
   eventAttendees,
+  statusUpdates,
   savedPosts,
   mentorProfiles,
   mentorshipRequests,
@@ -389,7 +390,6 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   private reels: any[] = [];
-  private inMemoryStatuses: any[] = [];
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
@@ -2912,6 +2912,15 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Create status update error:", error);
       throw error;
+    }
+  }
+
+  async getStatusById(statusId: number): Promise<any | undefined> {
+    try {
+      return this.inMemoryStatuses.find((s) => s.id === statusId);
+    } catch (error) {
+      console.error("Get status by id error:", error);
+      return undefined;
     }
   }
 

@@ -115,6 +115,7 @@ export default function StatusPage() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [wsConnected, setWsConnected] = useState(false);
 
   // Fetch status updates
   const {
@@ -124,6 +125,35 @@ export default function StatusPage() {
   } = useQuery<StatusUpdate[]>({
     queryKey: ["/api/status"],
   });
+
+  // Realtime subscribe to status events
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const ws = new WebSocket(wsUrl);
+    ws.onopen = () => {
+      setWsConnected(true);
+    };
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "status_created") {
+          // Refresh list when new status arrives
+          queryClient.invalidateQueries({ queryKey: ["/api/status"] });
+        } else if (msg.type === "status_reacted") {
+          // Refresh list when reactions change
+          queryClient.invalidateQueries({ queryKey: ["/api/status"] });
+        }
+      } catch (e) {}
+    };
+    ws.onclose = () => setWsConnected(false);
+    ws.onerror = () => setWsConnected(false);
+    return () => {
+      try {
+        ws.close();
+      } catch {}
+    };
+  }, [queryClient]);
 
   // Log for debugging
   console.log("Status updates data:", statusUpdates);
