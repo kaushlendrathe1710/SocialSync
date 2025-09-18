@@ -632,6 +632,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== STATUS API ROUTES ==========
+  app.get("/api/status", async (req, res) => {
+    try {
+      const statusUpdates = await storage.getStatusUpdates(req.session.userId);
+      res.json(statusUpdates);
+    } catch (error) {
+      console.error("Get status updates error:", error);
+      res.status(500).json({ message: "Failed to get status updates" });
+    }
+  });
+
+  app.post("/api/status", requireAuth, upload.any(), async (req, res) => {
+    try {
+      const {
+        type,
+        content,
+        backgroundColor,
+        fontStyle,
+        pollOptions,
+        question,
+        privacy = "public",
+      } = req.body as any;
+
+      if (type === "text" && !content) {
+        return res
+          .status(400)
+          .json({ message: "Content is required for text status" });
+      }
+      if (type === "poll" && (!pollOptions || !content)) {
+        return res.status(400).json({
+          message: "Poll options and content are required for poll status",
+        });
+      }
+      if (type === "question" && !question) {
+        return res
+          .status(400)
+          .json({ message: "Question is required for question status" });
+      }
+
+      let mediaUrl: string | null = null;
+      const files = (req.files as Express.Multer.File[]) || [];
+      if (files.length > 0) {
+        if (files.length === 1) {
+          const f = files[0];
+          const ext = path.extname(f.originalname);
+          const fileName = `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(7)}${ext}`;
+          const filePath = path.join("uploads", fileName);
+          fs.renameSync(f.path, filePath);
+          mediaUrl = `/uploads/${fileName}`;
+        } else {
+          const urls: string[] = [];
+          for (const f of files) {
+            const ext = path.extname(f.originalname);
+            const fileName = `${Date.now()}-${Math.random()
+              .toString(36)
+              .substring(7)}${ext}`;
+            const filePath = path.join("uploads", fileName);
+            fs.renameSync(f.path, filePath);
+            urls.push(`/uploads/${fileName}`);
+          }
+          mediaUrl = urls.join(",");
+        }
+      }
+
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const statusData: any = {
+        userId: req.session.userId,
+        type,
+        content: content || null,
+        mediaUrl,
+        backgroundColor: backgroundColor || null,
+        fontStyle: fontStyle || null,
+        question: question || null,
+        privacy,
+        expiresAt,
+      };
+
+      if (type === "poll" && pollOptions) {
+        try {
+          const parsed = Array.isArray(pollOptions)
+            ? pollOptions
+            : JSON.parse(pollOptions as string);
+          statusData.pollOptions = parsed;
+          statusData.pollVotes = new Array(parsed.length).fill(0);
+        } catch (e) {
+          return res
+            .status(400)
+            .json({ message: "Invalid poll options format" });
+        }
+      }
+
+      const status = await storage.createStatusUpdate(statusData);
+      res.json(status);
+    } catch (error: any) {
+      console.error("Create status error:", error);
+      res
+        .status(500)
+        .json({ message: "Failed to create status", error: error.message });
+    }
+  });
+
+  app.post("/api/status/:id/view", requireAuth, async (req, res) => {
+    try {
+      const statusId = parseInt(req.params.id);
+      await storage.markStatusViewed(statusId, req.session.userId!);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark status viewed error:", error);
+      res.status(500).json({ message: "Failed to mark status as viewed" });
+    }
+  });
+
+  app.post("/api/status/:id/react", requireAuth, async (req, res) => {
+    try {
+      const statusId = parseInt(req.params.id);
+      const { reaction } = req.body as any;
+      const result = await storage.reactToStatus(
+        statusId,
+        req.session.userId!,
+        reaction
+      );
+      res.json(result);
+    } catch (error) {
+      console.error("React to status error:", error);
+      res.status(500).json({ message: "Failed to react to status" });
+    }
+  });
+
+  app.post("/api/status/:id/vote", requireAuth, async (req, res) => {
+    try {
+      const statusId = parseInt(req.params.id);
+      const { optionIndex } = req.body as any;
+      if (typeof optionIndex !== "number" || optionIndex < 0) {
+        return res
+          .status(400)
+          .json({ message: "Valid option index is required" });
+      }
+      const result = await storage.voteOnStatusPoll(
+        statusId,
+        req.session.userId!,
+        optionIndex
+      );
+      res.json(result);
+    } catch (error) {
+      console.error("Vote on status poll error:", error);
+      res.status(500).json({ message: "Failed to vote on poll" });
+    }
+  });
+
+  app.put("/api/status/:id", requireAuth, async (req, res) => {
+    try {
+      const statusId = parseInt(req.params.id);
+      const updated = await storage.updateStatusUpdate(
+        statusId,
+        req.session.userId!,
+        req.body || {}
+      );
+      res.json(updated);
+    } catch (error) {
+      console.error("Update status error:", error);
+      res.status(500).json({ message: "Failed to update status" });
+    }
+  });
+
+  app.delete("/api/status/:id", requireAuth, async (req, res) => {
+    try {
+      const statusId = parseInt(req.params.id);
+      const ok = await storage.deleteStatusUpdate(
+        statusId,
+        req.session.userId!
+      );
+      if (!ok) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete status error:", error);
+      res.status(500).json({ message: "Failed to delete status" });
+    }
+  });
+
   app.post("/api/posts/:id/comments", requireAuth, async (req, res) => {
     try {
       const postId = parseInt(req.params.id);

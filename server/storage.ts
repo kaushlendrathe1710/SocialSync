@@ -194,6 +194,38 @@ export interface IStorage {
   getActiveStories(userId?: number): Promise<(Story & { user: User })[]>;
   deleteStory(id: number): Promise<boolean>;
 
+  // Status update methods
+  getStatusUpdates(userId?: number): Promise<any[]>;
+  createStatusUpdate(data: any): Promise<any>;
+  markStatusViewed(statusId: number, userId: number): Promise<void>;
+  reactToStatus(
+    statusId: number,
+    userId: number,
+    reaction: string
+  ): Promise<any>;
+  updateStatusUpdate(
+    statusId: number,
+    userId: number,
+    updates: Partial<{
+      content: string | null;
+      backgroundColor: string | null;
+      fontStyle: string | null;
+      privacy: string;
+      isHighlighted: boolean;
+      highlightCategory: string | null;
+      pollOptions: string[] | null;
+      pollVotes: number[] | null;
+      question: string | null;
+      mediaUrl: string | null;
+    }>
+  ): Promise<any>;
+  deleteStatusUpdate(statusId: number, userId: number): Promise<boolean>;
+  voteOnStatusPoll(
+    statusId: number,
+    userId: number,
+    optionIndex: number
+  ): Promise<any>;
+
   // Message methods
   createMessage(message: InsertMessage): Promise<Message>;
   getConversation(userId1: number, userId2: number): Promise<MessageWithUser[]>;
@@ -357,6 +389,7 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   private reels: any[] = [];
+  private inMemoryStatuses: any[] = [];
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
@@ -2822,62 +2855,18 @@ export class DatabaseStorage implements IStorage {
 
   async getStatusUpdates(userId?: number): Promise<any[]> {
     try {
-      return [
-        {
-          id: 1,
-          userId: 1,
-          type: "photo",
-          content: "Loving this new lipstick shade! What do you think?",
-          mediaUrl: "/uploads/status1.jpg",
-          backgroundColor: null,
-          fontStyle: null,
-          pollOptions: null,
-          pollVotes: null,
-          question: null,
-          privacy: "public",
-          viewsCount: 45,
-          reactionsCount: 12,
-          expiresAt: new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString(),
-          isHighlighted: false,
-          createdAt: new Date().toISOString(),
-          user: {
-            id: 1,
-            name: "Beauty Guru",
-            username: "beautyguru",
-            avatar: "/uploads/avatar1.jpg",
-          },
-          hasViewed: false,
-        },
-        {
-          id: 2,
-          userId: 2,
-          type: "poll",
-          content: "Which skincare routine is better for oily skin?",
-          mediaUrl: null,
-          backgroundColor: "#4F46E5",
-          fontStyle: "font-bold",
-          pollOptions: [
-            "Morning cleanse + toner",
-            "Double cleanse method",
-            "Oil cleansing only",
-          ],
-          pollVotes: [15, 23, 8],
-          question: null,
-          privacy: "public",
-          viewsCount: 67,
-          reactionsCount: 8,
-          expiresAt: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
-          isHighlighted: false,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          user: {
-            id: 2,
-            name: "Skincare Expert",
-            username: "skincareexpert",
-            avatar: "/uploads/avatar2.jpg",
-          },
-          hasViewed: true,
-        },
-      ];
+      // Filter out expired
+      const now = Date.now();
+      this.inMemoryStatuses = this.inMemoryStatuses.filter(
+        (s) => new Date(s.expiresAt).getTime() > now
+      );
+      // Return sanitized, serializable objects
+      return this.inMemoryStatuses.map((s) => ({
+        ...s,
+        viewers: undefined,
+        reactions: undefined,
+        pollVoters: undefined,
+      }));
     } catch (error) {
       console.error("Get status updates error:", error);
       return [];
@@ -2886,8 +2875,10 @@ export class DatabaseStorage implements IStorage {
 
   async createStatusUpdate(data: any): Promise<any> {
     try {
+      // Fetch user for proper attribution
+      const user = await this.getUser(data.userId);
       const newStatus = {
-        id: Math.floor(Math.random() * 10000),
+        id: Date.now(),
         userId: data.userId,
         type: data.type,
         content: data.content,
@@ -2895,7 +2886,11 @@ export class DatabaseStorage implements IStorage {
         backgroundColor: data.backgroundColor,
         fontStyle: data.fontStyle,
         pollOptions: data.pollOptions,
-        pollVotes: data.pollVotes,
+        pollVotes:
+          data.pollVotes ||
+          (data.pollOptions
+            ? new Array(data.pollOptions.length).fill(0)
+            : null),
         question: data.question,
         privacy: data.privacy || "public",
         viewsCount: 0,
@@ -2905,13 +2900,14 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date().toISOString(),
         user: {
           id: data.userId,
-          name: "Current User",
-          username: "currentuser",
-          avatar: "/uploads/default-avatar.jpg",
+          name: user?.name || user?.email?.split("@")[0] || "User",
+          username: user?.username || user?.email?.split("@")[0] || "user",
+          avatar: user?.avatar || "/uploads/default-avatar.jpg",
         },
         hasViewed: false,
       };
 
+      this.inMemoryStatuses.unshift(newStatus);
       return newStatus;
     } catch (error) {
       console.error("Create status update error:", error);
@@ -2921,7 +2917,15 @@ export class DatabaseStorage implements IStorage {
 
   async markStatusViewed(statusId: number, userId: number): Promise<void> {
     try {
-      console.log(`Status ${statusId} viewed by user ${userId}`);
+      const s = this.inMemoryStatuses.find((x) => x.id === statusId);
+      if (s) {
+        if (!s.viewers) s.viewers = new Set<number>();
+        if (!s.viewers.has(userId)) {
+          s.viewers.add(userId);
+          s.viewsCount = (s.viewsCount || 0) + 1;
+          s.hasViewed = true;
+        }
+      }
     } catch (error) {
       console.error("Mark status viewed error:", error);
       throw error;
@@ -2934,13 +2938,150 @@ export class DatabaseStorage implements IStorage {
     reaction: string
   ): Promise<any> {
     try {
-      return {
-        success: true,
-        reaction: reaction,
-        reactionCount: Math.floor(Math.random() * 50) + 1,
-      };
+      const s = this.inMemoryStatuses.find((x) => x.id === statusId);
+      if (s) {
+        if (!s.reactions) s.reactions = new Map<string, Set<number>>();
+        if (!s.reactions.has(reaction)) s.reactions.set(reaction, new Set());
+        const set = s.reactions.get(reaction)!;
+        if (set.has(userId)) {
+          set.delete(userId);
+        } else {
+          set.add(userId);
+        }
+        s.reactionsCount = Array.from(s.reactions.values()).reduce(
+          (sum, set) => sum + set.size,
+          0
+        );
+        return { success: true, reaction, reactionCount: s.reactionsCount };
+      }
+      return { success: false };
     } catch (error) {
       console.error("React to status error:", error);
+      throw error;
+    }
+  }
+
+  async updateStatusUpdate(
+    statusId: number,
+    userId: number,
+    updates: Partial<{
+      content: string | null;
+      backgroundColor: string | null;
+      fontStyle: string | null;
+      privacy: string;
+      isHighlighted: boolean;
+      highlightCategory: string | null;
+      pollOptions: string[] | null;
+      pollVotes: number[] | null;
+      question: string | null;
+      mediaUrl: string | null;
+    }>
+  ): Promise<any> {
+    try {
+      const idx = this.inMemoryStatuses.findIndex((x) => x.id === statusId);
+      if (idx === -1) return null;
+      const s = this.inMemoryStatuses[idx];
+      if (s.userId !== userId) return null;
+      const updated = { ...s, ...updates, updatedAt: new Date().toISOString() };
+      this.inMemoryStatuses[idx] = updated;
+      return updated;
+    } catch (error) {
+      console.error("Update status error:", error);
+      throw error;
+    }
+  }
+
+  async deleteStatusUpdate(statusId: number, userId: number): Promise<boolean> {
+    try {
+      const before = this.inMemoryStatuses.length;
+      this.inMemoryStatuses = this.inMemoryStatuses.filter(
+        (s) => !(s.id === statusId && s.userId === userId)
+      );
+      return this.inMemoryStatuses.length < before;
+    } catch (error) {
+      console.error("Delete status error:", error);
+      return false;
+    }
+  }
+
+  async voteOnStatusPoll(
+    statusId: number,
+    userId: number,
+    optionIndex: number
+  ): Promise<any> {
+    try {
+      const s = this.inMemoryStatuses.find((x) => x.id === statusId);
+      if (!s || !Array.isArray(s.pollVotes)) return { success: false };
+      if (!s.pollVoters) s.pollVoters = new Map<number, number>();
+      if (s.pollVoters.has(userId)) {
+        // change vote: decrement old
+        const prev = s.pollVoters.get(userId)!;
+        s.pollVotes[prev] = Math.max(0, (s.pollVotes[prev] || 0) - 1);
+      }
+      s.pollVotes[optionIndex] = (s.pollVotes[optionIndex] || 0) + 1;
+      s.pollVoters.set(userId, optionIndex);
+      return { success: true, pollVotes: s.pollVotes };
+    } catch (error) {
+      console.error("Vote on status poll error:", error);
+      throw error;
+    }
+  }
+
+  async updateStatusUpdate(
+    statusId: number,
+    userId: number,
+    updates: Partial<{
+      content: string | null;
+      backgroundColor: string | null;
+      fontStyle: string | null;
+      privacy: string;
+      isHighlighted: boolean;
+      highlightCategory: string | null;
+      pollOptions: string[] | null;
+      pollVotes: number[] | null;
+      question: string | null;
+      mediaUrl: string | null;
+    }>
+  ): Promise<any> {
+    try {
+      // Mock: return merged object with provided updates
+      return {
+        id: statusId,
+        userId,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("Update status error:", error);
+      throw error;
+    }
+  }
+
+  async deleteStatusUpdate(statusId: number, userId: number): Promise<boolean> {
+    try {
+      console.log(`Deleting status ${statusId} by user ${userId}`);
+      return true;
+    } catch (error) {
+      console.error("Delete status error:", error);
+      return false;
+    }
+  }
+
+  async voteOnStatusPoll(
+    statusId: number,
+    userId: number,
+    optionIndex: number
+  ): Promise<any> {
+    try {
+      return {
+        success: true,
+        statusId,
+        userId,
+        optionIndex,
+        pollVotes: [],
+      };
+    } catch (error) {
+      console.error("Vote on status poll error:", error);
       throw error;
     }
   }
