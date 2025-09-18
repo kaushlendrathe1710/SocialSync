@@ -367,19 +367,28 @@ export default function ReelsPage() {
     }
   };
 
-  // Auto-play current video and handle direct reel links
+  // Auto-play current video, pause others, ensure only current has audio
   useEffect(() => {
-    Object.values(videoRefs.current).forEach((video, index) => {
-      if (video) {
-        if (index === currentReelIndex) {
-          video.play();
-          setIsPlaying(true);
-        } else {
+    Object.entries(videoRefs.current).forEach(([key, video]) => {
+      if (!video) return;
+      const idx = Number(key);
+      if (idx === currentReelIndex) {
+        try {
+          video.muted = isMuted;
+          const p = video.play();
+          if (p && typeof p.then === "function")
+            p.then(() => setIsPlaying(true)).catch(() => {});
+          else setIsPlaying(true);
+        } catch {}
+      } else {
+        try {
           video.pause();
-        }
+          video.currentTime = 0;
+          video.muted = true;
+        } catch {}
       }
     });
-  }, [currentReelIndex]);
+  }, [currentReelIndex, isMuted]);
 
   // Handle direct reel link navigation
   useEffect(() => {
@@ -637,30 +646,41 @@ export default function ReelsPage() {
             className="relative h-screen snap-start flex items-center justify-center"
           >
             {/* Video with double-tap to like */}
-            <video
-              ref={(el) => {
-                if (el) videoRefs.current[index] = el;
-              }}
-              src={reel.videoUrl}
-              className="h-full w-auto max-w-full object-cover bg-gray-900 cursor-pointer"
-              loop
-              muted={isMuted}
-              playsInline
-              autoPlay={index === currentReelIndex}
-              preload="metadata"
-              onClick={() => togglePlayPause(index)}
-              onDoubleClick={() => handleDoubleTap(reel.id)}
-              onError={(e) => {
-                console.error("Video error:", e);
-                console.error("Video src:", reel.videoUrl);
-              }}
-              onLoadStart={() => console.log("Video loading:", reel.videoUrl)}
-              onCanPlay={() => console.log("Video can play:", reel.videoUrl)}
-              onPlay={() => {
-                // Record view when playback starts
-                apiRequest("POST", `/api/reels/${reel.id}/view`, {});
-              }}
-            />
+            <div className="relative w-full h-full flex items-center justify-center">
+              <div
+                className="relative w-[56.25vh] max-w-full"
+                style={{ aspectRatio: "9 / 16" }}
+              >
+                <video
+                  ref={(el) => {
+                    if (el) videoRefs.current[index] = el;
+                  }}
+                  src={reel.videoUrl}
+                  className="absolute inset-0 h-full w-full object-cover bg-black cursor-pointer rounded"
+                  loop
+                  muted={isMuted}
+                  playsInline
+                  autoPlay={index === currentReelIndex}
+                  preload="metadata"
+                  onClick={() => togglePlayPause(index)}
+                  onDoubleClick={() => handleDoubleTap(reel.id)}
+                  onError={(e) => {
+                    console.error("Video error:", e);
+                    console.error("Video src:", reel.videoUrl);
+                  }}
+                  onLoadStart={() =>
+                    console.log("Video loading:", reel.videoUrl)
+                  }
+                  onCanPlay={() =>
+                    console.log("Video can play:", reel.videoUrl)
+                  }
+                  onPlay={() => {
+                    // Record view when playback starts
+                    apiRequest("POST", `/api/reels/${reel.id}/view`, {});
+                  }}
+                />
+              </div>
+            </div>
 
             {/* Double-tap heart animation */}
             {showLikeAnimation[reel.id] && (

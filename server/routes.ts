@@ -20,6 +20,7 @@ import {
 import nodemailer from "nodemailer";
 import multer from "multer";
 import { uploadToS3, deleteFromS3, validateS3Config } from "./aws-s3";
+import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 
@@ -497,24 +498,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         if (!req.file)
           return res.status(400).json({ message: "Video file is required" });
+        // Transcode to Instagram-like 9:16 (720x1280), H.264/AAC, ~3Mbps
+        // Write temp input
+        const tmpIn = path.join("uploads", `tmp-in-${Date.now()}.mp4`);
+        const tmpOut = path.join("uploads", `tmp-out-${Date.now()}.mp4`);
+        fs.writeFileSync(tmpIn, req.file.buffer);
+
+        const ffmpegArgs = [
+          "-y",
+          "-i",
+          tmpIn,
+          "-vf",
+          "scale=iw:ih,setsar=1:1,scale=720:-2:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:black",
+          "-c:v",
+          "libx264",
+          "-profile:v",
+          "high",
+          "-level:v",
+          "4.1",
+          "-preset",
+          "veryfast",
+          "-b:v",
+          "3000k",
+          "-maxrate",
+          "3200k",
+          "-bufsize",
+          "6000k",
+          "-pix_fmt",
+          "yuv420p",
+          "-r",
+          "30",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "128k",
+          tmpOut,
+        ];
+
+        await new Promise<void>((resolve, reject) => {
+          const proc = spawn("ffmpeg", ffmpegArgs);
+          proc.on("error", reject);
+          proc.on("close", (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`ffmpeg exited with code ${code}`));
+          });
+        });
+
+        // Upload transcoded output
+        const outBuffer = fs.readFileSync(tmpOut);
         let videoUrl: string;
         if (validateS3Config()) {
           const uploaded = await uploadToS3(
-            req.file.buffer,
-            req.file.originalname,
-            req.file.mimetype,
+            outBuffer,
+            req.file.originalname.replace(/\.[^/.]+$/, "-reel.mp4"),
+            "video/mp4",
             "reels"
           );
           videoUrl = uploaded.url;
         } else {
-          const ext = path.extname(req.file.originalname);
-          const fileName = `${Date.now()}-${Math.random()
+          const finalName = `${Date.now()}-${Math.random()
             .toString(36)
-            .substring(7)}${ext}`;
-          const filePath = path.join("uploads", fileName);
-          fs.writeFileSync(filePath, req.file.buffer);
-          videoUrl = `/uploads/${fileName}`;
+            .substring(7)}-reel.mp4`;
+          const finalPath = path.join("uploads", finalName);
+          fs.renameSync(tmpOut, finalPath);
+          videoUrl = `/uploads/${finalName}`;
         }
+        // Cleanup temp input if still present
+        try {
+          fs.unlinkSync(tmpIn);
+        } catch {}
+        try {
+          if (fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut);
+        } catch {}
         const duration = 30;
         const {
           caption,
