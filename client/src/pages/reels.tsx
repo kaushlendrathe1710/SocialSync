@@ -606,6 +606,10 @@ export default function ReelsPage() {
               }}
               onLoadStart={() => console.log("Video loading:", reel.videoUrl)}
               onCanPlay={() => console.log("Video can play:", reel.videoUrl)}
+              onPlay={() => {
+                // Record view when playback starts
+                apiRequest("POST", `/api/reels/${reel.id}/view`, {});
+              }}
             />
 
             {/* Double-tap heart animation */}

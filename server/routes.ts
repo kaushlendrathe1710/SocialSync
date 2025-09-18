@@ -553,6 +553,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Record reel view
+  app.post("/api/reels/:id/view", async (req, res) => {
+    try {
+      const reelId = parseInt(req.params.id);
+      await storage.incrementReelView(reelId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Record reel view error:", error);
+      res.status(500).json({ message: "Failed to record view" });
+    }
+  });
+
   app.post("/api/reels/:id/like", requireAuth, async (req, res) => {
     try {
       const reelId = parseInt(req.params.id);
@@ -596,6 +608,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete reel error:", error);
       res.status(500).json({ message: "Failed to delete reel" });
+    }
+  });
+
+  // Reel comments
+  app.get("/api/reels/:id/comments", async (req, res) => {
+    try {
+      const reelId = parseInt(req.params.id);
+      const list = await storage.getReelComments(reelId);
+      res.json(list);
+    } catch (error) {
+      console.error("Get reel comments error:", error);
+      res.status(500).json({ message: "Failed to get comments" });
+    }
+  });
+
+  app.post("/api/reels/:id/comments", requireAuth, async (req, res) => {
+    try {
+      const reelId = parseInt(req.params.id);
+      const { content } = z
+        .object({ content: z.string().min(1) })
+        .parse(req.body);
+      const comment = await storage.createReelComment(
+        reelId,
+        req.session.userId!,
+        content
+      );
+      res.json(comment);
+    } catch (error) {
+      console.error("Create reel comment error:", error);
+      res.status(500).json({ message: "Failed to create comment" });
     }
   });
 

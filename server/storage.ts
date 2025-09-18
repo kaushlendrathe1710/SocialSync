@@ -2767,6 +2767,53 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async incrementReelView(reelId: number): Promise<void> {
+    try {
+      await db
+        .update(reels)
+        .set({ viewsCount: sql`${reels.viewsCount} + 1` })
+        .where(eq(reels.id, reelId));
+    } catch (error) {
+      console.error("Increment reel view error:", error);
+      throw error;
+    }
+  }
+
+  async createReelComment(
+    reelId: number,
+    userId: number,
+    content: string
+  ): Promise<any> {
+    try {
+      const [comment] = await db
+        .insert(comments)
+        .values({ postId: reelId, userId, content })
+        .returning();
+      await db
+        .update(reels)
+        .set({ commentsCount: sql`${reels.commentsCount} + 1` })
+        .where(eq(reels.id, reelId));
+      return comment;
+    } catch (error) {
+      console.error("Create reel comment error:", error);
+      throw error;
+    }
+  }
+
+  async getReelComments(reelId: number): Promise<(Comment & { user: User })[]> {
+    try {
+      const result = await db
+        .select({ comment: comments, user: users })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .where(eq(comments.postId, reelId))
+        .orderBy(asc(comments.createdAt));
+      return result.map(({ comment, user }) => ({ ...comment, user }));
+    } catch (error) {
+      console.error("Get reel comments error:", error);
+      return [];
+    }
+  }
   async saveReel(userId: number, reelId: number): Promise<void> {
     try {
       await db
