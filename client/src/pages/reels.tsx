@@ -80,6 +80,9 @@ export default function ReelsPage() {
   const [showLikeAnimation, setShowLikeAnimation] = useState<{
     [key: number]: boolean;
   }>({});
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [activeReelId, setActiveReelId] = useState<number | null>(null);
+  const [newComment, setNewComment] = useState("");
   const [newReel, setNewReel] = useState({
     caption: "",
     privacy: "public",
@@ -159,6 +162,53 @@ export default function ReelsPage() {
       toast({
         title: "Error",
         description: "Failed to update like status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Comments query (fetch when modal open)
+  const { data: reelComments = [], isLoading: commentsLoading } = useQuery({
+    queryKey: activeReelId
+      ? [`/api/reels/${activeReelId}/comments`]
+      : ["/api/reels/0/comments"],
+    enabled: commentsOpen && !!activeReelId,
+  }) as {
+    data: Array<{
+      id: number;
+      content: string;
+      user: { id: number; name: string; username?: string; avatar?: string };
+    }>;
+    isLoading: boolean;
+  };
+
+  // Create comment
+  const createCommentMutation = useMutation({
+    mutationFn: async ({
+      reelId,
+      content,
+    }: {
+      reelId: number;
+      content: string;
+    }) => {
+      const res = await apiRequest("POST", `/api/reels/${reelId}/comments`, {
+        content,
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      if (activeReelId) {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/reels/${activeReelId}/comments`],
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/reels"] });
+      }
+      setNewComment("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Comment failed",
+        description: error.message || "Could not post comment",
         variant: "destructive",
       });
     },
@@ -705,10 +755,8 @@ export default function ReelsPage() {
                       variant="ghost"
                       className="rounded-full w-12 h-12 text-white hover:bg-white/20 transition-all duration-200 hover:scale-110"
                       onClick={() => {
-                        toast({
-                          title: "Comments",
-                          description: "Comments feature coming soon!",
-                        });
+                        setActiveReelId(reel.id);
+                        setCommentsOpen(true);
                       }}
                     >
                       <MessageCircle className="w-7 h-7" />
@@ -825,6 +873,64 @@ export default function ReelsPage() {
           </div>
         </div>
       )}
+
+      {/* Comments Modal */}
+      <Dialog open={commentsOpen} onOpenChange={setCommentsOpen}>
+        <DialogContent
+          className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6"
+          aria-describedby="reel-comments"
+        >
+          <DialogHeader>
+            <DialogTitle>Comments</DialogTitle>
+          </DialogHeader>
+          <div id="reel-comments" className="space-y-4">
+            {commentsLoading ? (
+              <div className="text-sm text-gray-400">Loading comments…</div>
+            ) : reelComments.length === 0 ? (
+              <div className="text-sm text-gray-400">
+                Be the first to comment.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {reelComments.map((c) => (
+                  <div key={c.id} className="flex items-start space-x-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={c.user.avatar} />
+                      <AvatarFallback>{c.user.name?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="text-xs text-gray-400">
+                        {c.user.name}
+                        {c.user.username ? ` @${c.user.username}` : ""}
+                      </div>
+                      <div className="text-sm">{c.content}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="pt-2 flex items-center space-x-2">
+              <Input
+                placeholder="Write a comment…"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+              />
+              <Button
+                onClick={() => {
+                  if (!activeReelId || !newComment.trim()) return;
+                  createCommentMutation.mutate({
+                    reelId: activeReelId,
+                    content: newComment.trim(),
+                  });
+                }}
+                disabled={createCommentMutation.isPending || !newComment.trim()}
+              >
+                Post
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
