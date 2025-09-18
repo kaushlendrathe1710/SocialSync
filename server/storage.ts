@@ -2683,16 +2683,37 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(users, eq(reels.userId, users.id))
         .orderBy(desc(reels.createdAt));
 
-      return result.map(({ reel, user }) => ({
-        ...reel,
-        user: {
-          id: user.id,
-          name: user.name || user.email?.split("@")[0] || "User",
-          username: user.username || user.email?.split("@")[0] || "user",
-          avatar: user.avatar || "/uploads/default-avatar.jpg",
-        },
-        isLiked: false, // You can implement like tracking later
-      }));
+      const reelsWithUser = await Promise.all(
+        result.map(async ({ reel, user }) => {
+          let isLiked = false;
+          if (userId) {
+            const liked = await db
+              .select()
+              .from(likes)
+              .where(
+                and(
+                  eq(likes.userId, userId),
+                  eq(likes.postId, reel.id),
+                  eq(likes.reactionType, "like")
+                )
+              )
+              .limit(1);
+            isLiked = liked.length > 0;
+          }
+          return {
+            ...reel,
+            user: {
+              id: user.id,
+              name: user.name || user.email?.split("@")[0] || "User",
+              username: user.username || user.email?.split("@")[0] || "user",
+              avatar: user.avatar || "/uploads/default-avatar.jpg",
+            },
+            isLiked,
+          };
+        })
+      );
+
+      return reelsWithUser;
     } catch (error) {
       console.error("Get reels error:", error);
       return [];
@@ -2752,6 +2773,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       if (result.length === 0) return undefined;
       const { reel, user } = result[0] as any;
+      // Determine isLiked for current session not available here; return false by default
       return {
         ...reel,
         user: {
@@ -2760,6 +2782,7 @@ export class DatabaseStorage implements IStorage {
           username: user.username || user.email?.split("@")[0] || "user",
           avatar: user.avatar || "/uploads/default-avatar.jpg",
         },
+        isLiked: false,
       };
     } catch (error) {
       console.error("Get reel by id error:", error);
