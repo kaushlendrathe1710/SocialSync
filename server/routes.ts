@@ -19,6 +19,7 @@ import {
 } from "@shared/schema";
 import nodemailer from "nodemailer";
 import multer from "multer";
+import { uploadToS3, deleteFromS3, validateS3Config } from "./aws-s3";
 import path from "path";
 import fs from "fs";
 
@@ -47,6 +48,21 @@ const upload = multer({
     } else {
       cb(new Error("Only images and videos are allowed"));
     }
+  },
+});
+
+// Memory upload for S3-backed routes
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) return cb(null, true);
+    cb(new Error("Only images and videos are allowed"));
   },
 });
 
@@ -461,6 +477,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== REELS API ROUTES ==========
+
+  app.get("/api/reels", async (req, res) => {
+    try {
+      const all = await storage.getReels(req.session.userId);
+      res.json(all);
+    } catch (error) {
+      console.error("Get reels error:", error);
+      res.status(500).json({ message: "Failed to get reels" });
+    }
+  });
+
+  app.post(
+    "/api/reels",
+    requireAuth,
+    memoryUpload.single("video"),
+    async (req, res) => {
+      try {
+        if (!req.file)
+          return res.status(400).json({ message: "Video file is required" });
+        let videoUrl: string;
+        if (validateS3Config()) {
+          const uploaded = await uploadToS3(
+            req.file.buffer,
+            req.file.originalname,
+            req.file.mimetype,
+            "reels"
+          );
+          videoUrl = uploaded.url;
+        } else {
+          const ext = path.extname(req.file.originalname);
+          const fileName = `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(7)}${ext}`;
+          const filePath = path.join("uploads", fileName);
+          fs.writeFileSync(filePath, req.file.buffer);
+          videoUrl = `/uploads/${fileName}`;
+        }
+        const duration = 30;
+        const {
+          caption,
+          privacy = "public",
+          musicId,
+          effects,
+        } = req.body as any;
+
+        const reel = await storage.createReel({
+          userId: req.session.userId,
+          videoUrl,
+          caption: caption || null,
+          musicId: musicId ? parseInt(musicId) : null,
+          effects: effects ? JSON.parse(effects) : [],
+          duration,
+          privacy,
+        });
+
+        res.json(reel);
+      } catch (error) {
+        console.error("Create reel error:", error);
+        res.status(500).json({ message: "Failed to create reel" });
+      }
+    }
+  );
+
+  app.get("/api/reels/:id", async (req, res) => {
+    try {
+      const reelId = parseInt(req.params.id);
+      const reel = await storage.getReelById(reelId);
+      if (!reel) return res.status(404).json({ message: "Reel not found" });
+      res.json(reel);
+    } catch (error) {
+      console.error("Get reel error:", error);
+      res.status(500).json({ message: "Failed to get reel" });
+    }
+  });
+
+  app.post("/api/reels/:id/like", requireAuth, async (req, res) => {
+    try {
+      const reelId = parseInt(req.params.id);
+      const isLiked = await storage.toggleReelLike(reelId, req.session.userId!);
+      res.json({ isLiked });
+    } catch (error) {
+      console.error("Toggle reel like error:", error);
+      res.status(500).json({ message: "Failed to toggle reel like" });
+    }
+  });
+
+  app.post("/api/reels/:id/save", requireAuth, async (req, res) => {
+    try {
+      const reelId = parseInt(req.params.id);
+      await storage.saveReel(req.session.userId!, reelId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Save reel error:", error);
+      res.status(500).json({ message: "Failed to save reel" });
+    }
+  });
+
+  app.post("/api/reels/:id/share", requireAuth, async (req, res) => {
+    try {
+      const reelId = parseInt(req.params.id);
+      const { platform } = req.body as any;
+      await storage.shareReel(reelId, platform);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Share reel error:", error);
+      res.status(500).json({ message: "Failed to share reel" });
+    }
+  });
+
+  app.delete("/api/reels/:id", requireAuth, async (req, res) => {
+    try {
+      const reelId = parseInt(req.params.id);
+      const ok = await storage.deleteReel(reelId, req.session.userId!);
+      if (!ok) return res.status(404).json({ message: "Not found" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete reel error:", error);
+      res.status(500).json({ message: "Failed to delete reel" });
+    }
+  });
+
   app.post(
     "/api/posts",
     requireAuth,
@@ -643,7 +781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/status", requireAuth, upload.any(), async (req, res) => {
+  app.post("/api/status", requireAuth, memoryUpload.any(), async (req, res) => {
     try {
       const {
         type,
@@ -674,27 +812,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let mediaUrl: string | null = null;
       const files = (req.files as Express.Multer.File[]) || [];
       if (files.length > 0) {
-        if (files.length === 1) {
-          const f = files[0];
-          const ext = path.extname(f.originalname);
-          const fileName = `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(7)}${ext}`;
-          const filePath = path.join("uploads", fileName);
-          fs.renameSync(f.path, filePath);
-          mediaUrl = `/uploads/${fileName}`;
+        if (validateS3Config()) {
+          if (files.length === 1) {
+            const f = files[0];
+            const uploaded = await uploadToS3(
+              f.buffer,
+              f.originalname,
+              f.mimetype,
+              "status"
+            );
+            mediaUrl = uploaded.url;
+          } else {
+            const urls: string[] = [];
+            for (const f of files) {
+              const uploaded = await uploadToS3(
+                f.buffer,
+                f.originalname,
+                f.mimetype,
+                "status"
+              );
+              urls.push(uploaded.url);
+            }
+            mediaUrl = urls.join(",");
+          }
         } else {
-          const urls: string[] = [];
-          for (const f of files) {
+          if (files.length === 1) {
+            const f = files[0];
             const ext = path.extname(f.originalname);
             const fileName = `${Date.now()}-${Math.random()
               .toString(36)
               .substring(7)}${ext}`;
             const filePath = path.join("uploads", fileName);
-            fs.renameSync(f.path, filePath);
-            urls.push(`/uploads/${fileName}`);
+            fs.writeFileSync(filePath, f.buffer);
+            mediaUrl = `/uploads/${fileName}`;
+          } else {
+            const urls: string[] = [];
+            for (const f of files) {
+              const ext = path.extname(f.originalname);
+              const fileName = `${Date.now()}-${Math.random()
+                .toString(36)
+                .substring(7)}${ext}`;
+              const filePath = path.join("uploads", fileName);
+              fs.writeFileSync(filePath, f.buffer);
+              urls.push(`/uploads/${fileName}`);
+            }
+            mediaUrl = urls.join(",");
           }
-          mediaUrl = urls.join(",");
         }
       }
 

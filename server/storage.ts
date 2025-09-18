@@ -390,6 +390,7 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   private reels: any[] = [];
+  private inMemoryStatuses: any[] = [];
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
@@ -2741,6 +2742,66 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getReelById(reelId: number): Promise<any | undefined> {
+    try {
+      const result = await db
+        .select({ reel: reels, user: users })
+        .from(reels)
+        .innerJoin(users, eq(reels.userId, users.id))
+        .where(eq(reels.id, reelId))
+        .limit(1);
+      if (result.length === 0) return undefined;
+      const { reel, user } = result[0] as any;
+      return {
+        ...reel,
+        user: {
+          id: user.id,
+          name: user.name || user.email?.split("@")[0] || "User",
+          username: user.username || user.email?.split("@")[0] || "user",
+          avatar: user.avatar || "/uploads/default-avatar.jpg",
+        },
+      };
+    } catch (error) {
+      console.error("Get reel by id error:", error);
+      return undefined;
+    }
+  }
+
+  async saveReel(userId: number, reelId: number): Promise<void> {
+    try {
+      await db
+        .insert(savedPosts)
+        .values({ userId, postId: reelId })
+        .onConflictDoNothing();
+    } catch (error) {
+      console.error("Save reel error:", error);
+      throw error;
+    }
+  }
+
+  async shareReel(reelId: number, platform?: string): Promise<void> {
+    try {
+      await db
+        .update(reels)
+        .set({ sharesCount: sql`${reels.sharesCount} + 1` })
+        .where(eq(reels.id, reelId));
+    } catch (error) {
+      console.error("Share reel error:", error);
+      throw error;
+    }
+  }
+
+  async deleteReel(reelId: number, userId: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(reels)
+        .where(and(eq(reels.id, reelId), eq(reels.userId, userId)));
+      return result.rowCount! > 0;
+    } catch (error) {
+      console.error("Delete reel error:", error);
+      return false;
+    }
+  }
   async toggleReelLike(reelId: number, userId: number): Promise<boolean> {
     try {
       // Check if user already liked this reel
@@ -2855,17 +2916,23 @@ export class DatabaseStorage implements IStorage {
 
   async getStatusUpdates(userId?: number): Promise<any[]> {
     try {
-      // Filter out expired
-      const now = Date.now();
-      this.inMemoryStatuses = this.inMemoryStatuses.filter(
-        (s) => new Date(s.expiresAt).getTime() > now
-      );
-      // Return sanitized, serializable objects
-      return this.inMemoryStatuses.map((s) => ({
-        ...s,
-        viewers: undefined,
-        reactions: undefined,
-        pollVoters: undefined,
+      const now = new Date();
+      const result = await db
+        .select({ status: statusUpdates, user: users })
+        .from(statusUpdates)
+        .innerJoin(users, eq(statusUpdates.userId, users.id))
+        .where(gt(statusUpdates.expiresAt, now))
+        .orderBy(desc(statusUpdates.createdAt));
+
+      return result.map(({ status, user }) => ({
+        ...status,
+        user: {
+          id: user.id,
+          name: user.name || user.email?.split("@")[0] || "User",
+          username: user.username || user.email?.split("@")[0] || "user",
+          avatar: user.avatar || "/uploads/default-avatar.jpg",
+        },
+        hasViewed: false,
       }));
     } catch (error) {
       console.error("Get status updates error:", error);
@@ -2875,17 +2942,14 @@ export class DatabaseStorage implements IStorage {
 
   async createStatusUpdate(data: any): Promise<any> {
     try {
-      // Fetch user for proper attribution
-      const user = await this.getUser(data.userId);
-      const newStatus = {
-        id: Date.now(),
+      const insertData = {
         userId: data.userId,
         type: data.type,
         content: data.content,
         mediaUrl: data.mediaUrl,
         backgroundColor: data.backgroundColor,
         fontStyle: data.fontStyle,
-        pollOptions: data.pollOptions,
+        pollOptions: data.pollOptions || null,
         pollVotes:
           data.pollVotes ||
           (data.pollOptions
@@ -2895,9 +2959,22 @@ export class DatabaseStorage implements IStorage {
         privacy: data.privacy || "public",
         viewsCount: 0,
         reactionsCount: 0,
-        expiresAt: data.expiresAt,
+        expiresAt:
+          data.expiresAt instanceof Date
+            ? data.expiresAt
+            : new Date(data.expiresAt),
         isHighlighted: false,
-        createdAt: new Date().toISOString(),
+        highlightCategory: null,
+      } as any;
+
+      const [created] = await db
+        .insert(statusUpdates)
+        .values(insertData)
+        .returning();
+
+      const user = await this.getUser(data.userId);
+      return {
+        ...created,
         user: {
           id: data.userId,
           name: user?.name || user?.email?.split("@")[0] || "User",
@@ -2906,9 +2983,6 @@ export class DatabaseStorage implements IStorage {
         },
         hasViewed: false,
       };
-
-      this.inMemoryStatuses.unshift(newStatus);
-      return newStatus;
     } catch (error) {
       console.error("Create status update error:", error);
       throw error;
@@ -2926,15 +3000,10 @@ export class DatabaseStorage implements IStorage {
 
   async markStatusViewed(statusId: number, userId: number): Promise<void> {
     try {
-      const s = this.inMemoryStatuses.find((x) => x.id === statusId);
-      if (s) {
-        if (!s.viewers) s.viewers = new Set<number>();
-        if (!s.viewers.has(userId)) {
-          s.viewers.add(userId);
-          s.viewsCount = (s.viewsCount || 0) + 1;
-          s.hasViewed = true;
-        }
-      }
+      await db
+        .update(statusUpdates)
+        .set({ viewsCount: sql`${statusUpdates.viewsCount} + 1` })
+        .where(eq(statusUpdates.id, statusId));
     } catch (error) {
       console.error("Mark status viewed error:", error);
       throw error;
@@ -2947,23 +3016,17 @@ export class DatabaseStorage implements IStorage {
     reaction: string
   ): Promise<any> {
     try {
-      const s = this.inMemoryStatuses.find((x) => x.id === statusId);
-      if (s) {
-        if (!s.reactions) s.reactions = new Map<string, Set<number>>();
-        if (!s.reactions.has(reaction)) s.reactions.set(reaction, new Set());
-        const set = s.reactions.get(reaction)!;
-        if (set.has(userId)) {
-          set.delete(userId);
-        } else {
-          set.add(userId);
-        }
-        s.reactionsCount = Array.from(s.reactions.values()).reduce(
-          (sum, set) => sum + set.size,
-          0
-        );
-        return { success: true, reaction, reactionCount: s.reactionsCount };
-      }
-      return { success: false };
+      await db
+        .update(statusUpdates)
+        .set({ reactionsCount: sql`${statusUpdates.reactionsCount} + 1` })
+        .where(eq(statusUpdates.id, statusId));
+
+      const [row] = await db
+        .select({ count: statusUpdates.reactionsCount })
+        .from(statusUpdates)
+        .where(eq(statusUpdates.id, statusId));
+
+      return { success: true, reaction, reactionCount: row?.count ?? 0 };
     } catch (error) {
       console.error("React to status error:", error);
       throw error;
