@@ -16,6 +16,8 @@ import {
   insertNotificationSchema,
   insertFriendRequestSchema,
   insertFriendshipSchema,
+  insertEventSchema,
+  type InsertEvent,
 } from "@shared/schema";
 import nodemailer from "nodemailer";
 import multer from "multer";
@@ -1323,6 +1325,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ message: "Failed to get notifications" });
+    }
+  });
+
+  // ========== EVENTS API ROUTES ==========
+  app.get("/api/events", async (req, res) => {
+    try {
+      const currentUserId = req.session.userId;
+      const all = await storage.getEventsWithUserRSVP(currentUserId);
+      res.json(all);
+    } catch (error) {
+      console.error("Get events error:", error);
+      res.status(500).json({ message: "Failed to get events" });
+    }
+  });
+
+  app.post("/api/events", requireAuth, async (req, res) => {
+    try {
+      const parsed = z
+        .object({
+          title: z.string().min(1),
+          description: z.string().optional().nullable(),
+          date: z.string(),
+          time: z.string().optional().nullable(),
+          location: z.string().optional().nullable(),
+          maxAttendees: z.number().optional().nullable(),
+        })
+        .parse(req.body);
+
+      const startDate = new Date(
+        parsed.time
+          ? `${parsed.date}T${parsed.time}`
+          : `${parsed.date}T00:00:00`
+      );
+
+      const created = await storage.createEvent({
+        creatorId: req.session.userId!,
+        title: parsed.title,
+        description: parsed.description || null,
+        eventType: "general", // Default event type
+        startDate,
+        endDate: null,
+        location: parsed.location || null,
+        isVirtual: false,
+        meetingLink: null,
+        maxAttendees: parsed.maxAttendees || null,
+        currentAttendees: 0,
+        coverImage: null,
+      } as any);
+
+      res.json(created);
+    } catch (error) {
+      console.error("Create event error:", error);
+      res.status(500).json({ message: "Failed to create event" });
+    }
+  });
+
+  app.get("/api/events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const events = await storage.getEvents();
+      const ev = events.find((e: any) => e.id === id);
+      if (!ev) return res.status(404).json({ message: "Event not found" });
+      res.json(ev);
+    } catch (error) {
+      console.error("Get event error:", error);
+      res.status(500).json({ message: "Failed to get event" });
+    }
+  });
+
+  app.put("/api/events/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // First check if the event exists and user is the creator
+      const existingEvent = await storage.getEvents();
+      const event = existingEvent.find(e => e.id === id);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      if (event.creatorId !== req.session.userId) {
+        return res.status(403).json({ message: "You can only edit your own events" });
+      }
+
+      const parsed = z
+        .object({
+          title: z.string().min(1).optional(),
+          description: z.string().optional().nullable(),
+          eventType: z.string().optional(),
+          date: z.string().optional(),
+          time: z.string().optional().nullable(),
+          location: z.string().optional().nullable(),
+          maxAttendees: z.number().optional().nullable(),
+        })
+        .parse(req.body);
+
+      const updates: Partial<InsertEvent> = {};
+      
+      if (parsed.title) updates.title = parsed.title;
+      if (parsed.description !== undefined) updates.description = parsed.description;
+      if (parsed.eventType) updates.eventType = parsed.eventType;
+      if (parsed.location !== undefined) updates.location = parsed.location;
+      if (parsed.maxAttendees !== undefined) updates.maxAttendees = parsed.maxAttendees;
+      
+      if (parsed.date) {
+        const startDate = new Date(
+          parsed.time
+            ? `${parsed.date}T${parsed.time}`
+            : `${parsed.date}T00:00:00`
+        );
+        updates.startDate = startDate;
+      }
+
+      const updatedEvent = await storage.updateEvent(id, updates);
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error("Update event error:", error);
+      res.status(500).json({ message: "Failed to update event" });
+    }
+  });
+
+  app.delete("/api/events/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // First check if the event exists and user is the creator
+      const existingEvent = await storage.getEvents();
+      const event = existingEvent.find(e => e.id === id);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      if (event.creatorId !== req.session.userId) {
+        return res.status(403).json({ message: "You can only delete your own events" });
+      }
+
+      await storage.deleteEvent(id);
+      res.json({ success: true, message: "Event deleted successfully" });
+    } catch (error) {
+      console.error("Delete event error:", error);
+      res.status(500).json({ message: "Failed to delete event" });
+    }
+  });
+
+  app.post("/api/events/:id/rsvp", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = z.object({ status: z.string() }).parse(req.body);
+      const attendee = await storage.respondToEvent(
+        id,
+        req.session.userId!,
+        status
+      );
+      res.json(attendee);
+    } catch (error) {
+      console.error("RSVP error:", error);
+      res.status(500).json({ message: "Failed to RSVP" });
+    }
+  });
+
+  app.get("/api/events/:id/attendees", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const list = await storage.getEvents();
+      const ev = list.find((e: any) => e.id === id);
+      res.json({ attendees: ev?.attendeeCount || 0 });
+    } catch (error) {
+      console.error("Get attendees error:", error);
+      res.status(500).json({ message: "Failed to get attendees" });
     }
   });
 
