@@ -365,7 +365,10 @@ export interface IStorage {
 
   // Event methods
   createEvent(event: InsertEvent): Promise<Event>;
+  updateEvent(eventId: number, updates: Partial<InsertEvent>): Promise<Event>;
+  deleteEvent(eventId: number): Promise<void>;
   getEvents(userId?: number): Promise<EventWithDetails[]>;
+  getEventsWithUserRSVP(currentUserId?: number): Promise<EventWithDetails[]>;
   respondToEvent(
     eventId: number,
     userId: number,
@@ -2356,6 +2359,22 @@ export class DatabaseStorage implements IStorage {
     return newEvent;
   }
 
+  async updateEvent(eventId: number, updates: Partial<InsertEvent>): Promise<Event> {
+    const [updatedEvent] = await db
+      .update(events)
+      .set(updates)
+      .where(eq(events.id, eventId))
+      .returning();
+    return updatedEvent;
+  }
+
+  async deleteEvent(eventId: number): Promise<void> {
+    // First delete related event attendees
+    await db.delete(eventAttendees).where(eq(eventAttendees.eventId, eventId));
+    // Then delete the event
+    await db.delete(events).where(eq(events.id, eventId));
+  }
+
   async getEvents(userId?: number): Promise<EventWithDetails[]> {
     let query = db
       .select({
@@ -2380,25 +2399,89 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
+  async getEventsWithUserRSVP(currentUserId?: number): Promise<EventWithDetails[]> {
+    let query = db
+      .select({
+        event: events,
+        creator: users,
+        userRSVP: eventAttendees,
+      })
+      .from(events)
+      .innerJoin(users, eq(events.creatorId, users.id))
+      .leftJoin(
+        eventAttendees,
+        currentUserId 
+          ? and(eq(eventAttendees.eventId, events.id), eq(eventAttendees.userId, currentUserId))
+          : undefined
+      );
+
+    const result = await query.orderBy(asc(events.startDate));
+
+    return result.map(({ event, creator, userRSVP }) => ({
+      ...event,
+      creator,
+      attendeeStatus: userRSVP?.status || "none",
+      attendeeCount: event.currentAttendees || 0,
+    }));
+  }
+
   async respondToEvent(
     eventId: number,
     userId: number,
     status: string
   ): Promise<EventAttendee> {
-    const [attendee] = await db
-      .insert(eventAttendees)
-      .values({
-        eventId,
-        userId,
-        status,
-      })
-      .returning();
+    // Check if user already has an RSVP for this event
+    const existingRSVP = await db
+      .select()
+      .from(eventAttendees)
+      .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)))
+      .limit(1);
 
-    if (status === "going") {
-      await db
-        .update(events)
-        .set({ currentAttendees: sql`${events.currentAttendees} + 1` })
-        .where(eq(events.id, eventId));
+    let attendee: EventAttendee;
+
+    if (existingRSVP.length > 0) {
+      // Update existing RSVP
+      const oldStatus = existingRSVP[0].status;
+      
+      // Update the RSVP status
+      [attendee] = await db
+        .update(eventAttendees)
+        .set({ status, responseDate: new Date() })
+        .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)))
+        .returning();
+
+      // Update attendee count based on status change
+      if (oldStatus === "going" && status !== "going") {
+        // User was going, now not going - decrease count
+        await db
+          .update(events)
+          .set({ currentAttendees: sql`${events.currentAttendees} - 1` })
+          .where(eq(events.id, eventId));
+      } else if (oldStatus !== "going" && status === "going") {
+        // User wasn't going, now going - increase count
+        await db
+          .update(events)
+          .set({ currentAttendees: sql`${events.currentAttendees} + 1` })
+          .where(eq(events.id, eventId));
+      }
+    } else {
+      // Create new RSVP
+      [attendee] = await db
+        .insert(eventAttendees)
+        .values({
+          eventId,
+          userId,
+          status,
+        })
+        .returning();
+
+      // Update attendee count if going
+      if (status === "going") {
+        await db
+          .update(events)
+          .set({ currentAttendees: sql`${events.currentAttendees} + 1` })
+          .where(eq(events.id, eventId));
+      }
     }
 
     return attendee;

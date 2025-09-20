@@ -11,11 +11,15 @@ import {
   Users, 
   Plus,
   User,
-  CalendarDays
+  CalendarDays,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import CreateEventModal from "@/components/create-event-modal";
+import EditEventModal from "@/components/edit-event-modal";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Event {
   id: number;
@@ -39,12 +43,73 @@ interface Event {
 
 export default function EventsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: events = [], isLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
   });
+
+  const handleDeleteEvent = async (eventId: number) => {
+    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Event deleted successfully",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      } else {
+        throw new Error('Failed to delete event');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete event. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRSVP = async (eventId: number, status: string) => {
+    try {
+      const response = await fetch(`/api/events/${eventId}/rsvp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        const statusText = status === 'going' ? 'joined' : status === 'interested' ? 'marked as interested' : 'marked as not going';
+        toast({
+          title: "Success",
+          description: `You have ${statusText} this event`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      } else {
+        throw new Error('Failed to RSVP');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to RSVP. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const formatEventDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -134,6 +199,13 @@ export default function EventsPage() {
                         <Badge className={eventStatus.color}>
                           {eventStatus.status}
                         </Badge>
+                        {user && event.creatorId !== user.id && event.attendeeStatus !== 'none' && (
+                          <Badge variant="secondary">
+                            {event.attendeeStatus === 'going' ? 'Going' : 
+                             event.attendeeStatus === 'interested' ? 'Interested' : 
+                             event.attendeeStatus === 'not_going' ? 'Not Going' : ''}
+                          </Badge>
+                        )}
                       </div>
                       
                       <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -182,10 +254,95 @@ export default function EventsPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      {eventStatus.status !== 'past' && (
-                        <Button size="sm">
+                      {user && event.creatorId === user.id && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setEditingEvent(event)}
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => handleDeleteEvent(event.id)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                      {user && event.creatorId !== user.id && eventStatus.status !== 'past' && (
+                        <>
+                          {event.attendeeStatus === 'going' ? (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleRSVP(event.id, 'not_going')}
+                            >
+                              <User className="w-4 h-4 mr-1" />
+                              Leave Event
+                            </Button>
+                          ) : event.attendeeStatus === 'interested' ? (
+                            <>
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleRSVP(event.id, 'going')}
+                              >
+                                <User className="w-4 h-4 mr-1" />
+                                Join Event
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleRSVP(event.id, 'not_going')}
+                              >
+                                Not Going
+                              </Button>
+                            </>
+                          ) : event.attendeeStatus === 'not_going' ? (
+                            <>
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleRSVP(event.id, 'going')}
+                              >
+                                <User className="w-4 h-4 mr-1" />
+                                Join Event
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleRSVP(event.id, 'interested')}
+                              >
+                                Interested
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleRSVP(event.id, 'going')}
+                              >
+                                <User className="w-4 h-4 mr-1" />
+                                Join Event
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleRSVP(event.id, 'interested')}
+                              >
+                                Interested
+                              </Button>
+                            </>
+                          )}
+                        </>
+                      )}
+                      {!user && eventStatus.status !== 'past' && (
+                        <Button size="sm" disabled>
                           <User className="w-4 h-4 mr-1" />
-                          Join Event
+                          Login to Join
                         </Button>
                       )}
                     </div>
@@ -203,6 +360,15 @@ export default function EventsPage() {
           setShowCreateModal(false);
           queryClient.invalidateQueries({ queryKey: ["/api/events"] });
         }} 
+      />
+
+      <EditEventModal 
+        isOpen={!!editingEvent} 
+        onClose={() => {
+          setEditingEvent(null);
+          queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+        }}
+        event={editingEvent}
       />
     </div>
   );
