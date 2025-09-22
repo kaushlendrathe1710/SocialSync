@@ -1328,6 +1328,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== WELLNESS TRACKING API ROUTES ==========
+  app.get("/api/wellness-tracking", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const days = req.query.days ? parseInt(String(req.query.days)) : undefined;
+      const records = await storage.getWellnessTracking(userId, days);
+      res.json(records);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get wellness tracking" });
+    }
+  });
+
+  // ========== HABIT TRACKING API ROUTES ==========
+  app.get("/api/habits", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const habits = await storage.getUserHabits(userId);
+      res.json(habits);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get habits" });
+    }
+  });
+
+  app.post("/api/habits", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const { name, description, frequency, category, targetValue, unit } = req.body || {};
+      if (!name || typeof name !== "string") {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      const habit = await storage.createHabit({
+        userId,
+        name,
+        description: description ?? null,
+        frequency: frequency ?? "daily",
+        category: category ?? null,
+        targetValue: targetValue ?? null,
+        unit: unit ?? null,
+        isActive: true,
+      } as any);
+      res.json(habit);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create habit" });
+    }
+  });
+
+  app.get("/api/habit-logs", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const date = (req.query.date as string) || undefined;
+      const days = req.query.days ? parseInt(String(req.query.days)) : undefined;
+      if (date) {
+        const logs = await storage.getHabitLogsForDate(userId, date);
+        return res.json(logs);
+      }
+      const logs = await storage.getHabitLogsForUser(userId, days);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get habit logs" });
+    }
+  });
+
+  app.post("/api/habit-logs", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const { habitId, date, completed, value, notes } = req.body || {};
+      if (!habitId || !date) {
+        return res.status(400).json({ message: "habitId and date are required" });
+      }
+      const log = await storage.logHabit({
+        habitId: Number(habitId),
+        userId,
+        date: new Date(date),
+        completed: !!completed,
+        value: value ?? null,
+        notes: notes ?? null,
+      } as any);
+      res.json(log);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to record habit log" });
+    }
+  });
+
+  app.post("/api/wellness-tracking", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const body = req.body || {};
+      const payload = {
+        userId,
+        date: body.date ? new Date(body.date) : new Date(),
+        moodRating: body.moodRating,
+        energyLevel: body.energyLevel,
+        stressLevel: body.stressLevel,
+        sleepHours: body.sleepHours,
+        waterIntake: body.waterIntake,
+        exerciseMinutes: body.exerciseMinutes,
+        notes: body.notes,
+        isPrivate: body.isPrivate,
+      } as any;
+      const record = await storage.recordWellnessTracking(payload);
+      res.json(record);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to record wellness tracking" });
+    }
+  });
+
+  app.put("/api/wellness-tracking/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const id = parseInt(req.params.id);
+      const updates = req.body || {};
+      const record = await storage.updateWellnessTracking(id, userId, updates);
+      res.json(record);
+    } catch (error: any) {
+      if (String(error.message || "").includes("not found")) {
+        return res.status(404).json({ message: "Wellness record not found" });
+      }
+      res.status(500).json({ message: "Failed to update wellness tracking" });
+    }
+  });
+
+  app.delete("/api/wellness-tracking/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const id = parseInt(req.params.id);
+      const ok = await storage.deleteWellnessTracking(id, userId);
+      if (!ok) return res.status(404).json({ message: "Wellness record not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete wellness record" });
+    }
+  });
+
+  app.get("/api/wellness-tracking/stats", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const days = req.query.days ? parseInt(String(req.query.days)) : undefined;
+      const stats = await storage.getWellnessStats(userId, days);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get wellness stats" });
+    }
+  });
+
   // ========== EVENTS API ROUTES ==========
   app.get("/api/events", async (req, res) => {
     try {

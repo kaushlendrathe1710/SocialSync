@@ -340,11 +340,35 @@ export interface IStorage {
     userId: number,
     days?: number
   ): Promise<WellnessTracking[]>;
+  updateWellnessTracking(
+    id: number,
+    userId: number,
+    updates: Partial<InsertWellnessTracking>
+  ): Promise<WellnessTracking>;
+  deleteWellnessTracking(id: number, userId: number): Promise<boolean>;
+  getWellnessStats(userId: number, days?: number): Promise<{
+    count: number;
+    startDate: string;
+    endDate: string;
+    averages: {
+      moodRating: number | null;
+      energyLevel: number | null;
+      stressLevel: number | null;
+      sleepHours: number | null;
+      waterIntake: number | null;
+      exerciseMinutes: number | null;
+    };
+    streaks: {
+      currentStreak: number;
+      bestStreak: number;
+    };
+  }>;
   createHabit(habit: InsertHabitTracking): Promise<HabitTracking>;
   getUserHabits(userId: number): Promise<HabitTracking[]>;
   logHabit(log: InsertHabitLog): Promise<HabitLog>;
   getHabitLogs(habitId: number, days?: number): Promise<HabitLog[]>;
   getHabitLogsForDate(userId: number, date: string): Promise<HabitLog[]>;
+  getHabitLogsForUser(userId: number, days?: number): Promise<HabitLog[]>;
   updateHabitStreak(habitId: number, streak: number): Promise<void>;
 
   // Beauty & Shopping methods
@@ -2071,6 +2095,141 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(wellnessTracking.date));
   }
 
+  async updateWellnessTracking(
+    id: number,
+    userId: number,
+    updates: Partial<InsertWellnessTracking>
+  ): Promise<WellnessTracking> {
+    const [existing] = await db
+      .select()
+      .from(wellnessTracking)
+      .where(and(eq(wellnessTracking.id, id), eq(wellnessTracking.userId, userId)))
+      .limit(1);
+
+    if (!existing) {
+      throw new Error("Wellness record not found or not authorized");
+    }
+
+    const allowed: Partial<InsertWellnessTracking> = {
+      moodRating: updates.moodRating,
+      energyLevel: updates.energyLevel,
+      stressLevel: updates.stressLevel,
+      sleepHours: updates.sleepHours,
+      waterIntake: updates.waterIntake,
+      exerciseMinutes: updates.exerciseMinutes,
+      notes: updates.notes,
+      isPrivate: updates.isPrivate,
+    };
+
+    const [updated] = await db
+      .update(wellnessTracking)
+      .set(allowed)
+      .where(and(eq(wellnessTracking.id, id), eq(wellnessTracking.userId, userId)))
+      .returning();
+
+    return updated;
+  }
+
+  async deleteWellnessTracking(id: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(wellnessTracking)
+      .where(and(eq(wellnessTracking.id, id), eq(wellnessTracking.userId, userId)))
+      .returning({ id: wellnessTracking.id });
+    return result.length > 0;
+  }
+
+  async getWellnessStats(
+    userId: number,
+    days = 30
+  ): Promise<{
+    count: number;
+    startDate: string;
+    endDate: string;
+    averages: {
+      moodRating: number | null;
+      energyLevel: number | null;
+      stressLevel: number | null;
+      sleepHours: number | null;
+      waterIntake: number | null;
+      exerciseMinutes: number | null;
+    };
+    streaks: { currentStreak: number; bestStreak: number };
+  }> {
+    const records = await this.getWellnessTracking(userId, days);
+
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+
+    const toNum = (v: any) => (typeof v === "number" ? v : v == null ? null : Number(v));
+
+    const sumAndCount = (key: keyof WellnessTracking) => {
+      let sum = 0;
+      let count = 0;
+      for (const r of records) {
+        const val = toNum(r[key as any]);
+        if (typeof val === "number" && !Number.isNaN(val)) {
+          sum += val;
+          count += 1;
+        }
+      }
+      return { sum, count };
+    };
+
+    const avg = (sum: number, count: number) => (count > 0 ? Number((sum / count).toFixed(2)) : null);
+
+    const mood = sumAndCount("moodRating" as any);
+    const energy = sumAndCount("energyLevel" as any);
+    const stress = sumAndCount("stressLevel" as any);
+    const sleep = sumAndCount("sleepHours" as any);
+    const water = sumAndCount("waterIntake" as any);
+    const exercise = sumAndCount("exerciseMinutes" as any);
+
+    // Streaks: count consecutive days from most recent going back
+    const byDate = new Set(records.map((r) => new Date(r.date as any).toISOString().split("T")[0]));
+    let currentStreak = 0;
+    let bestStreak = 0;
+    let cursor = new Date();
+    // current streak
+    while (currentStreak < days) {
+      const key = cursor.toISOString().split("T")[0];
+      if (byDate.has(key)) {
+        currentStreak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    // best streak in window
+    let tempStreak = 0;
+    const iter = new Date(endDate);
+    for (let i = 0; i < days; i++) {
+      const key = iter.toISOString().split("T")[0];
+      if (byDate.has(key)) {
+        tempStreak += 1;
+        if (tempStreak > bestStreak) bestStreak = tempStreak;
+      } else {
+        tempStreak = 0;
+      }
+      iter.setDate(iter.getDate() - 1);
+    }
+
+    return {
+      count: records.length,
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+      averages: {
+        moodRating: avg(mood.sum, mood.count),
+        energyLevel: avg(energy.sum, energy.count),
+        stressLevel: avg(stress.sum, stress.count),
+        sleepHours: avg(sleep.sum, sleep.count),
+        waterIntake: avg(water.sum, water.count),
+        exerciseMinutes: avg(exercise.sum, exercise.count),
+      },
+      streaks: { currentStreak, bestStreak },
+    };
+  }
+
   async createHabit(habit: InsertHabitTracking): Promise<HabitTracking> {
     const [newHabit] = await db.insert(habitTracking).values(habit).returning();
     return newHabit;
@@ -2161,6 +2320,17 @@ export class DatabaseStorage implements IStorage {
           sql`DATE(${habitLogs.date}) = ${date}`
         )
       )
+      .orderBy(desc(habitLogs.date));
+  }
+
+  async getHabitLogsForUser(userId: number, days = 60): Promise<HabitLog[]> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    return await db
+      .select()
+      .from(habitLogs)
+      .where(and(eq(habitLogs.userId, userId), gt(habitLogs.date, startDate)))
       .orderBy(desc(habitLogs.date));
   }
 
