@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface CommunityGroup {
   id: number;
@@ -67,6 +68,7 @@ export function CommunityGroups() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
 
   // Categories with icons
   const categories = [
@@ -83,10 +85,10 @@ export function CommunityGroups() {
 
   // Fetch community groups with proper category filtering
   const { data: groups = [], isLoading } = useQuery({
-    queryKey: ["/api/community-groups", selectedCategory],
+    queryKey: ["/api/groups", selectedCategory],
     queryFn: async () => {
       const categoryParam = selectedCategory !== "all" ? `?category=${selectedCategory}` : "";
-      const response = await fetch(`/api/community-groups${categoryParam}`, {
+      const response = await fetch(`/api/groups${categoryParam}`, {
         credentials: 'include'
       });
       if (!response.ok) {
@@ -107,7 +109,7 @@ export function CommunityGroups() {
   const createGroupMutation = useMutation({
     mutationFn: async (data: any) => {
       console.log('Creating community group:', data);
-      const response = await fetch("/api/community-groups", {
+      const response = await fetch("/api/groups", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +139,7 @@ export function CommunityGroups() {
         title: "Community created",
         description: `Your community "${data.name}" has been created successfully.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/community-groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       setShowCreateDialog(false);
       resetForm();
     },
@@ -153,7 +155,7 @@ export function CommunityGroups() {
 
   const joinGroupMutation = useMutation({
     mutationFn: async (groupId: number) => {
-      const response = await fetch(`/api/community-groups/${groupId}/join`, {
+      const response = await fetch(`/api/groups/${groupId}/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,12 +170,21 @@ export function CommunityGroups() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, groupId) => {
       toast({
         title: "Joined community",
         description: "You've successfully joined the community!",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/community-groups"] });
+      // Optimistically update currently loaded list so member count and button state update immediately
+      queryClient.setQueryData(["/api/groups", selectedCategory], (old: any) => {
+        if (!old || !Array.isArray(old)) return old;
+        return old.map((g: any) =>
+          g.id === groupId
+            ? { ...g, isJoined: true, membershipStatus: g.membershipStatus || "member", memberCount: (g.memberCount || 0) + 1 }
+            : g
+        );
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"], exact: false });
     },
     onError: (error: any) => {
       toast({
@@ -182,6 +193,27 @@ export function CommunityGroups() {
         variant: "destructive",
       });
     },
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (groupId: number) => {
+      const res = await fetch(`/api/groups/${groupId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to delete community');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Community deleted' });
+      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to delete community', variant: 'destructive' });
+    }
   });
 
   const resetForm = () => {
@@ -217,6 +249,11 @@ export function CommunityGroups() {
 
   const handleMessageMembers = (groupId: number) => {
     setLocation(`/messages?group=${groupId}`);
+  };
+
+  const handleDeleteGroup = (groupId: number) => {
+    if (!confirm('Delete this community? This cannot be undone.')) return;
+    deleteGroupMutation.mutate(groupId);
   };
 
   const getCategoryIcon = (category: string) => {
@@ -270,22 +307,24 @@ export function CommunityGroups() {
       </div>
 
       {/* Category Filters */}
-      <div className="flex flex-wrap gap-2">
-        {categories.map((category) => {
-          const IconComponent = category.icon;
-          return (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory(category.id)}
-              className="flex items-center gap-1"
-            >
-              <IconComponent className="h-3 w-3" />
-              {category.label}
-            </Button>
-          );
-        })}
+      <div className="-mx-3 sm:mx-0 overflow-x-auto">
+        <div className="px-3 sm:px-0 flex gap-2 whitespace-nowrap">
+          {categories.map((category) => {
+            const IconComponent = category.icon;
+            return (
+              <Button
+                key={category.id}
+                variant={selectedCategory === category.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(category.id)}
+                className="flex items-center gap-1"
+              >
+                <IconComponent className="h-3 w-3" />
+                {category.label}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Featured Communities */}
@@ -301,11 +340,11 @@ export function CommunityGroups() {
             {filteredGroups
               .filter((group: CommunityGroup) => group.isVerified)
               .slice(0, 6)
-              .map((group: CommunityGroup) => {
+              .map((group: CommunityGroup, index: number) => {
                 const IconComponent = getCategoryIcon(group.category);
                 return (
-                  <Card key={group.id} className="p-4 border-2 border-yellow-200">
-                    <div className="space-y-3">
+                  <Card key={`${group.id}-${index}`} className="p-4 border-2 border-yellow-200">
+                    <div className="space-y-3 overflow-hidden">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
                           <IconComponent className="h-5 w-5 text-purple-500" />
@@ -335,18 +374,21 @@ export function CommunityGroups() {
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <div className="flex flex-wrap items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Users className="h-4 w-4" />
-                          {group.memberCount} members
+                          <span>{group.memberCount} members</span>
+                          {user && group.creator && user.id === group.creator.id && (
+                            <Badge variant="secondary" className="text-xs">Owner</Badge>
+                          )}
                         </div>
                         {group.isJoined ? (
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2 w-full sm:w-auto max-w-full">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleViewGroup(group.id)}
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 w-full sm:w-auto shrink-0"
                             >
                               <ArrowRight className="h-3 w-3" />
                               View Group
@@ -354,17 +396,29 @@ export function CommunityGroups() {
                             <Button
                               size="sm"
                               onClick={() => handleMessageMembers(group.id)}
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 w-full sm:w-auto shrink-0"
                             >
                               <MessageCircle className="h-3 w-3" />
                               Message
                             </Button>
+                            {user && user.id === group.creator.id && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteGroup(group.id)}
+                                disabled={deleteGroupMutation.isPending}
+                                className="w-full sm:w-auto shrink-0"
+                              >
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         ) : (
                           <Button
                             size="sm"
                             onClick={() => handleJoinGroup(group.id)}
                             disabled={joinGroupMutation.isPending}
+                            className="w-full sm:w-auto shrink-0"
                           >
                             Join
                           </Button>
@@ -408,11 +462,11 @@ export function CommunityGroups() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredGroups.map((group: CommunityGroup) => {
+              {filteredGroups.map((group: CommunityGroup, index: number) => {
                 const IconComponent = getCategoryIcon(group.category);
                 return (
-                  <Card key={group.id} className="p-4 hover:shadow-md transition-shadow">
-                    <div className="space-y-3">
+                  <Card key={`${group.id}-${index}`} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="space-y-3 overflow-hidden">
                       <div className="flex items-start justify-between">
                         <IconComponent className="h-5 w-5 text-purple-500" />
                         <div className="flex items-center gap-2">
@@ -452,18 +506,21 @@ export function CommunityGroups() {
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <div className="flex flex-wrap items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Users className="h-4 w-4" />
-                          {group.memberCount} members
+                          <span>{group.memberCount} members</span>
+                          {user && group.creator && user.id === group.creator.id && (
+                            <Badge variant="secondary" className="text-xs">Owner</Badge>
+                          )}
                         </div>
                         {group.isJoined ? (
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2 w-full sm:w-auto max-w-full">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleViewGroup(group.id)}
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 w-full sm:w-auto shrink-0"
                             >
                               <ArrowRight className="h-3 w-3" />
                               Enter Group
@@ -471,17 +528,29 @@ export function CommunityGroups() {
                             <Button
                               size="sm"
                               onClick={() => handleMessageMembers(group.id)}
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 w-full sm:w-auto shrink-0"
                             >
                               <MessageCircle className="h-3 w-3" />
                               Message Members
                             </Button>
+                            {user && user.id === group.creator.id && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteGroup(group.id)}
+                                disabled={deleteGroupMutation.isPending}
+                                className="w-full sm:w-auto shrink-0"
+                              >
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         ) : (
                           <Button
                             size="sm"
                             onClick={() => handleJoinGroup(group.id)}
                             disabled={joinGroupMutation.isPending}
+                            className="w-full sm:w-auto shrink-0"
                           >
                             Join
                           </Button>
@@ -531,6 +600,7 @@ export function CommunityGroups() {
                   <select
                     id="category"
                     className="w-full p-2 border rounded-md"
+                    aria-label="Category"
                     value={createForm.category}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, category: e.target.value }))}
                   >
@@ -546,6 +616,7 @@ export function CommunityGroups() {
                   <select
                     id="privacy"
                     className="w-full p-2 border rounded-md"
+                    aria-label="Privacy"
                     value={createForm.privacy}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, privacy: e.target.value }))}
                   >

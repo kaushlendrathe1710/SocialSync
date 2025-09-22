@@ -1340,6 +1340,313 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== GROUPS / COMMUNITIES API ROUTES ==========
+  app.get("/api/groups", async (req, res) => {
+    try {
+      const category = (req.query.category as string) || undefined;
+      const userId = req.session.userId as number | undefined;
+      const groups = await storage.getCommunityGroups(category, userId);
+      res.json(groups);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get groups" });
+    }
+  });
+
+  app.post("/api/groups", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId as number;
+      const { name, description, category, privacy, tags, coverImage } = req.body || {};
+      if (!name || !description || !category) {
+        return res.status(400).json({ message: "name, description, category required" });
+      }
+      const group = await storage.createCommunityGroup({
+        name,
+        description,
+        category,
+        privacy: privacy ?? "public",
+        coverImage: coverImage ?? null,
+        creatorId: userId,
+        memberCount: 0,
+        isVerified: false,
+        tags: Array.isArray(tags) ? tags : [],
+      } as any);
+      res.json(group);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create group" });
+    }
+  });
+
+  app.get("/api/groups/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const group = await storage.getGroupById(id);
+      if (!group) return res.status(404).json({ message: "Group not found" });
+      const userId = req.session.userId as number | undefined;
+      if (userId) {
+        const membership = await storage.getGroupMembership(id, userId);
+        (group as any).isJoined = !!membership && membership.status === "active";
+        (group as any).membershipStatus = membership?.status || (group as any).membershipStatus || "none";
+      }
+      res.json(group);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get group" });
+    }
+  });
+
+  app.put("/api/groups/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.session.userId as number;
+      const updates = req.body || {};
+      const updated = await storage.updateCommunityGroup(id, userId, updates);
+      res.json(updated);
+    } catch (error: any) {
+      if (String(error.message || "").includes("Not authorized")) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      res.status(500).json({ message: "Failed to update group" });
+    }
+  });
+
+  app.delete("/api/groups/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.session.userId as number;
+      const ok = await storage.deleteCommunityGroup(id, userId);
+      if (!ok) return res.status(404).json({ message: "Group not found" });
+      res.json({ success: true });
+    } catch (error: any) {
+      if (String(error.message || "").includes("Not authorized")) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      res.status(500).json({ message: "Failed to delete group" });
+    }
+  });
+
+  app.post("/api/groups/:id/join", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.session.userId as number;
+      const membership = await storage.joinGroup(id, userId);
+      res.json(membership);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to join group" });
+    }
+  });
+
+  app.post("/api/groups/:id/leave", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.session.userId as number;
+      const ok = await storage.leaveGroup(id, userId);
+      res.json({ success: ok });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to leave group" });
+    }
+  });
+
+  app.get("/api/groups/:id/members", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const members = await storage.getGroupMembers(id);
+      res.json(members);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get members" });
+    }
+  });
+
+  app.post("/api/groups/:id/posts", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.session.userId as number;
+      const { content, imageUrl, videoUrl } = req.body || {};
+      // Only owner can create posts for now
+      const group = await storage.getGroupById(id);
+      if (!group || group.creator.id !== userId) {
+        return res.status(403).json({ message: "Only owner can post" });
+      }
+      const post = await storage.createGroupPost({
+        groupId: id,
+        userId,
+        content: content ?? null,
+        imageUrl: imageUrl ?? null,
+        videoUrl: videoUrl ?? null,
+        isPinned: false,
+        likesCount: 0,
+        commentsCount: 0,
+      } as any);
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create group post" });
+    }
+  });
+
+  app.get("/api/groups/:id/posts", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const posts = await storage.getGroupPosts(id);
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get group posts" });
+    }
+  });
+
+  app.get("/api/groups/:id/events", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const events = await storage.getGroupEvents(id);
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get group events" });
+    }
+  });
+
+  app.post("/api/groups/:id/events", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.session.userId as number;
+      // Only owner can create events
+      const group = await storage.getGroupById(id);
+      if (!group || group.creator.id !== userId) {
+        return res.status(403).json({ message: "Only owner can create events" });
+      }
+      const parsed = z
+        .object({
+          title: z.string().min(1),
+          description: z.string().optional().nullable(),
+          eventDate: z.union([z.string(), z.date()]),
+          endDate: z.union([z.string(), z.date()]).optional().nullable(),
+          location: z.string().optional().nullable(),
+          isVirtual: z.boolean().optional().nullable(),
+          meetingLink: z.string().optional().nullable(),
+          maxAttendees: z.number().optional().nullable(),
+          coverImage: z.string().optional().nullable(),
+        })
+        .parse(req.body || {});
+
+      const event = await (storage as any).createGroupEvent({
+        groupId: id,
+        creatorId: userId,
+        title: parsed.title,
+        description: parsed.description ?? null,
+        eventDate:
+          typeof parsed.eventDate === "string"
+            ? new Date(parsed.eventDate)
+            : parsed.eventDate,
+        endDate:
+          parsed.endDate
+            ? typeof parsed.endDate === "string"
+              ? new Date(parsed.endDate)
+              : parsed.endDate
+            : null,
+        location: parsed.location ?? null,
+        isVirtual: parsed.isVirtual ?? false,
+        meetingLink: parsed.meetingLink ?? null,
+        maxAttendees: parsed.maxAttendees ?? null,
+        coverImage: parsed.coverImage ?? null,
+        currentAttendees: 0,
+        status: "active",
+      } as any);
+      res.json(event);
+    } catch (error) {
+      console.error("Create group event error:", error);
+      res.status(500).json({ message: "Failed to create group event" });
+    }
+  });
+
+  app.put("/api/groups/:groupId/events/:eventId", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const eventId = parseInt(req.params.eventId);
+      const userId = req.session.userId as number;
+      const group = await storage.getGroupById(groupId);
+      if (!group || group.creator.id !== userId) {
+        return res.status(403).json({ message: "Only owner can edit events" });
+      }
+      // For now, update using storage.updateEvent if backed by real events table, else echo
+      const updates = req.body || {};
+      const result = await (storage as any).updateGroupEvent(eventId, updates);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update event" });
+    }
+  });
+
+  app.delete("/api/groups/:groupId/events/:eventId", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const eventId = parseInt(req.params.eventId);
+      const userId = req.session.userId as number;
+      const group = await storage.getGroupById(groupId);
+      if (!group || group.creator.id !== userId) {
+        return res.status(403).json({ message: "Only owner can delete events" });
+      }
+      await (storage as any).deleteGroupEvent(eventId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete event" });
+    }
+  });
+
+  app.get("/api/groups/:id/files", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const files = await storage.getGroupFiles(id);
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get group files" });
+    }
+  });
+
+  app.post("/api/groups/:id/files", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.session.userId as number;
+      const group = await storage.getGroupById(id);
+      if (!group || group.creator.id !== userId) {
+        return res.status(403).json({ message: "Only owner can upload files" });
+      }
+      const data = { ...req.body, groupId: id, uploaderId: userId };
+      const file = await storage.uploadGroupFile(data);
+      res.json(file);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to upload group file" });
+    }
+  });
+
+  app.put("/api/groups/:groupId/files/:fileId", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const fileId = parseInt(req.params.fileId);
+      const userId = req.session.userId as number;
+      const group = await storage.getGroupById(groupId);
+      if (!group || group.creator.id !== userId) {
+        return res.status(403).json({ message: "Only owner can edit files" });
+      }
+      const updates = req.body || {};
+      const f = await (storage as any).updateGroupFile(fileId, updates);
+      res.json(f);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update group file" });
+    }
+  });
+
+  app.delete("/api/groups/:groupId/files/:fileId", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const fileId = parseInt(req.params.fileId);
+      const userId = req.session.userId as number;
+      const group = await storage.getGroupById(groupId);
+      if (!group || group.creator.id !== userId) {
+        return res.status(403).json({ message: "Only owner can delete files" });
+      }
+      await (storage as any).deleteGroupFile(fileId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete group file" });
+    }
+  });
+
   // ========== HABIT TRACKING API ROUTES ==========
   app.get("/api/habits", requireAuth, async (req, res) => {
     try {
