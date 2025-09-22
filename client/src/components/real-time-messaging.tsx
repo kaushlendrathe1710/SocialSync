@@ -69,6 +69,7 @@ export default function RealTimeMessaging() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const [showNewConversation, setShowNewConversation] = useState(false);
 
   // Add error boundary to catch rendering issues
   if (!user) {
@@ -150,7 +151,7 @@ export default function RealTimeMessaging() {
         ws.close();
       }
     };
-  }, [user, queryClient, selectedConversation, toast]);
+  }, [user, queryClient]);
 
   const { data: conversations, isLoading: conversationsLoading } = useQuery({
     queryKey: ['/api/conversations'],
@@ -158,10 +159,22 @@ export default function RealTimeMessaging() {
       const response = await api.getConversations();
       return response.json() as Promise<MessageWithUser[]>;
     },
-    refetchInterval: 2000, // Refresh every 2 seconds as fallback
+    refetchInterval: 2000,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true,
   });
 
-  const { data: messages, isLoading: messagesLoading } = useQuery({
+  const { data: friends = [], isLoading: friendsLoading } = useQuery({
+    queryKey: ['/api/friends'],
+    queryFn: async () => {
+      const res = await fetch('/api/friends', { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: showNewConversation,
+  });
+
+  const { data: messages, isLoading: messagesLoading, isFetching: messagesFetching } = useQuery({
     queryKey: ['/api/conversations', selectedConversation?.id],
     queryFn: async () => {
       if (!selectedConversation) return [];
@@ -169,7 +182,9 @@ export default function RealTimeMessaging() {
       return response.json() as Promise<MessageWithUser[]>;
     },
     enabled: !!selectedConversation,
-    refetchInterval: 1000, // Refresh every second for active conversation
+    refetchInterval: 1000,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true,
   });
 
   // Fetch privacy settings for users in conversations
@@ -208,7 +223,7 @@ export default function RealTimeMessaging() {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, selectedConversation?.id]);
 
   // Handle URL parameters
   useEffect(() => {
@@ -416,6 +431,14 @@ export default function RealTimeMessaging() {
     const otherUser = message.senderId === user?.id ? message.receiver : message.sender;
     setSelectedConversation(otherUser);
     setLocation(`/messages/${otherUser.id}`);
+    // prefetch thread so UI doesn't flash empty
+    queryClient.prefetchQuery({
+      queryKey: ['/api/conversations', otherUser.id],
+      queryFn: async () => {
+        const res = await api.getConversation(otherUser.id);
+        return res.json();
+      },
+    });
     
     // Mark messages as read when conversation is opened
     if (message.receiverId === user?.id && !message.readAt) {
@@ -993,7 +1016,7 @@ export default function RealTimeMessaging() {
                   </div>
                   <p className="text-lg font-medium mb-2">Your Messages</p>
                   <p className="text-muted-foreground mb-4">Send private messages to friends and family</p>
-                  <Button>Start New Conversation</Button>
+                  <Button onClick={() => setShowNewConversation(true)}>Start New Conversation</Button>
                 </div>
               </div>
             )}
@@ -1070,6 +1093,50 @@ export default function RealTimeMessaging() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showNewConversation} onOpenChange={setShowNewConversation}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Start a new conversation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {friendsLoading ? (
+              <div className="space-y-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="w-10 h-10 rounded-full" />
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                ))}
+              </div>
+            ) : friends.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No friends yet.</p>
+            ) : (
+              <div className="max-h-80 overflow-auto divide-y">
+                {friends.map((f: any) => (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      setSelectedConversation(f);
+                      setShowNewConversation(false);
+                      setLocation(`/messages/${f.id}`);
+                    }}
+                    className="w-full text-left p-3 hover:bg-muted flex items-center gap-3"
+                  >
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={f.avatar || undefined} />
+                      <AvatarFallback>{f.name?.[0] || '?'}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{f.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">@{f.username}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
