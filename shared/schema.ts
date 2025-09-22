@@ -369,6 +369,15 @@ export const groupPosts = pgTable("group_posts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Group chat messages
+export const groupMessages = pgTable("group_messages", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  userId: integer("user_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Wellness Features
 export const wellnessTracking = pgTable("wellness_tracking", {
   id: serial("id").primaryKey(),
@@ -714,6 +723,11 @@ export const insertGroupPostSchema = createInsertSchema(groupPosts).omit({
   commentsCount: true,
 });
 
+export const insertGroupMessageSchema = createInsertSchema(groupMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertWellnessTrackingSchema = createInsertSchema(wellnessTracking).omit({
   id: true,
   createdAt: true,
@@ -876,6 +890,8 @@ export type InsertGroupMembership = z.infer<typeof insertGroupMembershipSchema>;
 
 export type GroupPost = typeof groupPosts.$inferSelect;
 export type InsertGroupPost = z.infer<typeof insertGroupPostSchema>;
+export type GroupMessage = typeof groupMessages.$inferSelect;
+export type InsertGroupMessage = z.infer<typeof insertGroupMessageSchema>;
 
 export type WellnessTracking = typeof wellnessTracking.$inferSelect;
 export type InsertWellnessTracking = z.infer<typeof insertWellnessTrackingSchema>;

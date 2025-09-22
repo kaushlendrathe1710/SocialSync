@@ -21,6 +21,7 @@ import {
   groupPosts,
   groupEvents,
   groupFiles,
+  groupMessages,
   wellnessTracking,
   habitTracking,
   habitLogs,
@@ -78,6 +79,8 @@ import {
   type InsertGroupEvent,
   type GroupEventWithDetails,
   type GroupFile,
+  type GroupMessage,
+  type InsertGroupMessage,
   type WellnessTracking,
   type InsertWellnessTracking,
   type HabitTracking,
@@ -2043,6 +2046,22 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(groupMemberships.userId, users.id))
       .where(eq(groupMemberships.groupId, groupId));
     return result.map(r => r.user);
+  }
+
+  async createGroupMessage(msg: InsertGroupMessage): Promise<GroupMessage> {
+    const [row] = await db.insert(groupMessages).values(msg).returning();
+    return row;
+  }
+
+  async getGroupMessages(groupId: number, limit = 100): Promise<(GroupMessage & { user: User })[]> {
+    const rows = await db
+      .select({ m: groupMessages, u: users })
+      .from(groupMessages)
+      .innerJoin(users, eq(groupMessages.userId, users.id))
+      .where(eq(groupMessages.groupId, groupId))
+      .orderBy(desc(groupMessages.createdAt))
+      .limit(limit);
+    return rows.reverse().map(({ m, u }) => ({ ...m, user: u }));
   }
 
   async joinGroup(groupId: number, userId: number): Promise<GroupMembership> {
