@@ -19,6 +19,8 @@ import {
   communityGroups,
   groupMemberships,
   groupPosts,
+  groupEvents,
+  groupFiles,
   wellnessTracking,
   habitTracking,
   habitLogs,
@@ -72,6 +74,10 @@ import {
   type InsertGroupMembership,
   type GroupPost,
   type InsertGroupPost,
+  type GroupEvent,
+  type InsertGroupEvent,
+  type GroupEventWithDetails,
+  type GroupFile,
   type WellnessTracking,
   type InsertWellnessTracking,
   type HabitTracking,
@@ -331,6 +337,20 @@ export interface IStorage {
     userId?: number
   ): Promise<(GroupPost & { user: User })[]>;
   createGroupPost(post: InsertGroupPost): Promise<GroupPost>;
+  updateCommunityGroup(
+    groupId: number,
+    requesterId: number,
+    updates: Partial<InsertCommunityGroup>
+  ): Promise<CommunityGroup>;
+  deleteCommunityGroup(
+    groupId: number,
+    requesterId: number
+  ): Promise<boolean>;
+  getGroupEvents(groupId: number): Promise<GroupEventWithDetails[]>;
+  getGroupMembers(groupId: number): Promise<User[]>;
+  createGroupEvent(data: InsertGroupEvent): Promise<GroupEvent>;
+  updateGroupEvent(eventId: number, updates: Partial<InsertGroupEvent>): Promise<GroupEvent>;
+  deleteGroupEvent(eventId: number): Promise<void>;
 
   // Wellness methods
   recordWellnessTracking(
@@ -1869,7 +1889,76 @@ export class DatabaseStorage implements IStorage {
       .insert(communityGroups)
       .values(group)
       .returning();
+    // Ensure creator is a member/admin by default
+    await db
+      .insert(groupMemberships)
+      .values({
+        groupId: newGroup.id,
+        userId: newGroup.creatorId,
+        role: 'admin',
+        status: 'active',
+      });
+    // Increment member count if needed
+    await db
+      .update(communityGroups)
+      .set({ memberCount: sql`${communityGroups.memberCount} + 1` })
+      .where(eq(communityGroups.id, newGroup.id));
     return newGroup;
+  }
+
+  async updateCommunityGroup(
+    groupId: number,
+    requesterId: number,
+    updates: Partial<InsertCommunityGroup>
+  ): Promise<CommunityGroup> {
+    // Only creator can update
+    const [group] = await db
+      .select()
+      .from(communityGroups)
+      .where(eq(communityGroups.id, groupId))
+      .limit(1);
+    if (!group || group.creatorId !== requesterId) {
+      throw new Error("Not authorized to update this group");
+    }
+
+    const allowed: Partial<InsertCommunityGroup> = {
+      name: updates.name,
+      description: updates.description,
+      category: updates.category,
+      privacy: updates.privacy,
+      coverImage: (updates as any).coverImage,
+      tags: updates.tags,
+    } as any;
+
+    const [updated] = await db
+      .update(communityGroups)
+      .set(allowed)
+      .where(eq(communityGroups.id, groupId))
+      .returning();
+    return updated;
+  }
+
+  async deleteCommunityGroup(
+    groupId: number,
+    requesterId: number
+  ): Promise<boolean> {
+    const [group] = await db
+      .select()
+      .from(communityGroups)
+      .where(eq(communityGroups.id, groupId))
+      .limit(1);
+    if (!group || group.creatorId !== requesterId) {
+      throw new Error("Not authorized to delete this group");
+    }
+
+    await db.delete(groupPosts).where(eq(groupPosts.groupId, groupId));
+    await db
+      .delete(groupMemberships)
+      .where(eq(groupMemberships.groupId, groupId));
+    const result = await db
+      .delete(communityGroups)
+      .where(eq(communityGroups.id, groupId));
+    return result.rowCount! > 0;
   }
 
   async getCommunityGroups(
@@ -1945,6 +2034,15 @@ export class DatabaseStorage implements IStorage {
       );
 
     return membership;
+  }
+
+  async getGroupMembers(groupId: number): Promise<User[]> {
+    const result = await db
+      .select({ user: users })
+      .from(groupMemberships)
+      .innerJoin(users, eq(groupMemberships.userId, users.id))
+      .where(eq(groupMemberships.groupId, groupId));
+    return result.map(r => r.user);
   }
 
   async joinGroup(groupId: number, userId: number): Promise<GroupMembership> {
@@ -3483,85 +3581,29 @@ export class DatabaseStorage implements IStorage {
 
   // ========== GROUP EVENTS METHODS ==========
 
-  async getGroupEvents(groupId?: number): Promise<any[]> {
-    try {
-      return [
-        {
-          id: 1,
-          groupId: 1,
-          creatorId: 1,
-          title: "Virtual Skincare Workshop",
-          description:
-            "Join us for an interactive skincare workshop where we'll discuss routines for different skin types.",
-          eventDate: new Date(
-            Date.now() + 7 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          endDate: new Date(
-            Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000
-          ).toISOString(),
-          location: null,
-          isVirtual: true,
-          meetingLink: "https://meet.example.com/skincare-workshop",
-          maxAttendees: 50,
-          currentAttendees: 23,
-          coverImage: "/uploads/event1.jpg",
-          status: "active",
-          createdAt: new Date().toISOString(),
-          creator: {
-            id: 1,
-            name: "Beauty Guru",
-            username: "beautyguru",
-            avatar: "/uploads/avatar1.jpg",
-          },
-          group: {
-            id: 1,
-            name: "Skincare Enthusiasts",
-          },
-          attendeeStatus: "interested",
-        },
-      ];
-    } catch (error) {
-      console.error("Get group events error:", error);
-      return [];
-    }
+  async getGroupEvents(groupId: number) {
+    const result = await db
+      .select({ event: groupEvents, creator: users, group: communityGroups })
+      .from(groupEvents)
+      .innerJoin(users, eq(groupEvents.creatorId, users.id))
+      .innerJoin(communityGroups, eq(groupEvents.groupId, communityGroups.id))
+      .where(eq(groupEvents.groupId, groupId))
+      .orderBy(desc(groupEvents.eventDate));
+    return result.map(({ event, creator, group }) => ({ ...event, creator, group }));
   }
 
-  async createGroupEvent(data: any): Promise<any> {
-    try {
-      const newEvent = {
-        id: Math.floor(Math.random() * 10000),
-        groupId: data.groupId,
-        creatorId: data.creatorId,
-        title: data.title,
-        description: data.description,
-        eventDate: data.eventDate,
-        endDate: data.endDate,
-        location: data.location,
-        isVirtual: data.isVirtual,
-        meetingLink: data.meetingLink,
-        maxAttendees: data.maxAttendees,
-        currentAttendees: 0,
-        coverImage: data.coverImage,
-        status: "active",
-        createdAt: new Date().toISOString(),
-        creator: {
-          id: data.creatorId,
-          name: "Event Creator",
-          username: "creator",
-          avatar: "/uploads/default-avatar.jpg",
-        },
-        group: {
-          id: data.groupId,
-          name: "Group Name",
-        },
-        attendeeStatus: null,
-      };
+  async createGroupEvent(data: InsertGroupEvent) {
+    const [ev] = await db.insert(groupEvents).values(data).returning();
+    return ev;
+  }
 
-      return newEvent;
-    } catch (error) {
-      console.error("Create group event error:", error);
-      throw error;
-    }
+  async updateGroupEvent(eventId: number, updates: Partial<InsertGroupEvent>) {
+    const [ev] = await db.update(groupEvents).set(updates).where(eq(groupEvents.id, eventId)).returning();
+    return ev;
+  }
+
+  async deleteGroupEvent(eventId: number) {
+    await db.delete(groupEvents).where(eq(groupEvents.id, eventId));
   }
 
   async rsvpGroupEvent(
@@ -3583,58 +3625,49 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async uploadGroupFile(data: any): Promise<any> {
-    try {
-      const newFile = {
-        id: Math.floor(Math.random() * 10000),
+  async uploadGroupFile(data: any): Promise<GroupFile> {
+    const [file] = await db
+      .insert(groupFiles)
+      .values({
         groupId: data.groupId,
         uploaderId: data.uploaderId,
         fileName: data.fileName,
         fileUrl: data.fileUrl,
-        fileType: data.fileType,
-        fileSize: data.fileSize,
-        description: data.description,
-        uploadedAt: new Date().toISOString(),
-        uploader: {
-          id: data.uploaderId,
-          name: "File Uploader",
-          username: "uploader",
-          avatar: "/uploads/default-avatar.jpg",
-        },
-      };
-
-      return newFile;
-    } catch (error) {
-      console.error("Upload group file error:", error);
-      throw error;
-    }
+        fileType: data.fileType || 'document',
+        fileSize: data.fileSize || 0,
+        description: data.description || null,
+      })
+      .returning();
+    return file;
   }
 
-  async getGroupFiles(groupId: number): Promise<any[]> {
-    try {
-      return [
-        {
-          id: 1,
-          groupId: groupId,
-          uploaderId: 1,
-          fileName: "skincare-routine-guide.pdf",
-          fileUrl: "/uploads/skincare-guide.pdf",
-          fileType: "document",
-          fileSize: 2048576,
-          description: "Complete skincare routine guide for beginners",
-          uploadedAt: new Date().toISOString(),
-          uploader: {
-            id: 1,
-            name: "Beauty Expert",
-            username: "expert",
-            avatar: "/uploads/avatar1.jpg",
-          },
-        },
-      ];
-    } catch (error) {
-      console.error("Get group files error:", error);
-      return [];
-    }
+  async getGroupFiles(groupId: number): Promise<(GroupFile & { uploader: User })[]> {
+    const rows = await db
+      .select({ file: groupFiles, uploader: users })
+      .from(groupFiles)
+      .innerJoin(users, eq(groupFiles.uploaderId, users.id))
+      .where(eq(groupFiles.groupId, groupId))
+      .orderBy(desc(groupFiles.createdAt));
+    return rows.map(({ file, uploader }) => ({ ...file, uploader }));
+  }
+
+  async updateGroupFile(fileId: number, updates: Partial<typeof groupFiles.$inferInsert>): Promise<GroupFile> {
+    const [f] = await db
+      .update(groupFiles)
+      .set({
+        fileName: (updates as any)?.fileName,
+        fileUrl: (updates as any)?.fileUrl,
+        description: (updates as any)?.description,
+        fileType: (updates as any)?.fileType,
+        fileSize: (updates as any)?.fileSize,
+      })
+      .where(eq(groupFiles.id, fileId))
+      .returning();
+    return f as any;
+  }
+
+  async deleteGroupFile(fileId: number): Promise<void> {
+    await db.delete(groupFiles).where(eq(groupFiles.id, fileId));
   }
 
   // Friend Request Methods
