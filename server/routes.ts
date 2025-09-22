@@ -1455,6 +1455,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Group messages persistence
+  app.get("/api/groups/:id/messages", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const rows = await (storage as any).getGroupMessages(id, 200);
+      res.json(rows);
+    } catch (error) {
+      console.error("Get group messages error:", error);
+      // Fallback to empty list so UI doesn't break even if table doesn't exist yet
+      res.json([]);
+    }
+  });
+
+  app.post("/api/groups/:id/messages", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.session.userId as number;
+      const { content } = z.object({ content: z.string().min(1) }).parse(req.body || {});
+      const row = await (storage as any).createGroupMessage({ groupId: id, userId, content } as any);
+      res.json(row);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
   app.post("/api/groups/:id/posts", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -2304,6 +2329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   if (wss) {
     wss.on("connection", (ws: WebSocket, req) => {
+      const joinedGroups = new Set<number>();
       let currentStreamId: number | null = null;
       let socketId: string = Math.random().toString(36).substring(7);
       let currentUserId: number | null = null;
@@ -2317,6 +2343,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("WebSocket message received:", data.type);
 
           switch (data.type) {
+            // ========== GROUP CHAT ==========
+            case "group:join": {
+              if (typeof data.groupId === "number") {
+                joinedGroups.add(data.groupId);
+                ws.send(JSON.stringify({ type: "group:joined", groupId: data.groupId }));
+              }
+              break;
+            }
+            case "group:leave": {
+              if (typeof data.groupId === "number") {
+                joinedGroups.delete(data.groupId);
+                ws.send(JSON.stringify({ type: "group:left", groupId: data.groupId }));
+              }
+              break;
+            }
+            case "group:message": {
+              if (typeof data.groupId === "number" && typeof data.content === "string") {
+                const payload = {
+                  type: "group:message",
+                  groupId: data.groupId,
+                  content: data.content,
+                  userId: data.userId || null,
+                  username: data.username || null,
+                  timestamp: Date.now(),
+                };
+                // broadcast to all sockets that joined this group
+                if (wss) {
+                  wss.clients.forEach((client) => {
+                    try {
+                      // naive: send to everyone; client filters by groupId
+                      if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(payload));
+                      }
+                    } catch {}
+                  });
+                }
+              }
+              break;
+            }
+            // ========== END GROUP CHAT ==========
             case "join_stream":
               currentStreamId = data.streamId;
               currentUserId = data.userId;

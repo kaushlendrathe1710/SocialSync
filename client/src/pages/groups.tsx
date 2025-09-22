@@ -4,6 +4,7 @@ import { useParams } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar as UIAvatar, AvatarFallback as UIAvatarFallback, AvatarImage as UIAvatarImage } from '@/components/ui/avatar';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -92,7 +93,7 @@ export default function GroupsPage() {
   // Fetch specific group with join/owner awareness
   const { data: currentGroup, isLoading: groupLoading } = useQuery({
     queryKey: ['/api/groups', groupId],
-    queryFn: () => fetch(`/api/groups/${groupId}`).then(res => res.json()),
+    queryFn: () => fetch(`/api/groups/${groupId}`, { credentials: 'include' }).then(res => res.json()),
     enabled: !!groupId,
   });
 
@@ -246,14 +247,12 @@ export default function GroupsPage() {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button onClick={() => joinGroupMutation.mutate(currentGroup.id)}>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Join Group
-                </Button>
-                <Button variant="outline">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Message
-                </Button>
+                {!currentGroup.isJoined ? (
+                  <Button onClick={() => joinGroupMutation.mutate(currentGroup.id)}>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Join Group
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -261,11 +260,12 @@ export default function GroupsPage() {
 
         {/* Group Content Tabs */}
         <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="events">Events</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
+            <TabsTrigger id="tab-chat" value="chat">Chat</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="space-y-4">
@@ -351,6 +351,14 @@ export default function GroupsPage() {
             <Card>
               <CardContent className="p-4">
                 <MembersList groupId={currentGroup.id} creatorId={currentGroup.creator.id} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="chat" className="space-y-4">
+            <Card>
+              <CardContent className="p-0">
+                <GroupChat groupId={currentGroup.id} groupName={currentGroup.name} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -744,6 +752,85 @@ function FileActions({ groupId, file }: { groupId: number; file: any }) {
     <div className="flex items-center gap-2">
       <Button size="sm" variant="outline" onClick={() => setEditing(true)}>Edit</Button>
       <Button size="sm" variant="destructive" onClick={del}>Delete</Button>
+    </div>
+  );
+}
+
+function GroupChat({ groupId, groupName }: { groupId: number; groupName: string }) {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<any[]>([]);
+  const [text, setText] = useState('');
+  const wsRef = useRef<WebSocket | null>(null);
+  const endRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // load existing messages
+    fetch(`/api/groups/${groupId}/messages`, { credentials: 'include' })
+      .then((r) => r.ok ? r.json() : [])
+      .then((rows) => {
+        if (Array.isArray(rows)) {
+          setMessages(rows.map((r: any) => ({
+            type: 'group:message',
+            groupId,
+            content: r.content,
+            userId: r.userId,
+            username: r.user?.name,
+            timestamp: new Date(r.createdAt || Date.now()).getTime(),
+          })));
+        }
+      })
+      .catch(() => {});
+
+    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+    wsRef.current = ws;
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'group:join', groupId }));
+    };
+    ws.onmessage = (evt) => {
+      try {
+        const data = JSON.parse(evt.data);
+        if (data.type === 'group:message' && data.groupId === groupId) {
+          setMessages((prev) => [...prev, data]);
+        }
+      } catch {}
+    };
+    ws.onclose = () => {};
+    return () => {
+      try { ws.send(JSON.stringify({ type: 'group:leave', groupId })); } catch {}
+      ws.close();
+    };
+  }, [groupId]);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
+
+  const send = () => {
+    const content = text.trim();
+    if (!content || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: 'group:message', groupId, content, userId: user?.id, username: user?.name }));
+    // persist
+    fetch(`/api/groups/${groupId}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ content }) }).catch(() => {});
+    setText('');
+  };
+
+  return (
+    <div className="flex flex-col h-[420px]">
+      <div className="px-4 py-3 border-b">
+        <div className="font-semibold">{groupName} • Chat</div>
+        <div className="text-xs text-gray-500">Group messages are live</div>
+      </div>
+      <div className="flex-1 overflow-auto p-4 space-y-2">
+        {messages.map((m, i) => (
+          <div key={i} className="max-w-[80%] rounded px-3 py-2 text-sm bg-gray-100">
+            <div className="text-[11px] text-gray-500 mb-1">{m.username || 'Member'} • {new Date(m.timestamp || Date.now()).toLocaleTimeString()}</div>
+            <div>{m.content}</div>
+          </div>
+        ))}
+        <div ref={endRef} />
+      </div>
+      <div className="border-t p-3 flex gap-2">
+        <Input placeholder="Type a message..." value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send(); }} />
+        <Button onClick={send} disabled={!text.trim()}>Send</Button>
+      </div>
     </div>
   );
 }
