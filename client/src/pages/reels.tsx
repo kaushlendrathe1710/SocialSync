@@ -214,6 +214,30 @@ export default function ReelsPage() {
     },
   });
 
+  const updateReelCommentMutation = useMutation({
+    mutationFn: async ({ id, content }: { id: number; content: string }) => {
+      const res = await apiRequest('PUT', `/api/reel-comments/${id}`, { content });
+      return await res.json();
+    },
+    onSuccess: () => {
+      if (activeReelId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/reels/${activeReelId}/comments`] });
+      }
+    }
+  });
+
+  const deleteReelCommentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/reel-comments/${id}`, {});
+    },
+    onSuccess: () => {
+      if (activeReelId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/reels/${activeReelId}/comments`] });
+        queryClient.invalidateQueries({ queryKey: ['/api/reels'] });
+      }
+    }
+  });
+
   // Handle actual sharing to platforms
   const handleShare = async (reelId: number, platform: string) => {
     const reelUrl = `${window.location.origin}/reels/${reelId}`;
@@ -468,6 +492,51 @@ export default function ReelsPage() {
 
     createReelMutation.mutate(formData);
   };
+
+  function ReelCommentItem({ comment, canEdit, onUpdate, onDelete }: { comment: any; canEdit: boolean; onUpdate: (content: string) => void; onDelete: () => void }) {
+    const [editing, setEditing] = useState(false);
+    const [value, setValue] = useState(comment.content);
+    return (
+      <div className="flex items-start space-x-3">
+        <Avatar className="w-8 h-8">
+          <AvatarImage src={comment.user?.avatar} />
+          <AvatarFallback>{comment.user?.name?.[0]}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <div className="flex items-start justify-between">
+            <div className="text-xs text-gray-400">
+              {comment.user?.name}
+              {comment.user?.username ? ` @${comment.user.username}` : ""}
+            </div>
+            {canEdit && (
+              <div className="flex gap-2">
+                {!editing ? (
+                  <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>Edit</Button>
+                ) : (
+                  <>
+                    <Button variant="ghost" size="sm" onClick={() => { if (value.trim()) onUpdate(value.trim()); setEditing(false); }}>Save</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setEditing(false); setValue(comment.content); }}>Cancel</Button>
+                  </>
+                )}
+                <Button variant="ghost" size="sm" onClick={onDelete}>Delete</Button>
+              </div>
+            )}
+          </div>
+          {editing ? (
+            <div className="mt-1 rounded-2xl px-3 py-2 bg-gray-100 dark:bg-gray-800">
+              <Input
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="bg-transparent border-0 focus:ring-0 focus-visible:ring-0 text-sm text-gray-900 dark:text-gray-100"
+              />
+            </div>
+          ) : (
+            <div className="text-sm">{comment.content}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -913,19 +982,13 @@ export default function ReelsPage() {
             ) : (
               <div className="space-y-3">
                 {reelComments.map((c) => (
-                  <div key={c.id} className="flex items-start space-x-3">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={c.user.avatar} />
-                      <AvatarFallback>{c.user.name?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="text-xs text-gray-400">
-                        {c.user.name}
-                        {c.user.username ? ` @${c.user.username}` : ""}
-                      </div>
-                      <div className="text-sm">{c.content}</div>
-                    </div>
-                  </div>
+                  <ReelCommentItem
+                    key={c.id}
+                    comment={c}
+                    canEdit={c.user?.id === (reels[currentReelIndex]?.userId || -1) || true}
+                    onUpdate={(content) => updateReelCommentMutation.mutate({ id: c.id, content })}
+                    onDelete={() => deleteReelCommentMutation.mutate(c.id)}
+                  />
                 ))}
               </div>
             )}

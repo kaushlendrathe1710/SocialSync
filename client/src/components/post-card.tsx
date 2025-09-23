@@ -43,6 +43,32 @@ export default function PostCard({ post }: PostCardProps) {
     enabled: showComments,
   });
 
+  const updateCommentMutation = useMutation({
+    mutationFn: ({ id, content }: { id: number; content: string }) => api.updateComment(id, content),
+    onSuccess: async (_, variables) => {
+      queryClient.setQueryData(['/api/posts', post.id, 'comments'], (oldData: any[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map((c) => (c.id === variables.id ? { ...c, content: variables.content } : c));
+      });
+      toast({ title: 'Updated', description: 'Comment edited successfully.' });
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: (id: number) => api.deleteComment(id),
+    onSuccess: async (_, id) => {
+      queryClient.setQueryData(['/api/posts', post.id, 'comments'], (oldData: any[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.filter((c) => c.id !== id);
+      });
+      queryClient.setQueryData(['/api/posts'], (oldData: PostWithUser[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map((p) => (p.id === post.id ? { ...p, commentsCount: Math.max(0, p.commentsCount - 1) } : p));
+      });
+      toast({ title: 'Deleted', description: 'Comment removed.' });
+    },
+  });
+
   const likeMutation = useMutation({
     mutationFn: () => api.likePost(post.id),
     onSuccess: async (response) => {
@@ -278,17 +304,19 @@ export default function PostCard({ post }: PostCardProps) {
         {showComments && (
           <div className="mt-4 space-y-3 border-t pt-3">
             {comments?.map((comment) => (
-              <div key={comment.id} className="flex space-x-2">
+              <div key={comment.id} className="flex space-x-2 items-start">
                 <Avatar className="w-8 h-8">
                   <AvatarImage src={comment.user.avatar || undefined} />
                   <AvatarFallback>
                     {comment.user.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 bg-muted rounded-2xl px-3 py-2">
-                  <p className="font-semibold text-sm">{comment.user.name}</p>
-                  <p className="text-sm">{comment.content}</p>
-                </div>
+                <CommentItem
+                  comment={comment}
+                  canEdit={user?.id === comment.userId}
+                  onUpdate={(content) => updateCommentMutation.mutate({ id: comment.id, content })}
+                  onDelete={() => deleteCommentMutation.mutate(comment.id)}
+                />
               </div>
             ))}
 
@@ -321,5 +349,35 @@ export default function PostCard({ post }: PostCardProps) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function CommentItem({ comment, canEdit, onUpdate, onDelete }: { comment: any; canEdit: boolean; onUpdate: (content: string) => void; onDelete: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(comment.content);
+  return (
+    <div className="flex-1 bg-muted rounded-2xl px-3 py-2">
+      <div className="flex items-start justify-between">
+        <p className="font-semibold text-sm">{comment.user.name}</p>
+        {canEdit && (
+          <div className="flex gap-2">
+            {!editing ? (
+              <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>Edit</Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => { onUpdate(value.trim()); setEditing(false); }}>Save</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setEditing(false); setValue(comment.content); }}>Cancel</Button>
+              </>
+            )}
+            <Button variant="ghost" size="sm" onClick={onDelete}>Delete</Button>
+          </div>
+        )}
+      </div>
+      {editing ? (
+        <Input value={value} onChange={(e) => setValue(e.target.value)} className="mt-1 bg-background" />
+      ) : (
+        <p className="text-sm mt-1">{comment.content}</p>
+      )}
+    </div>
   );
 }

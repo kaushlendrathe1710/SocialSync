@@ -46,6 +46,14 @@ export const api = {
     apiRequest("GET", `/api/posts/${postId}/comments`),
   createComment: (postId: number, content: string) =>
     apiRequest("POST", `/api/posts/${postId}/comments`, { content }),
+  updateComment: (commentId: number, content: string) =>
+    apiRequest("PUT", `/api/comments/${commentId}`, { content }),
+  deleteComment: (commentId: number) =>
+    apiRequest("DELETE", `/api/comments/${commentId}`),
+  updateReelComment: (commentId: number, content: string) =>
+    apiRequest("PUT", `/api/reel-comments/${commentId}`, { content }),
+  deleteReelComment: (commentId: number) =>
+    apiRequest("DELETE", `/api/reel-comments/${commentId}`),
 
   // Stories
   getStories: (userId?: number) => {
