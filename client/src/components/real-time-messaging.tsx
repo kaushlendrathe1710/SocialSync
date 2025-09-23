@@ -67,6 +67,9 @@ export default function RealTimeMessaging() {
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [showMessagesMenu, setShowMessagesMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const lastConvIdRef = useRef<number | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const [showNewConversation, setShowNewConversation] = useState(false);
@@ -221,9 +224,34 @@ export default function RealTimeMessaging() {
   }, [conversations, user?.id]);
 
   // Auto-scroll to bottom when new messages arrive
+  // Track whether user is near bottom; only auto-scroll then
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, selectedConversation?.id]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+      shouldAutoScrollRef.current = nearBottom;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [selectedConversation?.id]);
+
+  // When messages grow and user is near bottom, keep them at bottom
+  useEffect(() => {
+    if (shouldAutoScrollRef.current) {
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
+  }, [messages?.length]);
+
+  // When switching conversation, scroll to bottom once after first load
+  useEffect(() => {
+    if (!selectedConversation) return;
+    if (lastConvIdRef.current !== selectedConversation.id && messages && messages.length) {
+      lastConvIdRef.current = selectedConversation.id;
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 0);
+    }
+  }, [selectedConversation?.id, messagesLoading]);
 
   // Handle URL parameters
   useEffect(() => {
@@ -506,7 +534,7 @@ export default function RealTimeMessaging() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <Card className="overflow-hidden h-[calc(100vh-120px)]">
-        <div className="flex h-full bg-white dark:bg-gray-900">
+        <div className="flex h-full bg-white dark:bg-gray-900 min-h-0">
           
           {/* Conversations Sidebar */}
           <div className={`w-full md:w-80 border-r border-border ${selectedConversation ? 'hidden md:block' : ''}`}>
@@ -660,7 +688,7 @@ export default function RealTimeMessaging() {
           </div>
           
           {/* Chat Area */}
-          <div className={`flex-col flex-1 ${selectedConversation ? 'flex' : 'hidden md:flex'}`}>
+          <div className={`flex flex-col flex-1 min-h-0 ${selectedConversation ? 'flex' : 'hidden md:flex'}`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header - Always Visible */}
@@ -716,7 +744,7 @@ export default function RealTimeMessaging() {
                 </div>
 
                 {/* Enhanced Messages Area */}
-                <ScrollArea className="flex-1 px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
+                <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-6 py-4 bg-gray-50 dark:bg-gray-900/50 h-[calc(100vh-260px)] max-h-[calc(100vh-260px)]">
                   {messagesLoading ? (
                     <div className="space-y-6">
                       {[...Array(5)].map((_, i) => (
@@ -760,7 +788,7 @@ export default function RealTimeMessaging() {
                                   </AvatarFallback>
                                 </Avatar>
                               )}
-                              <div className={`max-w-xs lg:max-w-md ${isFromCurrentUser ? 'order-1' : ''}`}>
+                              <div className={`max-w-md sm:max-w-lg lg:max-w-2xl ${isFromCurrentUser ? 'order-1' : ''}`}>
                                 <div
                                   className={`px-4 py-3 rounded-2xl shadow-sm ${
                                     isFromCurrentUser
@@ -801,11 +829,11 @@ export default function RealTimeMessaging() {
                                         );
                                       })()}
                                       {message.content && !message.content.includes('images') && message.content !== 'Image' && (
-                                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words break-all">{message.content}</p>
                                       )}
                                     </div>
                                   ) : (
-                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words break-all">{message.content}</p>
                                   )}
                                 </div>
                                 <div className={`flex items-center mt-1 space-x-1 px-1 ${isFromCurrentUser ? 'justify-end' : 'justify-start'}`}>
@@ -842,7 +870,7 @@ export default function RealTimeMessaging() {
                       </p>
                     </div>
                   )}
-                </ScrollArea>
+                </div>
 
                 {/* Enhanced Message Input */}
                 <div className="px-6 py-4 border-t border-border bg-white dark:bg-gray-900 shadow-lg">
