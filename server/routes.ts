@@ -698,6 +698,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Edit reel comment
+  app.put("/api/reel-comments/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { content } = z.object({ content: z.string().min(1) }).parse(req.body);
+      const updated = await storage.updateReelComment(id, content);
+      if (!updated) return res.status(404).json({ message: "Comment not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update comment" });
+    }
+  });
+
+  // Delete reel comment
+  app.delete("/api/reel-comments/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const ok = await storage.deleteReelComment(id);
+      if (!ok) return res.status(404).json({ message: "Comment not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
   app.post(
     "/api/posts",
     requireAuth,
@@ -1150,6 +1175,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(commentWithUser);
     } catch (error) {
       res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Edit a post comment
+  app.put("/api/comments/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { content } = z.object({ content: z.string().min(1) }).parse(req.body);
+      const updated = await storage.updateComment(id, content);
+      if (!updated) return res.status(404).json({ message: "Comment not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update comment" });
+    }
+  });
+
+  // Delete a post comment
+  app.delete("/api/comments/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const ok = await storage.deleteComment(id);
+      if (!ok) return res.status(404).json({ message: "Comment not found" });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete comment" });
     }
   });
 

@@ -3207,6 +3207,20 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+
+  async updateReelComment(id: number, content: string): Promise<Comment | undefined> {
+    const [row] = await db
+      .update(comments)
+      .set({ content })
+      .where(eq(comments.id, id))
+      .returning();
+    return row;
+  }
+
+  async deleteReelComment(id: number): Promise<boolean> {
+    const result = await db.delete(comments).where(eq(comments.id, id));
+    return result.rowCount! > 0;
+  }
   async saveReel(userId: number, reelId: number): Promise<void> {
     try {
       await db
