@@ -7,12 +7,14 @@ interface NotificationContextType {
   onlineUsers: Set<number>;
   unreadCount: number;
   setUnreadCount: (count: number) => void;
+  wsConnection: WebSocket | null;
 }
 
 const NotificationContext = createContext<NotificationContextType>({
   onlineUsers: new Set(),
   unreadCount: 0,
   setUnreadCount: () => {},
+  wsConnection: null,
 });
 
 export const useNotifications = () => useContext(NotificationContext);
@@ -42,14 +44,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const host = window.location.host || 'localhost:5000';
+    const wsUrl = `${protocol}//${host}/ws`;
+    console.log('WebSocket URL:', wsUrl);
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('WebSocket connected for notifications');
-      // Authenticate the connection
+      console.log('WebSocket connected for notifications and messaging');
+      // Join for messaging (this also handles online status)
       ws.send(JSON.stringify({
-        type: 'auth',
+        type: 'join',
         userId: user.id
       }));
     };
@@ -146,6 +150,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     onlineUsers,
     unreadCount,
     setUnreadCount,
+    wsConnection: wsRef.current,
   };
 
   return (

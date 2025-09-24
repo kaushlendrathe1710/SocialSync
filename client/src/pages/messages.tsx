@@ -1,5 +1,5 @@
-import SimpleMessaging from '@/components/simple-messaging';
+import RealTimeMessaging from '@/components/real-time-messaging';
 
 export default function MessagesPage() {
-  return <SimpleMessaging />;
+  return <RealTimeMessaging />;
 }

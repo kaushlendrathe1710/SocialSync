@@ -2433,6 +2433,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               break;
             }
             // ========== END GROUP CHAT ==========
+            case "join": {
+              if (data.userId) {
+                currentUserId = data.userId;
+                console.log('👤 SERVER: User', currentUserId, 'joined for messaging');
+              }
+              break;
+            }
             case "join_stream":
               currentStreamId = data.streamId;
               currentUserId = data.userId;
@@ -2718,6 +2725,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
               break;
+
+            case "webrtc-signaling": {
+              console.log('📞 SERVER: WebRTC signaling message received!');
+              console.log('📞 SERVER: Current user ID:', currentUserId);
+              console.log('📞 SERVER: Data:', data);
+              
+              if (!currentUserId) {
+                console.log('❌ SERVER: No current user ID set! User needs to join first.');
+                break;
+              }
+              
+              const signalingData = data.data;
+              
+              console.log('📞 SERVER: WebRTC signaling received from user', currentUserId);
+              console.log('📞 SERVER: Signaling data:', signalingData);
+              
+              // Handle different signaling message structures
+              let targetUserId;
+              if (signalingData.to) {
+                targetUserId = signalingData.to;
+              } else if (signalingData.data && signalingData.data.to) {
+                targetUserId = signalingData.data.to;
+              }
+              
+              console.log('📞 SERVER: Target user ID:', targetUserId);
+              
+              // Forward signaling message to the target user
+              if (wss && targetUserId) {
+                wss.clients.forEach((client) => {
+                  try {
+                    if (client.readyState === WebSocket.OPEN && client !== ws) {
+                      // Send to all clients - they'll filter by user ID
+                      const messageToSend = {
+                        type: "webrtc-signaling",
+                        data: {
+                          ...signalingData,
+                          from: currentUserId,
+                          to: targetUserId
+                        }
+                      };
+                      console.log('📞 SERVER: Forwarding WebRTC message:', messageToSend);
+                      client.send(JSON.stringify(messageToSend));
+                    }
+                  } catch (error) {
+                    console.error('Error forwarding WebRTC message:', error);
+                  }
+                });
+              } else {
+                console.log('❌ SERVER: No target user ID found or no WebSocket server');
+              }
+              break;
+            }
 
             default:
               console.log("Unknown WebSocket message type:", data.type);

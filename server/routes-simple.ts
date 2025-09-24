@@ -3174,6 +3174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ws.on("message", (message) => {
         try {
           const data = JSON.parse(message.toString());
+          
+          console.log('📨 SERVER: Received message type:', data.type, 'from user:', currentUserId);
 
           // Handle user joining for messaging
           if (data.type === "join" && data.userId) {
@@ -3184,6 +3186,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               connectedUsers.set(currentUserId, []);
             }
             connectedUsers.get(currentUserId)!.push(ws);
+
+            console.log('👤 SERVER: User', currentUserId, 'joined. Total connected:', connectedUsers.size);
 
             // Broadcast user online status
             broadcastToAllUsers({
@@ -3233,6 +3237,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: "typing",
               data: { userId: currentUserId, conversationId },
             });
+          }
+
+          // Handle WebRTC signaling for video calls
+          if (data.type === "webrtc-signaling") {
+            console.log('📞 SERVER: WebRTC signaling message received!');
+            console.log('📞 SERVER: Current user ID:', currentUserId);
+            console.log('📞 SERVER: Data:', data);
+            
+            if (!currentUserId) {
+              console.log('❌ SERVER: No current user ID set! User needs to join first.');
+              return;
+            }
+            
+            const signalingData = data.data;
+            
+            console.log('📞 SERVER: WebRTC signaling received from user', currentUserId);
+            console.log('📞 SERVER: Signaling data:', signalingData);
+            console.log('📞 SERVER: Target user ID:', signalingData.to);
+            console.log('📞 SERVER: Connected users:', Array.from(connectedUsers.keys()));
+            
+            // Forward signaling message to the target user
+            if (connectedUsers.has(signalingData.to)) {
+              const targetSockets = connectedUsers.get(signalingData.to)!;
+              console.log('📞 SERVER: Found', targetSockets.length, 'sockets for target user');
+              
+              targetSockets.forEach((socket, index) => {
+                if (socket.readyState === WebSocket.OPEN) {
+                  const messageToSend = {
+                    type: "webrtc-signaling",
+                    data: {
+                      ...signalingData,
+                      from: currentUserId
+                    }
+                  };
+                  console.log('📞 SERVER: Forwarding to socket', index, ':', messageToSend);
+                  socket.send(JSON.stringify(messageToSend));
+                } else {
+                  console.log('📞 SERVER: Socket', index, 'not open, state:', socket.readyState);
+                }
+              });
+            } else {
+              console.log('📞 SERVER: Target user', signalingData.to, 'not connected');
+              console.log('📞 SERVER: Available users:', Array.from(connectedUsers.keys()));
+            }
           }
 
           // Enhanced Live stream functionality

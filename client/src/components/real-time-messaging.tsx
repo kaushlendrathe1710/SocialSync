@@ -34,6 +34,10 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
+import VideoCall from '@/components/video-call';
+import IncomingCallNotification from '@/components/incoming-call-notification';
+import { useVideoCall } from '@/hooks/use-video-call';
+import DebugWebRTC from '@/components/debug-webrtc';
 
 const EMOJI_PICKER = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -54,7 +58,7 @@ export default function RealTimeMessaging() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { onlineUsers } = useNotifications();
+  const { onlineUsers, wsConnection } = useNotifications();
   const [location, setLocation] = useLocation();
   const { userId: paramUserId } = useParams();
   const [selectedConversation, setSelectedConversation] = useState<User | null>(null);
@@ -70,9 +74,21 @@ export default function RealTimeMessaging() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
   const lastConvIdRef = useRef<number | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const [showNewConversation, setShowNewConversation] = useState(false);
+  
+  // Video call functionality - use the WebSocket from notification context
+  const {
+    callState,
+    sendCallRequest,
+    acceptCall,
+    rejectCall,
+    endCall,
+    handleIncomingCall,
+    handleCallAccepted,
+    handleCallRejected,
+    handleCallEnded
+  } = useVideoCall(wsConnection);
 
   // Add error boundary to catch rendering issues
   if (!user) {
@@ -85,25 +101,24 @@ export default function RealTimeMessaging() {
     );
   }
 
-  // WebSocket connection for real-time messaging
+  // Navigate to video call page when call starts
   useEffect(() => {
-    if (!user) return;
-
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log('WebSocket connected for messaging');
-      ws.send(JSON.stringify({
-        type: 'join',
-        userId: user.id
+    if (callState.isInCall && selectedConversation) {
+      // Store state in sessionStorage since wouter doesn't support state passing
+      sessionStorage.setItem('videoCallState', JSON.stringify({
+        otherUser: selectedConversation,
+        isInitiator: !!callState.outgoingCall,
+        callId: callState.outgoingCall?.callId || callState.incomingCall?.callId
       }));
-    };
+      setLocation('/video-call');
+    }
+  }, [callState.isInCall, selectedConversation, setLocation, callState.outgoingCall, callState.incomingCall]);
 
-    ws.onmessage = (event) => {
+  // Handle WebSocket messages from the notification context
+  useEffect(() => {
+    if (!wsConnection) return;
+
+    const handleMessage = (event: MessageEvent) => {
       try {
         const message = JSON.parse(event.data);
         
@@ -139,22 +154,46 @@ export default function RealTimeMessaging() {
           }
         }
         
-        // Online/offline status is now handled by the global notification context
+        // Handle WebRTC signaling messages
+        if (message.type === 'webrtc-signaling') {
+          const signalingData = message.data;
+          console.log('📞 RECEIVED WebRTC signaling message:', signalingData);
+          console.log('Signaling type:', signalingData.type);
+          console.log('From user:', signalingData.from);
+          console.log('To user:', signalingData.to);
+          
+          switch (signalingData.type) {
+            case 'call-request':
+              console.log('📞 Processing call request...');
+              handleIncomingCall(signalingData.from, signalingData.data.callId);
+              break;
+            case 'call-accept':
+              console.log('✅ Processing call accept...');
+              handleCallAccepted();
+              break;
+            case 'call-reject':
+              console.log('❌ Processing call reject...');
+              handleCallRejected();
+              break;
+            case 'call-end':
+              console.log('📞 Processing call end...');
+              handleCallEnded();
+              break;
+            default:
+              console.log('❓ Unknown signaling type:', signalingData.type);
+          }
+        }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
     };
 
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
+    wsConnection.addEventListener('message', handleMessage);
 
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
+      wsConnection.removeEventListener('message', handleMessage);
     };
-  }, [user, queryClient]);
+  }, [wsConnection, user, queryClient, selectedConversation, handleIncomingCall, handleCallAccepted, handleCallRejected, handleCallEnded, toast]);
 
   const { data: conversations, isLoading: conversationsLoading } = useQuery({
     queryKey: ['/api/conversations'],
@@ -164,7 +203,6 @@ export default function RealTimeMessaging() {
     },
     refetchInterval: 2000,
     refetchOnWindowFocus: false,
-    keepPreviousData: true,
   });
 
   const { data: friends = [], isLoading: friendsLoading } = useQuery({
@@ -187,7 +225,6 @@ export default function RealTimeMessaging() {
     enabled: !!selectedConversation,
     refetchInterval: 1000,
     refetchOnWindowFocus: false,
-    keepPreviousData: true,
   });
 
   // Fetch privacy settings for users in conversations
@@ -533,6 +570,9 @@ export default function RealTimeMessaging() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Debug Component - Remove in production */}
+      <DebugWebRTC wsConnection={wsConnection} />
+      
       <Card className="overflow-hidden h-[calc(100vh-120px)]">
         <div className="flex h-full bg-white dark:bg-gray-900 min-h-0">
           
@@ -730,10 +770,22 @@ export default function RealTimeMessaging() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm" className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => sendCallRequest(selectedConversation, user!.id)}
+                        disabled={callState.isInCall}
+                        className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2"
+                      >
                         <Phone className="w-5 h-5" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => sendCallRequest(selectedConversation, user!.id)}
+                        disabled={callState.isInCall}
+                        className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2"
+                      >
                         <Video className="w-5 h-5" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setShowUserInfo(true)} className="hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2">
@@ -882,6 +934,7 @@ export default function RealTimeMessaging() {
                     multiple
                     className="hidden"
                     id="chat-file-input"
+                    aria-label="Select files to attach"
                   />
                   
                   {/* File previews */}
@@ -1110,11 +1163,21 @@ export default function RealTimeMessaging() {
               )}
               
               <div className="flex space-x-2 pt-4">
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => sendCallRequest(selectedConversation, user!.id)}
+                  disabled={callState.isInCall}
+                >
                   <Phone className="w-4 h-4 mr-2" />
                   Call
                 </Button>
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => sendCallRequest(selectedConversation, user!.id)}
+                  disabled={callState.isInCall}
+                >
                   <Video className="w-4 h-4 mr-2" />
                   Video Call
                 </Button>
@@ -1167,6 +1230,28 @@ export default function RealTimeMessaging() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Video Call Navigation */}
+      {callState.isInCall && selectedConversation && (
+        <div className="fixed inset-0 z-50 bg-gray-900 flex items-center justify-center">
+          <div className="text-white text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p>Starting video call...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Incoming Call Notification */}
+      {callState.incomingCall && (
+        <IncomingCallNotification
+          from={callState.incomingCall.from}
+          onAccept={() => {
+            acceptCall(user!.id);
+            // The VideoCall component will be opened automatically
+          }}
+          onReject={() => rejectCall(user!.id)}
+        />
+      )}
     </div>
   );
 }

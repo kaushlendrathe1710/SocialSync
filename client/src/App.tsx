@@ -27,6 +27,7 @@ import GroupsPage from "@/pages/groups";
 import VirtualRoomsPage from "@/pages/virtual-rooms";
 import LiveStreamsPage from "@/pages/live-streams";
 import LiveStreamPage from "@/pages/live-stream";
+import VideoCallPage from "@/pages/video-call";
 import Navigation from "@/components/navigation";
 import Sidebar from "@/components/sidebar";
 import NotFound from "@/pages/not-found";
@@ -90,6 +91,7 @@ function AppContent() {
               <Route path="/profile" component={ProfilePage} />
               <Route path="/explore" component={ExplorePage} />
               <Route path="/messages" component={MessagesPage} />
+              <Route path="/video-call" component={VideoCallPage} />
               <Route path="/notifications" component={NotificationsPage} />
               <Route path="/friends" component={FriendsPage} />
               <Route path="/wellness" component={WellnessPage} />
@@ -113,7 +115,7 @@ function AppContent() {
   }
 
   // Check if user is admin and automatically redirect or show admin interface
-  const isAdminUser = user.role === "admin" || user.role === "super_admin";
+  const isAdminUser = user?.role === "admin" || user?.role === "super_admin";
   const isAdminRoute = window.location.pathname.startsWith("/admin");
 
   // Auto-redirect admin users to admin dashboard if they're on the main site
@@ -155,6 +157,7 @@ function AppContent() {
             <Route path="/explore" component={ExplorePage} />
             <Route path="/messages/:userId?" component={MessagesPage} />
             <Route path="/messages" component={MessagesPage} />
+            <Route path="/video-call" component={VideoCallPage} />
             <Route path="/notifications" component={NotificationsPage} />
             <Route path="/friends" component={FriendsPage} />
             <Route path="/wellness" component={WellnessPage} />
