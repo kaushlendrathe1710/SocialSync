@@ -29,6 +29,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
+  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -51,6 +52,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     ws.onopen = () => {
       console.log('WebSocket connected for notifications and messaging');
+      setWsConnection(ws); // Update the state with the connected WebSocket
       // Join for messaging (this also handles online status)
       ws.send(JSON.stringify({
         type: 'join',
@@ -69,6 +71,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     ws.onclose = () => {
       console.log('WebSocket disconnected');
+      setWsConnection(null); // Clear the state
       // Attempt to reconnect after 3 seconds
       setTimeout(() => {
         if (user) {
@@ -79,6 +82,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
+      setWsConnection(null); // Clear the state
     };
 
     wsRef.current = ws;
@@ -87,6 +91,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (ws.readyState === WebSocket.OPEN) {
         ws.close();
       }
+      setWsConnection(null); // Clear the state on cleanup
     };
   }, [user]);
 
@@ -150,7 +155,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     onlineUsers,
     unreadCount,
     setUnreadCount,
-    wsConnection: wsRef.current,
+    wsConnection: wsConnection,
   };
 
   return (
