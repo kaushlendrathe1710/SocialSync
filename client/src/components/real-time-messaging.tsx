@@ -37,7 +37,6 @@ import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import VideoCall from '@/components/video-call';
 import IncomingCallNotification from '@/components/incoming-call-notification';
 import { useVideoCall } from '@/hooks/use-video-call';
-import DebugWebRTC from '@/components/debug-webrtc';
 
 const EMOJI_PICKER = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -89,6 +88,7 @@ export default function RealTimeMessaging() {
     handleCallRejected,
     handleCallEnded
   } = useVideoCall(wsConnection);
+  
 
   // Add error boundary to catch rendering issues
   if (!user) {
@@ -570,9 +570,6 @@ export default function RealTimeMessaging() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Debug Component - Remove in production */}
-      <DebugWebRTC wsConnection={wsConnection} />
-      
       <Card className="overflow-hidden h-[calc(100vh-120px)]">
         <div className="flex h-full bg-white dark:bg-gray-900 min-h-0">
           
@@ -774,7 +771,7 @@ export default function RealTimeMessaging() {
                         variant="ghost" 
                         size="sm" 
                         onClick={() => sendCallRequest(selectedConversation, user!.id)}
-                        disabled={callState.isInCall}
+                        disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
                         className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2"
                       >
                         <Phone className="w-5 h-5" />
@@ -783,7 +780,7 @@ export default function RealTimeMessaging() {
                         variant="ghost" 
                         size="sm" 
                         onClick={() => sendCallRequest(selectedConversation, user!.id)}
-                        disabled={callState.isInCall}
+                        disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
                         className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2"
                       >
                         <Video className="w-5 h-5" />
@@ -1167,7 +1164,7 @@ export default function RealTimeMessaging() {
                   variant="outline" 
                   className="flex-1"
                   onClick={() => sendCallRequest(selectedConversation, user!.id)}
-                  disabled={callState.isInCall}
+                  disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
                 >
                   <Phone className="w-4 h-4 mr-2" />
                   Call
@@ -1176,12 +1173,22 @@ export default function RealTimeMessaging() {
                   variant="outline" 
                   className="flex-1"
                   onClick={() => sendCallRequest(selectedConversation, user!.id)}
-                  disabled={callState.isInCall}
+                  disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
                 >
                   <Video className="w-4 h-4 mr-2" />
                   Video Call
                 </Button>
               </div>
+              
+              {/* WebSocket Status Indicator */}
+              {(!wsConnection || wsConnection.readyState !== WebSocket.OPEN) && (
+                <div className="mt-2 text-center">
+                  <div className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></div>
+                    Connecting to server...
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
