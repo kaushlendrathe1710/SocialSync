@@ -569,14 +569,14 @@ export default function RealTimeMessaging() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <Card className="overflow-hidden h-[calc(100vh-120px)]">
-        <div className="flex h-full bg-white dark:bg-gray-900 min-h-0">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <Card className="flex-1 m-4 overflow-hidden shadow-xl border-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
+        <div className="flex h-full bg-transparent min-h-0">
           
           {/* Conversations Sidebar */}
-          <div className={`w-full md:w-80 border-r border-border ${selectedConversation ? 'hidden md:block' : ''}`}>
-            <div className="p-4 border-b border-border bg-white dark:bg-gray-900">
-              <div className="flex items-center justify-between mb-4">
+          <div className={`w-full md:w-80 border-r border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 flex flex-col h-full ${selectedConversation ? 'hidden md:flex' : 'flex'}`}>
+            <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50">
+              <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">Messages</h2>
                 <DropdownMenu open={showMessagesMenu} onOpenChange={setShowMessagesMenu}>
                   <DropdownMenuTrigger asChild>
@@ -634,11 +634,11 @@ export default function RealTimeMessaging() {
                 </DropdownMenu>
               </div>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   type="text"
                   placeholder="Search conversations..."
-                  className="pl-10 bg-muted border-none rounded-full"
+                  className="pl-10 bg-white/70 dark:bg-gray-800/70 border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm focus:shadow-md transition-all duration-200 backdrop-blur-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -672,21 +672,21 @@ export default function RealTimeMessaging() {
                     return (
                       <div
                         key={`${message.senderId}-${message.receiverId}`}
-                        className={`p-3 hover:bg-muted cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800 ${
-                          isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
+                        className={`p-4 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent dark:hover:from-blue-900/20 dark:hover:to-transparent cursor-pointer transition-all duration-200 border-b border-gray-100/50 dark:border-gray-800/50 ${
+                          isSelected ? 'bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 border-r-4 border-r-blue-500 shadow-sm' : ''
                         }`}
                         onClick={() => handleConversationSelect(message)}
                       >
                         <div className="flex items-center space-x-3">
                           <div className="relative">
-                            <Avatar className="w-12 h-12">
+                            <Avatar className="w-12 h-12 ring-2 ring-white dark:ring-gray-800 shadow-md">
                               <AvatarImage src={otherUser.avatar || undefined} />
-                              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                              <AvatarFallback className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-semibold">
                                 {otherUser.name?.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             {isOnline && (
-                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm animate-pulse"></div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -725,11 +725,11 @@ export default function RealTimeMessaging() {
           </div>
           
           {/* Chat Area */}
-          <div className={`flex flex-col flex-1 min-h-0 ${selectedConversation ? 'flex' : 'hidden md:flex'}`}>
+          <div className={`flex flex-col flex-1 min-h-0 h-full ${selectedConversation ? 'flex' : 'hidden md:flex'}`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header - Always Visible */}
-                <div className="sticky top-0 z-10 px-4 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md">
+                <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-white/90 to-gray-50/90 dark:from-gray-900/90 dark:to-gray-800/90 backdrop-blur-sm shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Button
@@ -741,15 +741,15 @@ export default function RealTimeMessaging() {
                         <ArrowLeft className="w-5 h-5" />
                       </Button>
                       <div className="relative">
-                        <Avatar className="w-11 h-11 ring-2 ring-blue-200 dark:ring-blue-800">
+                        <Avatar className="w-12 h-12 ring-2 ring-blue-200/50 dark:ring-blue-800/50 shadow-md">
                           <AvatarImage src={selectedConversation.avatar || undefined} />
-                          <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold text-base">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold text-lg">
                             {selectedConversation.name?.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         {onlineUsers.has(selectedConversation.id) && 
                          (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm animate-pulse"></div>
                         )}
                       </div>
                       <div className="flex flex-col min-w-0">
@@ -759,9 +759,12 @@ export default function RealTimeMessaging() {
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           {onlineUsers.has(selectedConversation.id) && 
                            (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? (
-                            <span className="text-green-600 dark:text-green-400 font-medium">Active now</span>
+                            <span className="text-green-600 dark:text-green-400 font-medium flex items-center">
+                              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                              Active now
+                            </span>
                           ) : (
-                            'Offline'
+                            <span className="text-gray-500 dark:text-gray-400">Offline</span>
                           )}
                         </p>
                       </div>
@@ -772,7 +775,7 @@ export default function RealTimeMessaging() {
                         size="sm" 
                         onClick={() => sendCallRequest(selectedConversation, user!.id)}
                         disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
-                        className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2"
+                        className="hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full p-3 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <Phone className="w-5 h-5" />
                       </Button>
@@ -781,11 +784,11 @@ export default function RealTimeMessaging() {
                         size="sm" 
                         onClick={() => sendCallRequest(selectedConversation, user!.id)}
                         disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
-                        className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-2"
+                        className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-3 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <Video className="w-5 h-5" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setShowUserInfo(true)} className="hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2">
+                      <Button variant="ghost" size="sm" onClick={() => setShowUserInfo(true)} className="hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-3 shadow-sm hover:shadow-md transition-all duration-200">
                         <Info className="w-5 h-5" />
                       </Button>
                     </div>
@@ -793,7 +796,7 @@ export default function RealTimeMessaging() {
                 </div>
 
                 {/* Enhanced Messages Area */}
-                <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-6 py-4 bg-gray-50 dark:bg-gray-900/50 h-[calc(100vh-260px)] max-h-[calc(100vh-260px)]">
+                <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-6 py-4 bg-gradient-to-b from-gray-50/50 to-white/50 dark:from-gray-900/50 dark:to-gray-800/50 h-[calc(100vh-200px)]">
                   {messagesLoading ? (
                     <div className="space-y-6">
                       {[...Array(5)].map((_, i) => (
@@ -922,7 +925,7 @@ export default function RealTimeMessaging() {
                 </div>
 
                 {/* Enhanced Message Input */}
-                <div className="px-6 py-4 border-t border-border bg-white dark:bg-gray-900 shadow-lg">
+                <div className="px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-white/90 to-gray-50/90 dark:from-gray-900/90 dark:to-gray-800/90 backdrop-blur-sm shadow-lg">
                   {/* Hidden file input */}
                   <input
                     type="file"
@@ -974,7 +977,7 @@ export default function RealTimeMessaging() {
                     </div>
                   )}
                   
-                  <form onSubmit={handleSendMessage} className="flex items-end space-x-3">
+                  <form onSubmit={handleSendMessage} className="flex items-end space-x-3 bg-white/70 dark:bg-gray-800/70 rounded-2xl p-3 shadow-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm">
                     <div className="flex items-center space-x-1">
                       <Button 
                         type="button" 
@@ -982,7 +985,7 @@ export default function RealTimeMessaging() {
                         size="sm"
                         onClick={handleAttachmentClick}
                         title="Attach file"
-                        className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full p-2"
+                        className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full p-2 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <Paperclip className="w-5 h-5" />
                       </Button>
@@ -1015,7 +1018,7 @@ export default function RealTimeMessaging() {
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="resize-none rounded-3xl border-2 border-gray-200 dark:border-gray-700 pr-14 min-h-[48px] max-h-32 focus:border-blue-500 dark:focus:border-blue-400 bg-gray-50 dark:bg-gray-800 shadow-inner transition-colors"
+                        className="resize-none rounded-2xl border border-gray-200/50 dark:border-gray-700/50 pr-14 min-h-[48px] max-h-32 focus:border-blue-500 dark:focus:border-blue-400 bg-white/80 dark:bg-gray-800/80 shadow-sm focus:shadow-md transition-all duration-200 backdrop-blur-sm"
                         rows={1}
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1025,7 +1028,7 @@ export default function RealTimeMessaging() {
                               <Smile className="w-5 h-5" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-80 p-3 border-2 border-gray-200 dark:border-gray-700 shadow-xl">
+                          <PopoverContent className="w-80 p-4 border border-gray-200/50 dark:border-gray-700/50 shadow-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
                             <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
                               {EMOJI_PICKER.map((emoji) => (
                                 <Button
@@ -1033,7 +1036,7 @@ export default function RealTimeMessaging() {
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="h-9 w-9 p-0 text-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                  className="h-9 w-9 p-0 text-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 hover:scale-110"
                                   onClick={() => handleEmojiSelect(emoji)}
                                 >
                                   {emoji}
@@ -1087,14 +1090,16 @@ export default function RealTimeMessaging() {
               </>
             ) : (
               /* No Conversation Selected */
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <Send className="w-10 h-10 text-white" />
+              <div className="flex flex-col flex-1 min-h-0">
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <Send className="w-10 h-10 text-white" />
+                    </div>
+                    <p className="text-lg font-medium mb-2">Your Messages</p>
+                    <p className="text-muted-foreground mb-4">Send private messages to friends and family</p>
+                    <Button onClick={() => setShowNewConversation(true)}>Start New Conversation</Button>
                   </div>
-                  <p className="text-lg font-medium mb-2">Your Messages</p>
-                  <p className="text-muted-foreground mb-4">Send private messages to friends and family</p>
-                  <Button onClick={() => setShowNewConversation(true)}>Start New Conversation</Button>
                 </div>
               </div>
             )}
@@ -1182,8 +1187,8 @@ export default function RealTimeMessaging() {
               
               {/* WebSocket Status Indicator */}
               {(!wsConnection || wsConnection.readyState !== WebSocket.OPEN) && (
-                <div className="mt-2 text-center">
-                  <div className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+                <div className="mt-3 text-center">
+                  <div className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 dark:from-yellow-900/30 dark:to-orange-900/30 dark:text-yellow-400 shadow-sm border border-yellow-200/50 dark:border-yellow-700/50">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></div>
                     Connecting to server...
                   </div>
