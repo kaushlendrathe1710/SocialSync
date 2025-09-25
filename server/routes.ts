@@ -25,11 +25,37 @@ import { uploadToS3, deleteFromS3, validateS3Config } from "./aws-s3";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
+import { randomUUID } from "crypto";
 
 // Extend Express Session interface
 declare module "express-session" {
   interface SessionData {
     userId?: number;
+  }
+}
+
+// Local file storage function (fallback when S3 is not configured)
+async function saveFileLocally(file: Express.Multer.File, fileType: string): Promise<string> {
+  try {
+    // Create directory structure
+    const uploadDir = path.join(process.cwd(), 'uploads', 'messages', fileType);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const fileExtension = path.extname(file.originalname);
+    const fileName = `${randomUUID()}${fileExtension}`;
+    const filePath = path.join(uploadDir, fileName);
+
+    // Copy file to permanent location
+    fs.copyFileSync(file.path, filePath);
+
+    // Return URL path (relative to server)
+    return `/uploads/messages/${fileType}/${fileName}`;
+  } catch (error) {
+    console.error('Error saving file locally:', error);
+    throw new Error('Failed to save file locally');
   }
 }
 
@@ -40,7 +66,7 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|mp3|wav|ogg|m4a|aac/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase()
     );
@@ -49,7 +75,7 @@ const upload = multer({
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error("Only images and videos are allowed"));
+      cb(new Error("Only images, videos, and audio files are allowed"));
     }
   },
 });
@@ -1337,20 +1363,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload media files for messages
+  app.post("/api/messages/upload", requireAuth, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Determine file type and folder
+      const fileType = req.file.mimetype.startsWith('image/') ? 'image' :
+                     req.file.mimetype.startsWith('video/') ? 'video' :
+                     req.file.mimetype.startsWith('audio/') ? 'audio' : 'document';
+      
+      let fileUrl: string;
+      
+      // Try S3 first, fallback to local storage
+      if (validateS3Config()) {
+        try {
+          // Read file buffer
+          const fileBuffer = fs.readFileSync(req.file.path);
+          const folder = `messages/${fileType}`;
+          
+          // Upload to S3
+          const uploadResult = await uploadToS3(
+            fileBuffer,
+            req.file.originalname,
+            req.file.mimetype,
+            folder
+          );
+          
+          fileUrl = uploadResult.url;
+        } catch (s3Error) {
+          console.error("S3 upload failed, falling back to local storage:", s3Error);
+          // Fallback to local storage
+          fileUrl = await saveFileLocally(req.file, fileType);
+        }
+      } else {
+        console.log("S3 not configured, using local storage");
+        // Use local storage
+        fileUrl = await saveFileLocally(req.file, fileType);
+      }
+
+      // Clean up temporary file
+      fs.unlinkSync(req.file.path);
+
+      res.json({
+        url: fileUrl,
+        fileName: req.file.originalname,
+        fileType,
+        fileSize: req.file.size,
+      });
+    } catch (error) {
+      console.error("File upload error:", error);
+      res.status(500).json({ message: "Failed to upload file" });
+    }
+  });
+
+  // Serve local uploaded files
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
   app.post("/api/messages", requireAuth, async (req, res) => {
     try {
-      const { receiverId, content } = z
+      console.log("Message request body:", req.body);
+      console.log("Session userId:", req.session.userId);
+      
+      const { receiverId, content, imageUrl, videoUrl, audioUrl, fileType, fileName, fileSize } = z
         .object({
           receiverId: z.number(),
-          content: z.string().min(1),
+          content: z.string().optional().default(""),
+          imageUrl: z.string().optional(),
+          videoUrl: z.string().optional(),
+          audioUrl: z.string().optional(),
+          fileType: z.string().optional(),
+          fileName: z.string().optional(),
+          fileSize: z.number().optional(),
         })
         .parse(req.body);
+
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      console.log("Creating message with data:", {
+        senderId: req.session.userId,
+        receiverId,
+        content,
+        imageUrl,
+        videoUrl,
+        audioUrl,
+        fileType,
+        fileName,
+        fileSize,
+      });
 
       const message = await storage.createMessage({
         senderId: req.session.userId,
         receiverId,
         content,
+        imageUrl: imageUrl || null,
+        videoUrl: videoUrl || null,
+        audioUrl: audioUrl || null,
+        fileType: fileType || null,
+        fileName: fileName || null,
+        fileSize: fileSize || null,
       });
+
+      console.log("Message created successfully:", message);
 
       // Create notification for message
       await storage.createNotification({
@@ -1362,7 +1480,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(message);
     } catch (error) {
-      res.status(500).json({ message: "Failed to send message" });
+      console.error("Message creation error:", error);
+      console.error("Error details:", error.message);
+      console.error("Error stack:", error.stack);
+      res.status(500).json({ message: "Failed to send message", error: error.message });
     }
   });
 
