@@ -39,7 +39,7 @@ export function useFileUpload(): UseFileUploadReturn {
       const allowedTypes = [
         'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
         'video/mp4', 'video/mov', 'video/avi',
-        'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/aac'
+        'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/aac', 'audio/webm'
       ];
 
       if (!allowedTypes.includes(file.type)) {
@@ -56,6 +56,12 @@ export function useFileUpload(): UseFileUploadReturn {
       formData.append('file', file);
 
       // Upload file
+      console.log('Starting file upload:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size
+      });
+
       const response = await fetch('/api/messages/upload', {
         method: 'POST',
         body: formData,
@@ -63,11 +69,13 @@ export function useFileUpload(): UseFileUploadReturn {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        console.error('Upload failed:', errorData);
         throw new Error(errorData.message || 'Upload failed');
       }
 
       const result: UploadResult = await response.json();
+      console.log('File upload successful:', result);
       
       toast({
         title: "File uploaded",

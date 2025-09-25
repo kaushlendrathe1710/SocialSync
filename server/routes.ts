@@ -66,7 +66,7 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|mp3|wav|ogg|m4a|aac/;
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|mp3|wav|ogg|m4a|aac|webm/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase()
     );
@@ -85,13 +85,13 @@ const memoryUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|mp3|wav|ogg|m4a|aac|webm/;
     const extname = allowedTypes.test(
       path.extname(file.originalname).toLowerCase()
     );
     const mimetype = allowedTypes.test(file.mimetype);
     if (mimetype && extname) return cb(null, true);
-    cb(new Error("Only images and videos are allowed"));
+    cb(new Error("Only images, videos, and audio files are allowed"));
   },
 });
 
@@ -1370,6 +1370,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      console.log("File upload request:", {
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        path: req.file.path
+      });
+
       // Determine file type and folder
       const fileType = req.file.mimetype.startsWith('image/') ? 'image' :
                      req.file.mimetype.startsWith('video/') ? 'video' :
@@ -1380,6 +1387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try S3 first, fallback to local storage
       if (validateS3Config()) {
         try {
+          console.log("Attempting S3 upload...");
           // Read file buffer
           const fileBuffer = fs.readFileSync(req.file.path);
           const folder = `messages/${fileType}`;
@@ -1393,26 +1401,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           
           fileUrl = uploadResult.url;
+          console.log("S3 upload successful:", uploadResult.url);
         } catch (s3Error) {
           console.error("S3 upload failed, falling back to local storage:", s3Error);
           // Fallback to local storage
           fileUrl = await saveFileLocally(req.file, fileType);
+          console.log("Local storage fallback successful:", fileUrl);
         }
       } else {
         console.log("S3 not configured, using local storage");
         // Use local storage
         fileUrl = await saveFileLocally(req.file, fileType);
+        console.log("Local storage upload successful:", fileUrl);
       }
 
       // Clean up temporary file
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.warn("Failed to clean up temporary file:", cleanupError);
+      }
 
-      res.json({
+      const result = {
         url: fileUrl,
         fileName: req.file.originalname,
         fileType,
         fileSize: req.file.size,
-      });
+      };
+
+      console.log("Upload completed successfully:", result);
+      res.json(result);
     } catch (error) {
       console.error("File upload error:", error);
       res.status(500).json({ message: "Failed to upload file" });

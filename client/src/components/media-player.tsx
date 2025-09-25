@@ -66,7 +66,14 @@ export default function MediaPlayer({ url, type, fileName, className = '' }: Med
     if (type === 'video' && videoRef.current) {
       setDuration(videoRef.current.duration);
     } else if (type === 'audio' && audioRef.current) {
-      setDuration(audioRef.current.duration);
+      const duration = audioRef.current.duration;
+      // Handle cases where duration might be Infinity or NaN
+      if (isFinite(duration) && duration > 0) {
+        setDuration(duration);
+      } else {
+        // For WebM files, try to get duration from other events
+        setDuration(0);
+      }
     }
   };
 
@@ -81,9 +88,30 @@ export default function MediaPlayer({ url, type, fileName, className = '' }: Med
   };
 
   const formatTime = (time: number) => {
+    if (!isFinite(time) || time < 0) {
+      return '0:00';
+    }
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleCanPlay = () => {
+    if (type === 'audio' && audioRef.current) {
+      const duration = audioRef.current.duration;
+      if (isFinite(duration) && duration > 0 && duration !== Infinity) {
+        setDuration(duration);
+      }
+    }
+  };
+
+  const handleDurationChange = () => {
+    if (type === 'audio' && audioRef.current) {
+      const duration = audioRef.current.duration;
+      if (isFinite(duration) && duration > 0 && duration !== Infinity) {
+        setDuration(duration);
+      }
+    }
   };
 
   const handleDownload = () => {
@@ -238,13 +266,16 @@ export default function MediaPlayer({ url, type, fileName, className = '' }: Med
               <input
                 type="range"
                 min="0"
-                max={duration || 0}
+                max={isFinite(duration) && duration > 0 ? duration : 100}
                 value={currentTime}
                 onChange={handleSeek}
                 className="flex-1 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer"
                 aria-label="Audio progress"
+                disabled={!isFinite(duration) || duration <= 0}
               />
-              <span className="text-sm text-gray-600">{formatTime(duration)}</span>
+              <span className="text-sm text-gray-600">
+                {isFinite(duration) && duration > 0 ? formatTime(duration) : '--:--'}
+              </span>
             </div>
             
             {fileName && (
@@ -269,8 +300,11 @@ export default function MediaPlayer({ url, type, fileName, className = '' }: Med
           src={url}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
+          onCanPlay={handleCanPlay}
+          onDurationChange={handleDurationChange}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
+          preload="metadata"
         />
       </Card>
     );
