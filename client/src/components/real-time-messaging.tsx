@@ -37,6 +37,8 @@ import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import VideoCall from '@/components/video-call';
 import IncomingCallNotification from '@/components/incoming-call-notification';
 import { useVideoCall } from '@/hooks/use-video-call';
+import { useFileUpload } from '@/hooks/use-file-upload';
+import MediaPlayer from '@/components/media-player';
 
 const EMOJI_PICKER = [
   '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
@@ -69,6 +71,15 @@ export default function RealTimeMessaging() {
   const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [showMessagesMenu, setShowMessagesMenu] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{
+    url: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+  }>>([]);
+  
+  // File upload hook
+  const { uploadFile, isUploading } = useFileUpload();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -309,20 +320,41 @@ export default function RealTimeMessaging() {
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { content?: string; files?: File[] }) => {
       if (data.files && data.files.length > 0) {
-        // Handle multiple file uploads
-        const formData = new FormData();
-        formData.append('receiverId', selectedConversation!.id.toString());
-        formData.append('content', data.content || '');
+        // Upload files first
+        const uploadPromises = data.files.map(file => uploadFile(file));
+        const uploadResults = await Promise.all(uploadPromises);
         
-        // Append all selected files
-        data.files.forEach((file) => {
-          formData.append('files', file);
-        });
+        // Filter out failed uploads
+        const successfulUploads = uploadResults.filter(result => result !== null);
         
+        if (successfulUploads.length === 0) {
+          throw new Error('Failed to upload files');
+        }
+        
+        // Determine message type based on uploaded files
+        const imageUrl = successfulUploads.find(result => result!.fileType === 'image')?.url;
+        const videoUrl = successfulUploads.find(result => result!.fileType === 'video')?.url;
+        const audioUrl = successfulUploads.find(result => result!.fileType === 'audio')?.url;
+        
+        const firstFile = successfulUploads[0]!;
+        
+        // Send message with file URLs
         const response = await fetch('/api/messages', {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
           credentials: 'include',
-          body: formData,
+          body: JSON.stringify({
+            receiverId: selectedConversation!.id,
+            content: data.content || '',
+            imageUrl,
+            videoUrl,
+            audioUrl,
+            fileType: firstFile.fileType,
+            fileName: firstFile.fileName,
+            fileSize: firstFile.fileSize,
+          }),
         });
         
         if (!response.ok) {
@@ -340,6 +372,7 @@ export default function RealTimeMessaging() {
       setMessageText('');
       setSelectedFiles([]);
       setFilePreviews([]);
+      setUploadedFiles([]);
       messageInputRef.current?.focus();
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversation?.id] });
@@ -848,39 +881,33 @@ export default function RealTimeMessaging() {
                                       : 'bg-white dark:bg-gray-800 text-foreground rounded-bl-md border border-gray-200 dark:border-gray-700'
                                   }`}
                                 >
-                                  {message.imageUrl ? (
+                                  {(message.imageUrl || message.videoUrl || message.audioUrl) ? (
                                     <div className="space-y-2">
-                                      {(() => {
-                                        // Check if imageUrl contains multiple images (JSON array)
-                                        let imageUrls: string[] = [];
-                                        try {
-                                          const parsed = JSON.parse(message.imageUrl);
-                                          if (Array.isArray(parsed)) {
-                                            imageUrls = parsed;
-                                          } else {
-                                            imageUrls = [message.imageUrl];
-                                          }
-                                        } catch {
-                                          imageUrls = [message.imageUrl];
-                                        }
-
-                                        return (
-                                          <div className={`${imageUrls.length > 1 ? 'grid grid-cols-2 gap-2' : ''}`}>
-                                            {imageUrls.map((url, index) => (
-                                              <img 
-                                                key={index}
-                                                src={url} 
-                                                alt={`Shared image ${index + 1}`} 
-                                                className={`rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${
-                                                  imageUrls.length === 1 ? 'max-w-xs' : 'w-full h-32 object-cover'
-                                                }`}
-                                                onClick={() => window.open(url, '_blank')}
-                                              />
-                                            ))}
-                                          </div>
-                                        );
-                                      })()}
-                                      {message.content && !message.content.includes('images') && message.content !== 'Image' && (
+                                      {/* Media Player */}
+                                      {message.imageUrl && (
+                                        <MediaPlayer
+                                          url={message.imageUrl}
+                                          type="image"
+                                          fileName={message.fileName || undefined}
+                                        />
+                                      )}
+                                      {message.videoUrl && (
+                                        <MediaPlayer
+                                          url={message.videoUrl}
+                                          type="video"
+                                          fileName={message.fileName || undefined}
+                                        />
+                                      )}
+                                      {message.audioUrl && (
+                                        <MediaPlayer
+                                          url={message.audioUrl}
+                                          type="audio"
+                                          fileName={message.fileName || undefined}
+                                        />
+                                      )}
+                                      
+                                      {/* Message content */}
+                                      {message.content && (
                                         <p className="text-sm leading-relaxed whitespace-pre-wrap break-words break-all">{message.content}</p>
                                       )}
                                     </div>
@@ -929,7 +956,7 @@ export default function RealTimeMessaging() {
                   {/* Hidden file input */}
                   <input
                     type="file"
-                    accept="image/*,video/*"
+                    accept="image/*,video/*,audio/*"
                     onChange={handleFileSelect}
                     multiple
                     className="hidden"
@@ -955,24 +982,45 @@ export default function RealTimeMessaging() {
                         </Button>
                       </div>
                       <div className="flex gap-2 overflow-x-auto">
-                        {filePreviews.map((preview, index) => (
-                          <div key={index} className="relative flex-shrink-0">
-                            <img 
-                              src={preview} 
-                              alt={`Preview ${index + 1}`} 
-                              className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg text-xs"
-                              onClick={() => removeSelectedFile(index)}
-                            >
-                              ×
-                            </Button>
-                          </div>
-                        ))}
+                        {filePreviews.map((preview, index) => {
+                          const file = selectedFiles[index];
+                          const isImage = file?.type.startsWith('image/');
+                          const isVideo = file?.type.startsWith('video/');
+                          const isAudio = file?.type.startsWith('audio/');
+                          
+                          return (
+                            <div key={index} className="relative flex-shrink-0">
+                              {isImage ? (
+                                <img 
+                                  src={preview} 
+                                  alt={`Preview ${index + 1}`} 
+                                  className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md"
+                                />
+                              ) : isVideo ? (
+                                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md flex items-center justify-center">
+                                  <Video className="w-8 h-8 text-gray-500" />
+                                </div>
+                              ) : isAudio ? (
+                                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md flex items-center justify-center">
+                                  <Mic className="w-8 h-8 text-gray-500" />
+                                </div>
+                              ) : (
+                                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md flex items-center justify-center">
+                                  <Paperclip className="w-8 h-8 text-gray-500" />
+                                </div>
+                              )}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg text-xs"
+                                onClick={() => removeSelectedFile(index)}
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

@@ -246,8 +246,13 @@ export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   senderId: integer("sender_id").notNull(),
   receiverId: integer("receiver_id").notNull(),
-  content: text("content").notNull(),
+  content: text("content").default(""), // Allow empty content for file-only messages
   imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  audioUrl: text("audio_url"),
+  fileType: text("file_type"), // image, video, audio, document
+  fileName: text("file_name"),
+  fileSize: integer("file_size"), // Size in bytes
   readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
