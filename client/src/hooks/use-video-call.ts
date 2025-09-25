@@ -137,13 +137,23 @@ export function useVideoCall(wsConnection: WebSocket | null) {
 
       // Set timeout for call request
       callTimeoutRef.current = setTimeout(() => {
+        console.log('⏰ Call timeout reached, ending call');
         toast({
           title: "Call Timeout",
           description: "The call request timed out",
           variant: "destructive"
         });
         endCall();
-      }, 30000); // 30 seconds timeout
+      }, 60000); // Increased to 60 seconds to allow more time for connection
+      
+      // Make timeout clearing function globally available
+      (window as any).clearCallTimeout = () => {
+        if (callTimeoutRef.current) {
+          console.log('✅ Clearing call timeout - connection established');
+          clearTimeout(callTimeoutRef.current);
+          callTimeoutRef.current = undefined;
+        }
+      };
 
       toast({
         title: "Calling...",
@@ -180,11 +190,15 @@ export function useVideoCall(wsConnection: WebSocket | null) {
       data: message
     }));
 
-    setCallState(prev => ({
-      ...prev,
-      isInCall: true,
-      incomingCall: null
-    }));
+    setCallState(prev => {
+      const newState = {
+        ...prev,
+        isInCall: true,
+        incomingCall: null
+      };
+      console.log('📞 Call state after accepting:', newState);
+      return newState;
+    });
 
     toast({
       title: "Call Accepted",
@@ -225,8 +239,10 @@ export function useVideoCall(wsConnection: WebSocket | null) {
 
   // End call
   const endCall = useCallback(() => {
+    console.log('📞 Ending call, clearing timeout');
     if (callTimeoutRef.current) {
       clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = undefined;
     }
 
     setCallState({
@@ -290,21 +306,29 @@ export function useVideoCall(wsConnection: WebSocket | null) {
 
   // Handle call accepted
   const handleCallAccepted = useCallback(() => {
+    console.log('✅ Call accepted, clearing timeout');
+    console.log('📞 Current call state before acceptance:', callState);
+    
     if (callTimeoutRef.current) {
       clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = undefined;
     }
 
-    setCallState(prev => ({
-      ...prev,
-      outgoingCall: null,
-      isInCall: true // Start the actual video call
-    }));
+    setCallState(prev => {
+      const newState = {
+        ...prev,
+        outgoingCall: null,
+        isInCall: true // Start the actual video call
+      };
+      console.log('📞 New call state after acceptance:', newState);
+      return newState;
+    });
 
     toast({
       title: "Call Accepted",
       description: "Your call has been accepted",
     });
-  }, [toast]);
+  }, [toast, callState]);
 
   // Handle call rejected
   const handleCallRejected = useCallback(() => {

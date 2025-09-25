@@ -134,14 +134,29 @@ export default function RealTimeMessaging() {
 
   // Navigate to video call page when call starts
   useEffect(() => {
-    if (callState.isInCall && selectedConversation) {
-      // Store state in sessionStorage since wouter doesn't support state passing
-      sessionStorage.setItem('videoCallState', JSON.stringify({
-        otherUser: selectedConversation,
-        isInitiator: !!callState.outgoingCall,
-        callId: callState.outgoingCall?.callId || callState.incomingCall?.callId
-      }));
-      setLocation('/video-call');
+    console.log('🎬 Navigation effect triggered:', {
+      isInCall: callState.isInCall,
+      selectedConversation: selectedConversation?.id,
+      outgoingCall: callState.outgoingCall?.callId,
+      incomingCall: callState.incomingCall?.callId
+    });
+    
+    if (callState.isInCall) {
+      // Determine the other user for the call
+      const otherUser = selectedConversation || callState.incomingCall?.from || callState.outgoingCall?.to;
+      
+      if (otherUser) {
+        console.log('🎬 Navigating to video call page with user:', otherUser.id);
+        // Store state in sessionStorage since wouter doesn't support state passing
+        sessionStorage.setItem('videoCallState', JSON.stringify({
+          otherUser: otherUser,
+          isInitiator: !!callState.outgoingCall,
+          callId: callState.outgoingCall?.callId || callState.incomingCall?.callId
+        }));
+        setLocation('/video-call');
+      } else {
+        console.log('⚠️ Call is active but no other user found!');
+      }
     }
   }, [callState.isInCall, selectedConversation, setLocation, callState.outgoingCall, callState.incomingCall]);
 
@@ -1655,6 +1670,8 @@ export default function RealTimeMessaging() {
         <IncomingCallNotification
           from={callState.incomingCall.from}
           onAccept={() => {
+            // Set the conversation to the caller before accepting the call
+            setSelectedConversation(callState.incomingCall!.from);
             acceptCall(user!.id);
             // The VideoCall component will be opened automatically
           }}
