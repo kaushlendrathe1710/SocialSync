@@ -30,7 +30,12 @@ import {
   Mic,
   ThumbsUp,
   MessageCircle,
-  Check
+  Check,
+  Square,
+  Play,
+  Pause,
+  Trash2,
+  Volume2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
@@ -78,6 +83,21 @@ export default function RealTimeMessaging() {
     fileSize: number;
   }>>([]);
   
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  
+  // Refs for voice recording
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  
   // File upload hook
   const { uploadFile, isUploading } = useFileUpload();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -124,6 +144,21 @@ export default function RealTimeMessaging() {
       setLocation('/video-call');
     }
   }, [callState.isInCall, selectedConversation, setLocation, callState.outgoingCall, callState.incomingCall]);
+
+  // Cleanup voice recording on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [audioUrl]);
 
   // Handle WebSocket messages from the notification context
   useEffect(() => {
@@ -467,32 +502,246 @@ export default function RealTimeMessaging() {
     }
   };
 
-  const handleMicClick = () => {
-    // Request microphone access for voice messages
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-        .then((stream) => {
-          toast({
-            title: "Microphone access granted",
-            description: "Voice message functionality will be available in the next update",
-          });
-          
-          // Stop the stream for now
-          stream.getTracks().forEach(track => track.stop());
-        })
-        .catch((error) => {
-          toast({
-            title: "Microphone access denied",
-            description: "Please allow microphone access to send voice messages",
-            variant: "destructive",
-          });
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100,
+          channelCount: 1, // Mono recording for smaller file size
+        } 
+      });
+      
+      audioStreamRef.current = stream;
+      audioChunksRef.current = [];
+      
+      // Try different MIME types for better browser compatibility and duration support
+      let mimeType = 'audio/mp4';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm;codecs=opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/webm';
+        }
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: mimeType
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(audioBlob);
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        setShowVoiceRecorder(true);
+        
+        // Clean up stream
+        if (audioStreamRef.current) {
+          audioStreamRef.current.getTracks().forEach(track => track.stop());
+          audioStreamRef.current = null;
+        }
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      setRecordingDuration(0);
+      
+      // Start timer
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          // Auto-stop recording after 5 minutes
+          if (newTime >= 300) {
+            stopRecording();
+          }
+          return newTime;
         });
-    } else {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+      
       toast({
-        title: "Microphone not supported",
-        description: "Your browser doesn't support microphone access",
+        title: "Recording started",
+        description: "Tap and hold to record, release to stop",
+      });
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Recording failed",
+        description: "Please allow microphone access to record voice messages",
         variant: "destructive",
       });
+    }
+  };
+  
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsPaused(false);
+      
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+    }
+  };
+  
+  const pauseRecording = () => {
+    if (mediaRecorderRef.current && isRecording && !isPaused) {
+      mediaRecorderRef.current.pause();
+      setIsPaused(true);
+      
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+    }
+  };
+  
+  const resumeRecording = () => {
+    if (mediaRecorderRef.current && isRecording && isPaused) {
+      mediaRecorderRef.current.resume();
+      setIsPaused(false);
+      
+      // Resume timer
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    }
+  };
+  
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+    
+    setIsRecording(false);
+    setIsPaused(false);
+    setRecordingTime(0);
+    setRecordingDuration(0);
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setShowVoiceRecorder(false);
+    
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+    
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current = null;
+    }
+    
+    audioChunksRef.current = [];
+  };
+  
+  const sendVoiceMessage = async () => {
+    if (!audioBlob || !selectedConversation) return;
+    
+    try {
+      // Determine the correct file extension and MIME type
+      let fileExtension = '.m4a';
+      let mimeType = 'audio/mp4';
+      
+      // Check if the blob has a different type
+      if (audioBlob.type) {
+        mimeType = audioBlob.type;
+        if (audioBlob.type.includes('webm')) {
+          fileExtension = '.webm';
+        } else if (audioBlob.type.includes('ogg')) {
+          fileExtension = '.ogg';
+        } else if (audioBlob.type.includes('mp4')) {
+          fileExtension = '.m4a';
+        }
+      }
+      
+      // Create a File object from the blob
+      const audioFile = new File([audioBlob], `voice-message-${Date.now()}${fileExtension}`, {
+        type: mimeType
+      });
+      
+      console.log('Uploading voice message:', {
+        fileName: audioFile.name,
+        fileType: audioFile.type,
+        fileSize: audioFile.size
+      });
+      
+      // Upload the audio file
+      const uploadResult = await uploadFile(audioFile);
+      if (!uploadResult) {
+        throw new Error('Failed to upload voice message');
+      }
+      
+      console.log('Voice message uploaded successfully:', uploadResult);
+      
+      // Send message with audio
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          receiverId: selectedConversation.id,
+          content: '🎤 Voice message',
+          audioUrl: uploadResult.url,
+          fileType: 'audio',
+          fileName: uploadResult.fileName,
+          fileSize: uploadResult.fileSize,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send voice message');
+      }
+      
+      // Reset voice recording state
+      cancelRecording();
+      
+      // Refresh messages
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversation.id] });
+      
+      toast({
+        title: "Voice message sent",
+        description: "Your voice message has been delivered",
+      });
+      
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      toast({
+        title: "Failed to send voice message",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  const handleMicClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
     }
   };
 
@@ -951,6 +1200,101 @@ export default function RealTimeMessaging() {
                   )}
                 </div>
 
+                {/* Voice Recorder UI */}
+                {(isRecording || showVoiceRecorder) && (
+                  <div className="px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-red-50/90 to-pink-50/90 dark:from-red-900/20 dark:to-pink-900/20 backdrop-blur-sm shadow-lg">
+                    {isRecording ? (
+                      <div className="flex items-center justify-between bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-md border border-red-200/50 dark:border-red-700/50">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                            Recording... {formatRecordingTime(recordingTime)}
+                          </span>
+                          {recordingTime > 240 && (
+                            <span className="text-xs text-orange-600 dark:text-orange-400">
+                              (Max: 5:00)
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {!isPaused ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={pauseRecording}
+                              className="text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full p-2"
+                            >
+                              <Pause className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={resumeRecording}
+                              className="text-gray-600 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full p-2"
+                            >
+                              <Play className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={stopRecording}
+                            className="text-gray-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full p-2"
+                          >
+                            <Square className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : showVoiceRecorder && audioUrl ? (
+                      <div className="flex items-center justify-between bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-md border border-blue-200/50 dark:border-blue-700/50">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center">
+                            <Volume2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              Voice message ({formatRecordingTime(recordingDuration)})
+                            </span>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <audio 
+                                src={audioUrl} 
+                                controls 
+                                className="h-6 text-xs"
+                                preload="metadata"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={cancelRecording}
+                            className="text-gray-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full p-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={sendVoiceMessage}
+                            disabled={sendMessageMutation.isPending}
+                            className="rounded-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg transition-all duration-200 hover:scale-105"
+                          >
+                            <Send className="w-4 h-4 mr-1" />
+                            Send
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
                 {/* Enhanced Message Input */}
                 <div className="px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-white/90 to-gray-50/90 dark:from-gray-900/90 dark:to-gray-800/90 backdrop-blur-sm shadow-lg">
                   {/* Hidden file input */}
@@ -1025,7 +1369,7 @@ export default function RealTimeMessaging() {
                     </div>
                   )}
                   
-                  <form onSubmit={handleSendMessage} className="flex items-end space-x-3 bg-white/70 dark:bg-gray-800/70 rounded-2xl p-3 shadow-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm">
+                  <form onSubmit={handleSendMessage} className={`flex items-end space-x-3 bg-white/70 dark:bg-gray-800/70 rounded-2xl p-3 shadow-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm ${isRecording ? 'opacity-50 pointer-events-none' : ''}`}>
                     <div className="flex items-center space-x-1">
                       <Button 
                         type="button" 
@@ -1101,7 +1445,7 @@ export default function RealTimeMessaging() {
                         <Button 
                           type="submit" 
                           size="sm" 
-                          disabled={sendMessageMutation.isPending}
+                          disabled={sendMessageMutation.isPending || isRecording}
                           className="rounded-full w-12 h-12 p-0 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg transition-all duration-200 hover:scale-105"
                         >
                           <Send className="w-5 h-5" />
@@ -1113,14 +1457,19 @@ export default function RealTimeMessaging() {
                             variant="ghost" 
                             size="sm"
                             onClick={handleMicClick}
-                            title="Send voice message"
-                            className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full p-2"
+                            title={isRecording ? "Stop recording" : "Send voice message"}
+                            className={`rounded-full p-2 transition-all duration-200 ${
+                              isRecording 
+                                ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 animate-pulse' 
+                                : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                            }`}
                           >
-                            <Mic className="w-5 h-5" />
+                            <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
                           </Button>
                           <Button 
                             type="button" 
                             size="sm"
+                            disabled={isRecording}
                             className="rounded-full w-12 h-12 p-0 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg transition-all duration-200 hover:scale-105"
                             onClick={() => {
                               setMessageText('👍');
