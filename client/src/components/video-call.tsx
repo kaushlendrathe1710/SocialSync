@@ -322,39 +322,53 @@ export default function VideoCall({
       console.log('🔗 ICE gathering state:', peerConnection.iceGatheringState);
       console.log('🔗 Signaling state:', peerConnection.signalingState);
       
-      // Only update to disconnected/failed if we haven't established a connection yet
-      if (state === 'connected') {
+      // Use ICE connection state as the primary indicator for connection reliability
+      const iceState = peerConnection.iceConnectionState;
+      
+      if (iceState === 'connected' || iceState === 'completed') {
         console.log('✅ WebRTC connection established!');
         setCallState(prev => ({
           ...prev,
           connectionState: 'connected',
           isConnected: true,
-          hasRemoteStream: true
+          hasRemoteStream: prev.hasRemoteStream // Keep existing remote stream state
         }));
-        callStartTimeRef.current = Date.now();
-        startCallTimer();
-        toast({
-          title: "Call Connected",
-          description: `Connected to ${otherUser.name}`,
-        });
-      } else if (state === 'disconnected' || state === 'failed') {
+        if (!callStartTimeRef.current) {
+          callStartTimeRef.current = Date.now();
+          startCallTimer();
+          toast({
+            title: "Call Connected",
+            description: `Connected to ${otherUser.name}`,
+          });
+          
+          // Clear any pending call timeout since we're now connected
+          if (typeof window !== 'undefined' && (window as any).clearCallTimeout) {
+            (window as any).clearCallTimeout();
+          }
+        }
+      } else if (iceState === 'disconnected' || iceState === 'failed' || iceState === 'closed') {
         console.log('❌ WebRTC connection failed or disconnected');
-        // Only end call if we haven't established a connection yet
-        if (!callState.isConnected) {
+        setCallState(prev => ({
+          ...prev,
+          connectionState: 'disconnected',
+          isConnected: false
+        }));
+        
+        // Only end call if this happens very early (within 5 seconds of connection attempt)
+        if (callStartTimeRef.current && Date.now() - callStartTimeRef.current < 5000) {
           toast({
             title: "Call Ended",
             description: "The call has ended",
           });
           endCall();
         } else {
-          // If we were connected, try to reconnect or just log the issue
-          console.log('⚠️ Connection lost but keeping call active');
+          console.log('⚠️ Connection lost but keeping call active for potential recovery');
         }
-      } else {
-        // For other states (connecting, checking), update normally
+      } else if (iceState === 'checking' || iceState === 'connecting') {
+        // For connecting states, update normally
         setCallState(prev => ({
           ...prev,
-          connectionState: state as 'connecting' | 'connected' | 'disconnected' | 'failed',
+          connectionState: 'connecting' as const,
           isConnected: false
         }));
       }
@@ -644,28 +658,8 @@ export default function VideoCall({
             console.log('🎬 Ready as receiver, waiting for offer...');
           }
           
-          // Multiple fallbacks to ensure connection state updates
-          setTimeout(() => {
-            console.log('🔄 5s fallback: Forcing connection state to connected');
-            setCallState(prev => ({
-              ...prev,
-              connectionState: 'connected',
-              isConnected: true,
-              hasRemoteStream: true
-            }));
-          }, 5000);
-          
-          setTimeout(() => {
-            if (callState.connectionState === 'connecting') {
-              console.log('⚠️ Connection state still connecting after 10s, forcing update...');
-              setCallState(prev => ({
-                ...prev,
-                connectionState: 'connected',
-                isConnected: true,
-                hasRemoteStream: true
-              }));
-            }
-          }, 10000);
+          // Remove problematic timeout mechanisms that interfere with WebRTC
+          // The connection state will be updated naturally through WebRTC events
         } catch (error) {
           console.error('❌ Error initializing call:', error);
         }
