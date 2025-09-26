@@ -276,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     for (const config of testConfigs) {
       try {
-        const testTransporter = nodemailer.createTransporter({
+        const testTransporter = nodemailer.createTransport({
           host: config.host,
           port: config.port,
           secure: config.secure,
