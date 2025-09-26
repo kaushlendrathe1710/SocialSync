@@ -26,7 +26,16 @@ import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
-
+import dotenv from "dotenv";
+dotenv.config();
+// Environment variables for email configuration
+const EMAIL_HOST = process.env.EMAIL_HOST || "";
+const EMAIL_PORT = process.env.EMAIL_PORT
+  ? parseInt(process.env.EMAIL_PORT)
+  : 587;
+const EMAIL_USER = process.env.EMAIL_USER || "";
+const EMAIL_PASS = process.env.EMAIL_PASS || "";
+const EMAIL_FROM = process.env.EMAIL_FROM || "verification@lelekart.com";
 // Extend Express Session interface
 declare module "express-session" {
   interface SessionData {
@@ -96,15 +105,32 @@ const memoryUpload = multer({
 });
 
 // Email configuration
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || "587"),
-  secure: (process.env.EMAIL_PORT || process.env.SMTP_PORT) === "465", // true for 465, false for other ports
+export const transporter = nodemailer.createTransport({
+  host: EMAIL_HOST,
+  port: EMAIL_PORT,
+  secure: EMAIL_PORT === 465, // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER || process.env.SMTP_USER,
-    pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
+    user: EMAIL_USER,
+    pass: EMAIL_PASS,
   },
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // SMTP connection verification
 async function verifySMTPConnection(): Promise<boolean> {
@@ -130,7 +156,7 @@ async function verifySMTPConnection(): Promise<boolean> {
 
 // Generate 6-digit OTP
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(100000 + Math.random() * 900000).toString();    
 }
 
 // Live stream viewer tracking
