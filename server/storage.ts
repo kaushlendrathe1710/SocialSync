@@ -269,6 +269,7 @@ export interface IStorage {
   // Live stream methods
   createLiveStream(liveStream: InsertLiveStream): Promise<LiveStream>;
   getActiveLiveStreams(): Promise<(LiveStream & { user: User })[]>;
+  getLiveStreamById(streamId: number): Promise<(LiveStream & { user: User }) | null>;
   endLiveStream(streamId: number, userId: number): Promise<boolean>;
 
   // Post view methods
@@ -1484,6 +1485,25 @@ export class DatabaseStorage implements IStorage {
       ...live_streams,
       user: users,
     }));
+  }
+
+  async getLiveStreamById(streamId: number): Promise<(LiveStream & { user: User }) | null> {
+    const result = await db
+      .select()
+      .from(liveStreams)
+      .innerJoin(users, eq(liveStreams.userId, users.id))
+      .where(eq(liveStreams.id, streamId))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    const { live_streams, users: userData } = result[0];
+    return {
+      ...live_streams,
+      user: userData,
+    };
   }
 
   async endLiveStream(streamId: number, userId: number): Promise<boolean> {

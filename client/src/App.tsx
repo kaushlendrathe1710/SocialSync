@@ -150,6 +150,7 @@ function AppContent() {
             <Route path="/groups" component={GroupsPage} />
             <Route path="/virtual-rooms" component={VirtualRoomsPage} />
             <Route path="/live-streams" component={LiveStreamsPage} />
+            <Route path="/live-stream/:id" component={LiveStreamPage} />
             <Route path="/live-stream" component={LiveStreamPage} />
             <Route path="/posts/:id" component={PublicPostPage} />
             <Route path="/profile/:id?" component={ProfilePage} />

@@ -15,6 +15,7 @@ import FeelingActivityModal from "@/components/feeling-activity-modal";
 import CreateEventModal from "@/components/create-event-modal";
 import CreateRoomModal from "@/components/create-room-modal";
 import LiveStreamViewer from "@/components/live-stream-viewer";
+import LiveStreamModal from "@/components/live-stream-modal";
 import { Plus, ImageIcon, Video, Smile, Users, UserPlus } from "lucide-react";
 import { Link } from "wouter";
 import type { PostWithUser, Story, User } from "@shared/schema";
@@ -29,6 +30,7 @@ export default function FeedPage() {
     useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
+  const [isLiveStreamModalOpen, setIsLiveStreamModalOpen] = useState(false);
   const [selectedStory, setSelectedStory] = useState<
     (Story & { user: User }) | null
   >(null);
@@ -45,51 +47,40 @@ export default function FeedPage() {
     };
     const handleOpenCreateEvent = () => setIsCreateEventModalOpen(true);
     const handleOpenCreateRoom = () => setIsCreateRoomModalOpen(true);
+    const handleOpenLiveStream = () => setIsLiveStreamModalOpen(true);
 
     window.addEventListener("openCreatePost", handleOpenCreatePost);
     window.addEventListener("openCreateStory", handleOpenCreateStory);
     window.addEventListener("openCreateEvent", handleOpenCreateEvent);
     window.addEventListener("openCreateRoom", handleOpenCreateRoom);
+    window.addEventListener("openLiveStream", handleOpenLiveStream);
 
     return () => {
       window.removeEventListener("openCreatePost", handleOpenCreatePost);
       window.removeEventListener("openCreateStory", handleOpenCreateStory);
       window.removeEventListener("openCreateEvent", handleOpenCreateEvent);
       window.removeEventListener("openCreateRoom", handleOpenCreateRoom);
+      window.removeEventListener("openLiveStream", handleOpenLiveStream);
     };
   }, []);
 
   const { data: posts = [], isLoading: postsLoading } = useQuery({
     queryKey: ["/api/posts"],
-    onSuccess: (data) => {
-      console.log(`[Feed] Posts loaded:`, data?.length || 0);
-      if (data && data.length > 0) {
-        console.log(`[Feed] Sample post:`, {
-          id: data[0].id,
-          username: data[0].user?.username,
-          content: data[0].content?.substring(0, 50),
-          hasMedia: !!(data[0].imageUrl || data[0].videoUrl),
-        });
-      }
-    },
-    onError: (error) => {
-      console.error(`[Feed] Error loading posts:`, error);
-    },
-  });
+  }) as { data: PostWithUser[], isLoading: boolean };
 
   const { data: stories = [] } = useQuery({
     queryKey: ["/api/stories"],
-  });
+  }) as { data: (Story & { user: User })[] };
 
   const { data: friendSuggestions = [] } = useQuery({
     queryKey: ["/api/friend-suggestions"],
     enabled: !!user,
-  });
+  }) as { data: User[] };
 
   const { data: liveStreams = [] } = useQuery({
     queryKey: ["/api/live-streams"],
     refetchInterval: 10000, // Refresh every 10 seconds
-  });
+  }) as { data: any[] };
 
   const sendRequestMutation = useMutation({
     mutationFn: async (receiverId: number) => {
@@ -278,7 +269,7 @@ export default function FeedPage() {
                 <Button
                   variant="ghost"
                   className="flex-1 text-gray-600 hover:bg-gray-100 py-3"
-                  onClick={() => (window.location.href = "/live-stream")}
+                  onClick={() => setIsLiveStreamModalOpen(true)}
                 >
                   <Video className="h-5 w-5 mr-2 text-red-500" />
                   Live Video
@@ -414,6 +405,11 @@ export default function FeedPage() {
       <CreateRoomModal
         isOpen={isCreateRoomModalOpen}
         onClose={() => setIsCreateRoomModalOpen(false)}
+      />
+
+      <LiveStreamModal
+        isOpen={isLiveStreamModalOpen}
+        onClose={() => setIsLiveStreamModalOpen(false)}
       />
 
       {selectedStory && (

@@ -19,6 +19,7 @@ interface CreateDropdownProps {
   onCreateStory: () => void;
   onCreateEvent?: () => void;
   onCreateRoom?: () => void;
+  onCreateLiveStream?: () => void;
 }
 
 export default function CreateDropdown({
@@ -28,6 +29,7 @@ export default function CreateDropdown({
   onCreateStory,
   onCreateEvent,
   onCreateRoom,
+  onCreateLiveStream,
 }: CreateDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -70,9 +72,10 @@ export default function CreateDropdown({
       icon: <Video className="h-5 w-5 text-red-500" />,
       title: "Go Live",
       description: "Broadcast live video to your followers",
-      onClick: () => {
-        window.location.href = "/live-stream";
-      },
+      onClick: onCreateLiveStream || (() => {
+        const event = new CustomEvent("openLiveStream");
+        window.dispatchEvent(event);
+      }),
     },
     {
       icon: <Image className="h-5 w-5 text-green-500" />,

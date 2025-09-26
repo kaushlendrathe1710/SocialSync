@@ -2254,23 +2254,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/live-streams/:id", async (req: Request, res: Response) => {
+    try {
+      const streamId = parseInt(req.params.id);
+      const stream = await storage.getLiveStreamById(streamId);
+      
+      if (!stream) {
+        return res.status(404).json({ message: "Live stream not found" });
+      }
+      
+      res.json(stream);
+    } catch (error) {
+      console.error("Get live stream error:", error);
+      res.status(500).json({ message: "Failed to get live stream" });
+    }
+  });
+
   app.put(
     "/api/live-streams/:id/end",
     requireAuth,
     async (req: Request, res: Response) => {
       try {
         const streamId = parseInt(req.params.id);
+        const userId = req.session.userId!;
+        
+        console.log("Ending live stream:", { streamId, userId });
+        
         const success = await storage.endLiveStream(
           streamId,
-          req.session.userId!
+          userId
         );
 
+        console.log("End live stream result:", success);
+
         if (!success) {
+          console.log("Stream not found or not authorized");
           return res
             .status(404)
             .json({ message: "Live stream not found or not authorized" });
         }
 
+        console.log("Live stream ended successfully");
         res.json({ message: "Live stream ended successfully" });
       } catch (error) {
         console.error("End live stream error:", error);
@@ -2616,6 +2640,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               break;
 
             case "join_stream_as_host":
+            case "live-stream:host":
+              console.log("Host joining stream:", data);
               currentStreamId = data.streamId;
               currentUserId = data.userId;
               isHost = true;
@@ -2626,6 +2652,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 userId: currentUserId,
                 isHost: true,
               });
+              
+              console.log("Host connected to stream:", currentStreamId);
+              console.log("Total hosts connected:", liveStreamHosts.size);
 
               if (!liveStreamViewers.has(currentStreamId)) {
                 liveStreamViewers.set(currentStreamId, new Set());
@@ -2916,6 +2945,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               break;
             }
+
+            case "audio_data":
+              // Forward audio data to all viewers of this stream
+              if (currentStreamId && isHost) {
+                console.log("Forwarding audio data to viewers of stream:", currentStreamId);
+                const viewers = liveStreamViewers.get(currentStreamId);
+                if (viewers) {
+                  // Find all WebSocket connections for this stream
+                  streamSockets.forEach((socketInfo, socketWs) => {
+                    if (socketInfo.streamId === currentStreamId && !socketInfo.isHost && socketWs.readyState === WebSocket.OPEN) {
+                      try {
+                        socketWs.send(JSON.stringify({
+                          type: "audio_data",
+                          streamId: currentStreamId,
+                          audioData: data.audioData,
+                          sampleRate: data.sampleRate,
+                          timestamp: data.timestamp
+                        }));
+                      } catch (error) {
+                        console.error("Error sending audio data to viewer:", error);
+                      }
+                    }
+                  });
+                }
+              }
+              break;
+
+            case "video_frame":
+              // Forward video frame to all viewers of this stream
+              if (currentStreamId && isHost) {
+                console.log("Forwarding video frame to viewers of stream:", currentStreamId);
+                const viewers = liveStreamViewers.get(currentStreamId);
+                if (viewers) {
+                  // Find all WebSocket connections for this stream
+                  streamSockets.forEach((socketInfo, socketWs) => {
+                    if (socketInfo.streamId === currentStreamId && !socketInfo.isHost && socketWs.readyState === WebSocket.OPEN) {
+                      try {
+                        socketWs.send(JSON.stringify({
+                          type: "video_frame",
+                          streamId: currentStreamId,
+                          frameData: data.frameData,
+                          timestamp: data.timestamp
+                        }));
+                      } catch (error) {
+                        console.error("Error sending video frame to viewer:", error);
+                      }
+                    }
+                  });
+                }
+              }
+              break;
 
             default:
               console.log("Unknown WebSocket message type:", data.type);
