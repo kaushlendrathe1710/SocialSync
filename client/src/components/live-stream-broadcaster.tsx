@@ -29,6 +29,7 @@ interface Message {
   userAvatar?: string;
   content: string;
   timestamp: Date;
+  type?: "text" | "reaction" | "system";
 }
 
 export default function LiveStreamBroadcaster({ 
@@ -57,12 +58,35 @@ export default function LiveStreamBroadcaster({
   const frameCaptureInterval = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize streaming after component mounts
+  // Load existing chat messages
+  const loadChatMessages = async () => {
+    try {
+      const response = await fetch(`/api/live-streams/${streamId}/chat?limit=50`);
+      if (response.ok) {
+        const chatMessages = await response.json();
+        const formattedMessages = chatMessages.map((msg: any) => ({
+          id: msg.id.toString(),
+          username: msg.username,
+          content: msg.message,
+          timestamp: msg.createdAt,
+          type: msg.messageType || "text",
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error("Error loading chat messages:", error);
+    }
+  };
+
   useEffect(() => {
+    // Load existing chat messages
+    loadChatMessages();
+    
     // Add a small delay to ensure the video element is rendered
     const timer = setTimeout(() => {
       startStreaming();
     }, 100);
-    
+
     return () => {
       clearTimeout(timer);
       stopStreaming();
@@ -402,13 +426,25 @@ export default function LiveStreamBroadcaster({
           console.log("Viewer count updated:", data.count || data.viewerCount);
           setViewerCount(data.count || data.viewerCount);
           break;
-        case "message":
-          console.log("New message received:", data.message);
-          setMessages(prev => [...prev, data.message]);
+        case "chat_message":
+          console.log("New chat message received:", data);
+          setMessages(prev => [...prev, {
+            id: data.messageId,
+            username: data.username,
+            content: data.message,
+            timestamp: data.timestamp,
+            type: "text",
+          }]);
           break;
         case "reaction":
           console.log("Reaction received:", data);
-          // Handle reactions (could show temporary emoji overlay)
+          setMessages(prev => [...prev, {
+            id: `reaction-${Date.now()}`,
+            username: data.username,
+            content: data.reactionType,
+            timestamp: new Date().toISOString(),
+            type: "reaction",
+          }]);
           break;
         default:
           console.log("Unknown message type:", data.type);
@@ -719,7 +755,13 @@ export default function LiveStreamBroadcaster({
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
-                <p className="text-gray-300 text-sm">{message.content}</p>
+                {message.type === "reaction" ? (
+                  <div className="text-2xl">
+                    {message.content}
+                  </div>
+                ) : (
+                  <p className="text-gray-300 text-sm">{message.content}</p>
+                )}
               </div>
             </div>
           ))}

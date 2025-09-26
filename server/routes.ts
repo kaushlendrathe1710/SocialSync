@@ -2270,6 +2270,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get chat messages for a live stream
+  app.get("/api/live-streams/:id/chat", async (req: Request, res: Response) => {
+    try {
+      const streamId = parseInt(req.params.id);
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const messages = await storage.getLiveStreamChatMessages(streamId, limit, offset);
+      res.json(messages);
+    } catch (error) {
+      console.error("Get live stream chat messages error:", error);
+      res.status(500).json({ message: "Failed to get chat messages" });
+    }
+  });
+
   app.put(
     "/api/live-streams/:id/end",
     requireAuth,
@@ -2550,7 +2565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("New WebSocket connection established");
 
-      ws.on("message", (message) => {
+      ws.on("message", async (message) => {
         try {
           const data = JSON.parse(message.toString());
           console.log("WebSocket message received:", data.type);
@@ -2718,6 +2733,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   timestamp: new Date().toISOString(),
                 };
 
+                // Store the message in the database
+                (async () => {
+                  try {
+                    await storage.createLiveStreamChatMessage({
+                      streamId: currentStreamId,
+                      userId: currentUserId,
+                      username: data.username || `User ${currentUserId}`,
+                      userAvatar: data.userAvatar,
+                      message: data.message,
+                      messageType: "text",
+                    });
+                  } catch (error) {
+                    console.error("Error storing chat message:", error);
+                  }
+                })();
+
                 // Broadcast to all viewers in the stream
                 broadcastToStream(currentStreamId, messageData);
               }
@@ -2733,6 +2764,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   userAvatar: data.userAvatar,
                   reactionType: data.reactionType,
                 };
+
+                // Store the reaction in the database
+                (async () => {
+                  try {
+                    await storage.createLiveStreamChatMessage({
+                      streamId: currentStreamId,
+                      userId: currentUserId,
+                      username: data.username || `User ${currentUserId}`,
+                      userAvatar: data.userAvatar,
+                      message: data.reactionType,
+                      messageType: "reaction",
+                    });
+                  } catch (error) {
+                    console.error("Error storing reaction:", error);
+                  }
+                })();
 
                 // Broadcast to all viewers in the stream
                 broadcastToStream(currentStreamId, reactionData);

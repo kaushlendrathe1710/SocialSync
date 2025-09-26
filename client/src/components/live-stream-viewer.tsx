@@ -138,9 +138,36 @@ export default function LiveStreamViewer({ isOpen, onClose, stream }: LiveStream
     }
   }, [stream, user]);
 
+  // Load existing chat messages
+  const loadChatMessages = async () => {
+    if (!stream) return;
+    
+    try {
+      const response = await fetch(`/api/live-streams/${stream.id}/chat?limit=50`);
+      if (response.ok) {
+        const chatMessages = await response.json();
+        const formattedMessages = chatMessages.map((msg: any) => ({
+          id: msg.id.toString(),
+          userId: msg.userId,
+          username: msg.username,
+          userAvatar: msg.userAvatar,
+          message: msg.message,
+          timestamp: msg.createdAt,
+          type: msg.messageType || "text",
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error("Error loading chat messages:", error);
+    }
+  };
+
   // Set up WebSocket connection for real-time features
   useEffect(() => {
     if (isOpen && stream && !websocket) {
+      // Load existing chat messages first
+      loadChatMessages();
+      
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws`;
       const ws = new WebSocket(wsUrl);
@@ -753,9 +780,15 @@ export default function LiveStreamViewer({ isOpen, onClose, stream }: LiveStream
                               {message.timestamp.toLocaleTimeString()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700 break-words">
-                            {message.message}
-                          </p>
+                          {message.type === "reaction" ? (
+                            <div className="text-2xl">
+                              {message.message}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-700 break-words">
+                              {message.message}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}

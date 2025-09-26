@@ -11,6 +11,7 @@ import {
   messages,
   notifications,
   liveStreams,
+  liveStreamChatMessages,
   postViews,
   friendRequests,
   friendships,
@@ -59,6 +60,8 @@ import {
   type InsertNotification,
   type LiveStream,
   type InsertLiveStream,
+  type LiveStreamChatMessage,
+  type InsertLiveStreamChatMessage,
   type PostView,
   type InsertPostView,
   type FriendRequest,
@@ -271,6 +274,10 @@ export interface IStorage {
   getActiveLiveStreams(): Promise<(LiveStream & { user: User })[]>;
   getLiveStreamById(streamId: number): Promise<(LiveStream & { user: User }) | null>;
   endLiveStream(streamId: number, userId: number): Promise<boolean>;
+
+  // Live stream chat methods
+  createLiveStreamChatMessage(message: InsertLiveStreamChatMessage): Promise<LiveStreamChatMessage>;
+  getLiveStreamChatMessages(streamId: number, limit?: number, offset?: number): Promise<LiveStreamChatMessage[]>;
 
   // Post view methods
   recordPostView(postView: InsertPostView): Promise<PostView>;
@@ -1523,6 +1530,28 @@ export class DatabaseStorage implements IStorage {
       console.error("End live stream error:", error);
       return false;
     }
+  }
+
+  // Live stream chat methods
+  async createLiveStreamChatMessage(message: InsertLiveStreamChatMessage): Promise<LiveStreamChatMessage> {
+    const [newMessage] = await db
+      .insert(liveStreamChatMessages)
+      .values(message)
+      .returning();
+    
+    return newMessage;
+  }
+
+  async getLiveStreamChatMessages(streamId: number, limit: number = 50, offset: number = 0): Promise<LiveStreamChatMessage[]> {
+    const messages = await db
+      .select()
+      .from(liveStreamChatMessages)
+      .where(eq(liveStreamChatMessages.streamId, streamId))
+      .orderBy(desc(liveStreamChatMessages.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return messages.reverse(); // Return in chronological order
   }
 
   // Post view methods
