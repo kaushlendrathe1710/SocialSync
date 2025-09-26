@@ -120,10 +120,10 @@ async function verifySMTPConnection(): Promise<boolean> {
   try {
     console.log("🔍 Verifying SMTP connection...");
     console.log("SMTP Config:", {
-      host: process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com",
-      port: process.env.EMAIL_PORT || process.env.SMTP_PORT || "587",
-      user: process.env.EMAIL_USER || process.env.SMTP_USER ? "✅ Set" : "❌ Missing",
-      pass: process.env.EMAIL_PASS || process.env.SMTP_PASS ? "✅ Set" : "❌ Missing",
+      host: EMAIL_HOST || "smtp.hostinger.com",
+      port: EMAIL_PORT|| "465",
+      user: EMAIL_USER ? "✅ Set" : "❌ Missing",
+      pass: EMAIL_PASS  ? "✅ Set" : "❌ Missing",
     });
 
     await transporter.verify();
