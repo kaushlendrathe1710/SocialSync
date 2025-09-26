@@ -107,9 +107,9 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false,
   },
-  connectionTimeout: 5000,
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
+  connectionTimeout: 30000,  // 30 seconds
+  greetingTimeout: 30000,    // 30 seconds  
+  socketTimeout: 60000,      // 60 seconds
 });
 
 // Generate 6-digit OTP
