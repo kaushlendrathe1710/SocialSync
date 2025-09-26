@@ -2254,23 +2254,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/live-streams/:id", async (req: Request, res: Response) => {
+    try {
+      const streamId = parseInt(req.params.id);
+      const stream = await storage.getLiveStreamById(streamId);
+      
+      if (!stream) {
+        return res.status(404).json({ message: "Live stream not found" });
+      }
+      
+      res.json(stream);
+    } catch (error) {
+      console.error("Get live stream error:", error);
+      res.status(500).json({ message: "Failed to get live stream" });
+    }
+  });
+
+  // Get chat messages for a live stream
+  app.get("/api/live-streams/:id/chat", async (req: Request, res: Response) => {
+    try {
+      const streamId = parseInt(req.params.id);
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const messages = await storage.getLiveStreamChatMessages(streamId, limit, offset);
+      res.json(messages);
+    } catch (error) {
+      console.error("Get live stream chat messages error:", error);
+      res.status(500).json({ message: "Failed to get chat messages" });
+    }
+  });
+
   app.put(
     "/api/live-streams/:id/end",
     requireAuth,
     async (req: Request, res: Response) => {
       try {
         const streamId = parseInt(req.params.id);
+        const userId = req.session.userId!;
+        
+        console.log("Ending live stream:", { streamId, userId });
+        
         const success = await storage.endLiveStream(
           streamId,
-          req.session.userId!
+          userId
         );
 
+        console.log("End live stream result:", success);
+
         if (!success) {
+          console.log("Stream not found or not authorized");
           return res
             .status(404)
             .json({ message: "Live stream not found or not authorized" });
         }
 
+        console.log("Live stream ended successfully");
         res.json({ message: "Live stream ended successfully" });
       } catch (error) {
         console.error("End live stream error:", error);
@@ -2526,7 +2565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("New WebSocket connection established");
 
-      ws.on("message", (message) => {
+      ws.on("message", async (message) => {
         try {
           const data = JSON.parse(message.toString());
           console.log("WebSocket message received:", data.type);
@@ -2616,6 +2655,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               break;
 
             case "join_stream_as_host":
+            case "live-stream:host":
+              console.log("Host joining stream:", data);
               currentStreamId = data.streamId;
               currentUserId = data.userId;
               isHost = true;
@@ -2626,6 +2667,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 userId: currentUserId,
                 isHost: true,
               });
+              
+              console.log("Host connected to stream:", currentStreamId);
+              console.log("Total hosts connected:", liveStreamHosts.size);
 
               if (!liveStreamViewers.has(currentStreamId)) {
                 liveStreamViewers.set(currentStreamId, new Set());
@@ -2689,6 +2733,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   timestamp: new Date().toISOString(),
                 };
 
+                // Store the message in the database
+                (async () => {
+                  try {
+                    await storage.createLiveStreamChatMessage({
+                      streamId: currentStreamId,
+                      userId: currentUserId,
+                      username: data.username || `User ${currentUserId}`,
+                      userAvatar: data.userAvatar,
+                      message: data.message,
+                      messageType: "text",
+                    });
+                  } catch (error) {
+                    console.error("Error storing chat message:", error);
+                  }
+                })();
+
                 // Broadcast to all viewers in the stream
                 broadcastToStream(currentStreamId, messageData);
               }
@@ -2704,6 +2764,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   userAvatar: data.userAvatar,
                   reactionType: data.reactionType,
                 };
+
+                // Store the reaction in the database
+                (async () => {
+                  try {
+                    await storage.createLiveStreamChatMessage({
+                      streamId: currentStreamId,
+                      userId: currentUserId,
+                      username: data.username || `User ${currentUserId}`,
+                      userAvatar: data.userAvatar,
+                      message: data.reactionType,
+                      messageType: "reaction",
+                    });
+                  } catch (error) {
+                    console.error("Error storing reaction:", error);
+                  }
+                })();
 
                 // Broadcast to all viewers in the stream
                 broadcastToStream(currentStreamId, reactionData);
@@ -2916,6 +2992,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               break;
             }
+
+            case "audio_data":
+              // Forward audio data to all viewers of this stream
+              if (currentStreamId && isHost) {
+                console.log("Forwarding audio data to viewers of stream:", currentStreamId);
+                const viewers = liveStreamViewers.get(currentStreamId);
+                if (viewers) {
+                  // Find all WebSocket connections for this stream
+                  streamSockets.forEach((socketInfo, socketWs) => {
+                    if (socketInfo.streamId === currentStreamId && !socketInfo.isHost && socketWs.readyState === WebSocket.OPEN) {
+                      try {
+                        socketWs.send(JSON.stringify({
+                          type: "audio_data",
+                          streamId: currentStreamId,
+                          audioData: data.audioData,
+                          sampleRate: data.sampleRate,
+                          timestamp: data.timestamp
+                        }));
+                      } catch (error) {
+                        console.error("Error sending audio data to viewer:", error);
+                      }
+                    }
+                  });
+                }
+              }
+              break;
+
+            case "video_frame":
+              // Forward video frame to all viewers of this stream
+              if (currentStreamId && isHost) {
+                console.log("Forwarding video frame to viewers of stream:", currentStreamId);
+                const viewers = liveStreamViewers.get(currentStreamId);
+                if (viewers) {
+                  // Find all WebSocket connections for this stream
+                  streamSockets.forEach((socketInfo, socketWs) => {
+                    if (socketInfo.streamId === currentStreamId && !socketInfo.isHost && socketWs.readyState === WebSocket.OPEN) {
+                      try {
+                        socketWs.send(JSON.stringify({
+                          type: "video_frame",
+                          streamId: currentStreamId,
+                          frameData: data.frameData,
+                          timestamp: data.timestamp
+                        }));
+                      } catch (error) {
+                        console.error("Error sending video frame to viewer:", error);
+                      }
+                    }
+                  });
+                }
+              }
+              break;
 
             default:
               console.log("Unknown WebSocket message type:", data.type);

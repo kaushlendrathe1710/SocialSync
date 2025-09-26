@@ -31,6 +31,7 @@ import NotificationsDropdown from "./notifications-dropdown";
 import MessagesDropdown from "./messages-dropdown";
 import CreateDropdown from "./create-dropdown";
 import SettingsModal from "./settings-modal";
+import LiveStreamModal from "./live-stream-modal";
 
 export default function Navigation() {
   const { user, logout } = useAuth();
@@ -42,6 +43,7 @@ export default function Navigation() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsModalType, setSettingsModalType] = useState<'settings' | 'privacy' | 'help' | 'display'>('settings');
+  const [showLiveStreamModal, setShowLiveStreamModal] = useState(false);
 
   // Get real-time counts for notifications and messages
   const { data: notifications = [] } = useQuery({
@@ -170,6 +172,10 @@ export default function Navigation() {
                 const event = new CustomEvent('openCreateRoom');
                 window.dispatchEvent(event);
               }}
+              onCreateLiveStream={() => {
+                setIsCreateOpen(false);
+                setShowLiveStreamModal(true);
+              }}
             />
           </div>
 
@@ -290,6 +296,10 @@ export default function Navigation() {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         type={settingsModalType}
+      />
+      <LiveStreamModal
+        isOpen={showLiveStreamModal}
+        onClose={() => setShowLiveStreamModal(false)}
       />
     </nav>
     </>

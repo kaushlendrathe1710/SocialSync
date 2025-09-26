@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import WorkingLiveStreamViewer from "@/components/working-live-stream-viewer";
+import LiveStreamViewer from "@/components/live-stream-viewer";
+import LiveStreamModal from "@/components/live-stream-modal";
 
 interface VirtualRoom {
   id: number;
@@ -40,6 +41,7 @@ export default function VirtualRoomsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedRoom, setSelectedRoom] = useState<VirtualRoom | null>(null);
+  const [showLiveStreamModal, setShowLiveStreamModal] = useState(false);
 
   const { data: virtualRooms = [], isLoading } = useQuery({
     queryKey: ["/api/live-streams"],
@@ -63,6 +65,17 @@ export default function VirtualRoomsPage() {
   const handleCloseViewer = () => {
     setSelectedRoom(null);
   };
+
+  // Listen for live stream creation events
+  useEffect(() => {
+    const handleOpenLiveStream = () => setShowLiveStreamModal(true);
+
+    window.addEventListener("openLiveStream", handleOpenLiveStream);
+
+    return () => {
+      window.removeEventListener("openLiveStream", handleOpenLiveStream);
+    };
+  }, []);
 
   const formatDuration = (startedAt: string) => {
     const start = new Date(startedAt);
@@ -117,7 +130,10 @@ export default function VirtualRoomsPage() {
           <p className="text-gray-600 mb-4">
             Create a live video to start your own virtual room
           </p>
-          <Button onClick={() => (window.location.href = "/feed")}>
+          <Button onClick={() => {
+            const event = new CustomEvent("openLiveStream");
+            window.dispatchEvent(event);
+          }}>
             <Video className="w-4 h-4 mr-2" />
             Create Live Video
           </Button>
@@ -218,10 +234,16 @@ export default function VirtualRoomsPage() {
       )}
 
       {/* Live Stream Viewer */}
-      <WorkingLiveStreamViewer
+      <LiveStreamViewer
         isOpen={!!selectedRoom}
         onClose={handleCloseViewer}
         stream={selectedRoom}
+      />
+
+      {/* Live Stream Creation Modal */}
+      <LiveStreamModal
+        isOpen={showLiveStreamModal}
+        onClose={() => setShowLiveStreamModal(false)}
       />
     </div>
   );

@@ -41,6 +41,12 @@ export default function Sidebar() {
       active: location === "/status",
     },
     {
+      icon: Video,
+      label: "Live Streams",
+      path: "/live-streams",
+      active: location === "/live-streams",
+    },
+    {
       icon: Search,
       label: "Explore",
       path: "/explore",
@@ -152,24 +158,6 @@ export default function Sidebar() {
                 }`}
               />
               Virtual Rooms
-            </button>
-          </Link>
-          <Link href="/live-streams">
-            <button
-              className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                location === "/live-streams"
-                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-              }`}
-            >
-              <Video
-                className={`mr-3 h-5 w-5 ${
-                  location === "/live-streams"
-                    ? "text-blue-600"
-                    : "text-gray-400"
-                }`}
-              />
-              Live Streams
             </button>
           </Link>
           <Link href="/wellness">

@@ -284,6 +284,18 @@ export const liveStreams = pgTable("live_streams", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Live stream chat messages
+export const liveStreamChatMessages = pgTable("live_stream_chat_messages", {
+  id: serial("id").primaryKey(),
+  streamId: integer("stream_id").notNull(),
+  userId: integer("user_id").notNull(),
+  username: text("username").notNull(),
+  userAvatar: text("user_avatar"),
+  message: text("message").notNull(),
+  messageType: text("message_type").default("text"), // text, reaction, system
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const postViews = pgTable("post_views", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").notNull(),
@@ -682,6 +694,11 @@ export const insertLiveStreamSchema = createInsertSchema(liveStreams).omit({
   viewerCount: true,
 });
 
+export const insertLiveStreamChatMessageSchema = createInsertSchema(liveStreamChatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertPostViewSchema = createInsertSchema(postViews).omit({
   id: true,
   viewedAt: true,
@@ -870,6 +887,9 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type LiveStream = typeof liveStreams.$inferSelect;
 export type InsertLiveStream = z.infer<typeof insertLiveStreamSchema>;
+
+export type LiveStreamChatMessage = typeof liveStreamChatMessages.$inferSelect;
+export type InsertLiveStreamChatMessage = z.infer<typeof insertLiveStreamChatMessageSchema>;
 
 export type PostView = typeof postViews.$inferSelect;
 export type InsertPostView = z.infer<typeof insertPostViewSchema>;
@@ -1406,6 +1426,25 @@ export const mentorshipRequestsRelations = relations(mentorshipRequests, ({ one 
   }),
   mentee: one(users, {
     fields: [mentorshipRequests.menteeId],
+    references: [users.id],
+  }),
+}));
+
+export const liveStreamsRelations = relations(liveStreams, ({ one, many }) => ({
+  user: one(users, {
+    fields: [liveStreams.userId],
+    references: [users.id],
+  }),
+  chatMessages: many(liveStreamChatMessages),
+}));
+
+export const liveStreamChatMessagesRelations = relations(liveStreamChatMessages, ({ one }) => ({
+  stream: one(liveStreams, {
+    fields: [liveStreamChatMessages.streamId],
+    references: [liveStreams.id],
+  }),
+  user: one(users, {
+    fields: [liveStreamChatMessages.userId],
     references: [users.id],
   }),
 }));
