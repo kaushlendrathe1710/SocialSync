@@ -106,11 +106,38 @@ const transporter = nodemailer.createTransport({
   },
   tls: {
     rejectUnauthorized: false,
+    ciphers: 'SSLv3',
   },
+  // Additional settings for Hostinger
+  pool: true,
+  maxConnections: 1,
+  maxMessages: 3,
   connectionTimeout: 30000,  // 30 seconds
   greetingTimeout: 30000,    // 30 seconds  
   socketTimeout: 60000,      // 60 seconds
 });
+
+// SMTP connection verification
+async function verifySMTPConnection(): Promise<boolean> {
+  try {
+    console.log("🔍 Verifying SMTP connection...");
+    console.log("SMTP Config:", {
+      host: process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com",
+      port: process.env.EMAIL_PORT || process.env.SMTP_PORT || "587",
+      user: process.env.EMAIL_USER || process.env.SMTP_USER ? "✅ Set" : "❌ Missing",
+      pass: process.env.EMAIL_PASS || process.env.SMTP_PASS ? "✅ Set" : "❌ Missing",
+    });
+
+    await transporter.verify();
+    console.log("✅ SMTP connection verified successfully!");
+    return true;
+  } catch (error: any) {
+    console.error("❌ SMTP connection failed:", error.message);
+    console.error("SMTP Error Code:", error.code);
+    console.error("SMTP Error Command:", error.command);
+    return false;
+  }
+}
 
 // Generate 6-digit OTP
 function generateOTP(): string {
@@ -144,6 +171,16 @@ async function sendOtpEmail(
     );
   }
 
+  // Verify SMTP connection before sending
+  console.log(`📧 Attempting to send ${purpose} email to ${email}...`);
+  try {
+    await transporter.verify();
+    console.log("✅ SMTP connection verified before sending email");
+  } catch (verifyError: any) {
+    console.error("❌ SMTP verification failed before sending email:", verifyError.message);
+    throw new Error(`SMTP connection failed: ${verifyError.message}`);
+  }
+
   await transporter.sendMail({
     from:
       process.env.FROM_EMAIL ||
@@ -169,6 +206,31 @@ async function sendOtpEmail(
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Verify SMTP connection on startup
+  console.log("🚀 Starting server...");
+  const smtpConnected = await verifySMTPConnection();
+  if (!smtpConnected) {
+    console.warn("⚠️  SMTP connection failed - OTP emails will not work!");
+    console.warn("⚠️  Please check your email configuration in environment variables");
+  }
+
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    const smtpStatus = await verifySMTPConnection();
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      smtp: {
+        connected: smtpStatus,
+        host: process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com",
+        port: process.env.EMAIL_PORT || process.env.SMTP_PORT || "587",
+        userConfigured: !!(process.env.EMAIL_USER || process.env.SMTP_USER),
+        passConfigured: !!(process.env.EMAIL_PASS || process.env.SMTP_PASS),
+      },
+      environment: process.env.NODE_ENV,
+    });
+  });
+
   // Auth routes
   app.post("/api/auth/send-otp", async (req, res) => {
     try {
