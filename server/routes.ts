@@ -113,26 +113,65 @@ export const transporter = nodemailer.createTransport({
     user: EMAIL_USER,
     pass: EMAIL_PASS,
   },
+  // Add timeout configurations for better debugging
+  connectionTimeout: 60000, // 60 seconds
+  greetingTimeout: 30000,  // 30 seconds
+  socketTimeout: 60000,     // 60 seconds
+  // Additional debugging options
+  debug: process.env.NODE_ENV === 'development', // Enable debug in dev
+  logger: process.env.NODE_ENV === 'development', // Enable logger in dev
 });
 
-// SMTP connection verification - Simplified to match working pattern
+// SMTP connection verification - Enhanced with detailed logging
 async function verifySMTPConnection(): Promise<boolean> {
   try {
     console.log("🔍 Verifying SMTP connection...");
-    console.log("SMTP Config:", {
-      host: EMAIL_HOST || "smtp.hostinger.com",
-      port: EMAIL_PORT|| "465",
-      user: EMAIL_USER ? "✅ Set" : "❌ Missing",
-      pass: EMAIL_PASS  ? "✅ Set" : "❌ Missing",
-    });
+    
+    // Detailed environment variable logging
+    console.log("📧 EMAIL Environment Variables:");
+    console.log("  EMAIL_HOST:", process.env.EMAIL_HOST || "❌ NOT SET");
+    console.log("  EMAIL_PORT:", process.env.EMAIL_PORT || "❌ NOT SET");
+    console.log("  EMAIL_USER:", process.env.EMAIL_USER || "❌ NOT SET");
+    console.log("  EMAIL_PASS:", process.env.EMAIL_PASS ? "✅ SET (hidden)" : "❌ NOT SET");
+    console.log("  EMAIL_FROM:", process.env.EMAIL_FROM || "❌ NOT SET");
+    
+    // Parsed configuration logging
+    console.log("⚙️ Parsed SMTP Configuration:");
+    console.log("  Host:", EMAIL_HOST || "❌ EMPTY");
+    console.log("  Port:", EMAIL_PORT || "❌ EMPTY");
+    console.log("  User:", EMAIL_USER || "❌ EMPTY");
+    console.log("  Pass:", EMAIL_PASS ? "✅ SET" : "❌ EMPTY");
+    console.log("  From:", EMAIL_FROM || "❌ EMPTY");
+    console.log("  Secure:", EMAIL_PORT === 465);
+    
+    // Transporter configuration logging
+    console.log("🚀 Transporter Configuration:");
+    console.log("  Host:", EMAIL_HOST);
+    console.log("  Port:", EMAIL_PORT);
+    console.log("  Secure:", EMAIL_PORT === 465);
+    console.log("  Auth User:", EMAIL_USER || "❌ NOT SET");
+    console.log("  Auth Pass:", EMAIL_PASS ? "✅ SET" : "❌ NOT SET");
 
+    console.log("🔄 Attempting SMTP connection...");
     await transporter.verify();
     console.log("✅ SMTP connection verified successfully!");
     return true;
   } catch (error: any) {
-    console.error("❌ SMTP connection failed:", error.message);
-    console.error("SMTP Error Code:", error.code);
-    console.error("SMTP Error Command:", error.command);
+    console.error("❌ SMTP connection failed!");
+    console.error("📋 Error Details:");
+    console.error("  Message:", error.message);
+    console.error("  Code:", error.code);
+    console.error("  Command:", error.command);
+    console.error("  Response:", error.response);
+    console.error("  ResponseCode:", error.responseCode);
+    console.error("  Stack:", error.stack);
+    
+    // Additional debugging info
+    console.error("🔍 Debug Information:");
+    console.error("  Node Environment:", process.env.NODE_ENV);
+    console.error("  Platform:", process.platform);
+    console.error("  Node Version:", process.version);
+    
     return false;
   }
 }
@@ -194,6 +233,10 @@ async function sendOtpEmail(
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Log email configuration on startup
+  console.log("📧 Email Configuration Check:");
+  console.log("Email configuration: HOST=" + EMAIL_HOST + ", PORT=" + EMAIL_PORT + ", USER=" + EMAIL_USER + ", FROM=" + EMAIL_FROM);
+  
   // Verify SMTP connection on startup
   console.log("🚀 Starting server...");
   const smtpConnected = await verifySMTPConnection();
