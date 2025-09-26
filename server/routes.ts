@@ -128,6 +128,12 @@ async function verifySMTPConnection(): Promise<boolean> {
       pass: process.env.EMAIL_PASS || process.env.SMTP_PASS ? "✅ Set" : "❌ Missing",
     });
 
+    // Special handling for Hostinger
+    const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com";
+    if (host.includes("hostinger")) {
+      console.log("🏢 Detected Hostinger SMTP - using SSL/TLS configuration");
+    }
+
     await transporter.verify();
     console.log("✅ SMTP connection verified successfully!");
     return true;
