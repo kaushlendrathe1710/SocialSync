@@ -58,7 +58,7 @@ export default function NotificationsDropdown({
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
       const response = await fetch(`/api/notifications/${notificationId}/read`, {
-        method: 'POST',
+        method: 'PUT',
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to mark as read');
@@ -81,8 +81,8 @@ export default function NotificationsDropdown({
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/notifications/mark-all-read', {
-        method: 'POST',
+      const response = await fetch('/api/notifications/read-all', {
+        method: 'PUT',
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to mark all as read');

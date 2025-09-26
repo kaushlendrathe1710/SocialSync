@@ -45,7 +45,7 @@ export default function NotificationsPage() {
   const markReadMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await fetch(`/api/notifications/${id}/read`, {
-        method: 'POST',
+        method: 'PUT',
         credentials: 'include',
       });
       if (!response.ok) {
@@ -60,8 +60,8 @@ export default function NotificationsPage() {
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/notifications/mark-all-read', {
-        method: 'POST',
+      const response = await fetch('/api/notifications/read-all', {
+        method: 'PUT',
         credentials: 'include',
       });
       if (!response.ok) {

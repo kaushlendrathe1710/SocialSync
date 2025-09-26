@@ -105,8 +105,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           duration: 4000,
         });
         
-        // Refresh notifications
-        queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+        // Only refresh notifications if we're not in the middle of marking as read
+        // This prevents the "unread again" issue
+        const currentNotifications = queryClient.getQueryData(['/api/notifications']);
+        if (currentNotifications) {
+          // Add the new notification to existing data instead of refetching
+          queryClient.setQueryData(['/api/notifications'], (oldData: any) => {
+            if (!oldData) return oldData;
+            return [message.data, ...oldData];
+          });
+        } else {
+          // Only refetch if we don't have current data
+          queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+        }
         
         // Update unread count
         setUnreadCount(prev => prev + 1);
