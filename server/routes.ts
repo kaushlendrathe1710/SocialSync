@@ -262,6 +262,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Test different SMTP configurations
+  app.get("/api/test-smtp", async (req, res) => {
+    const testConfigs = [
+      { host: "smtp.hostinger.com", port: 465, secure: true },
+      { host: "smtp.hostinger.com", port: 587, secure: false },
+      { host: "smtp.hostinger.com", port: 2525, secure: false },
+      { host: "smtp.gmail.com", port: 587, secure: false },
+      { host: "smtp.sendgrid.net", port: 587, secure: false },
+    ];
+
+    const results = [];
+    
+    for (const config of testConfigs) {
+      try {
+        const testTransporter = nodemailer.createTransporter({
+          host: config.host,
+          port: config.port,
+          secure: config.secure,
+          connectionTimeout: 10000,
+          greetingTimeout: 5000,
+          socketTimeout: 10000,
+        });
+        
+        await testTransporter.verify();
+        results.push({ ...config, status: "✅ SUCCESS" });
+      } catch (error: any) {
+        results.push({ 
+          ...config, 
+          status: "❌ FAILED", 
+          error: error.message,
+          code: error.code 
+        });
+      }
+    }
+    
+    res.json({ smtpTests: results });
+  });
+
   // Auth routes
   app.post("/api/auth/send-otp", async (req, res) => {
     try {
