@@ -104,7 +104,7 @@ const memoryUpload = multer({
   },
 });
 
-// Email configuration
+// Email configuration - Updated to match working Hostinger setup
 export const transporter = nodemailer.createTransport({
   host: EMAIL_HOST,
   port: EMAIL_PORT,
@@ -115,24 +115,7 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// SMTP connection verification
+// SMTP connection verification - Simplified to match working pattern
 async function verifySMTPConnection(): Promise<boolean> {
   try {
     console.log("🔍 Verifying SMTP connection...");
