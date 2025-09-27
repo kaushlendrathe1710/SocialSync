@@ -811,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const reelId = parseInt(req.params.id);
       const { content } = z
-        .object({ content: z.string().min(1) })
+        .object({ content: z.string().min(1, "Comment content is required") })
         .parse(req.body);
       const comment = await storage.createReelComment(
         reelId,
@@ -853,7 +853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/posts",
     requireAuth,
-    upload.single("media"),
+    upload.array("media", 10), // Allow up to 10 media files
     async (req, res) => {
       try {
         let postData = {
@@ -864,8 +864,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           privacy: req.body.privacy || "public",
         };
 
-        // Handle file upload with S3 only
-        if (req.file) {
+        // Validate that either content or media is provided
+        const hasContent = req.body.content && req.body.content.trim().length > 0;
+        const hasMedia = req.files && (req.files as Express.Multer.File[]).length > 0;
+        
+        if (!hasContent && !hasMedia) {
+          return res.status(400).json({ 
+            message: "Either content or media must be provided" 
+          });
+        }
+
+        // Handle file uploads with S3 only
+        const files = req.files as Express.Multer.File[];
+        if (files && files.length > 0) {
           // Check if S3 is configured
           if (!validateS3Config()) {
             return res.status(500).json({ 
@@ -873,15 +884,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
 
-          const fileExtension = path.extname(req.file.originalname);
+          // For now, handle the first file (can be extended to handle multiple files)
+          const file = files[0];
+          const fileExtension = path.extname(file.originalname);
           const isVideo = /\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/i.test(fileExtension);
           const folder = isVideo ? "videos" : "images";
 
           // Upload to S3
           const uploadResult = await uploadToS3(
-            req.file.buffer,
-            req.file.originalname,
-            req.file.mimetype,
+            file.buffer,
+            file.originalname,
+            file.mimetype,
             folder
           );
 
@@ -1263,10 +1276,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = parseInt(req.params.id);
       const { content, imageUrl, gifUrl, mediaType } = z
         .object({ 
-          content: z.string().min(1),
+          content: z.string().optional(),
           imageUrl: z.string().optional(),
           gifUrl: z.string().optional(),
           mediaType: z.enum(['image', 'gif']).optional()
+        })
+        .refine((data) => {
+          // Either content must be provided, or media must be provided
+          return (data.content && data.content.trim().length > 0) || data.imageUrl || data.gifUrl;
+        }, {
+          message: "Either content or media (image/gif) must be provided"
         })
         .parse(req.body);
 
@@ -1307,11 +1326,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const { content, imageUrl, gifUrl, mediaType } = z.object({ 
-        content: z.string().min(1),
+        content: z.string().optional(),
         imageUrl: z.string().optional(),
         gifUrl: z.string().optional(),
         mediaType: z.enum(['image', 'gif']).optional()
-      }).parse(req.body);
+      })
+      .refine((data) => {
+        // Either content must be provided, or media must be provided
+        return (data.content && data.content.trim().length > 0) || data.imageUrl || data.gifUrl;
+      }, {
+        message: "Either content or media (image/gif) must be provided"
+      })
+      .parse(req.body);
       const updated = await storage.updateComment(id, content, imageUrl, gifUrl, mediaType);
       if (!updated) return res.status(404).json({ message: "Comment not found" });
       res.json(updated);
