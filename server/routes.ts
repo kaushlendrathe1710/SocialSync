@@ -25,9 +25,10 @@ import { uploadToS3, deleteFromS3, validateS3Config } from "./aws-s3";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
-import { randomUUID } from "crypto";
 import dotenv from "dotenv";
 dotenv.config();
+
+
 // Environment variables for email configuration
 const EMAIL_HOST = process.env.EMAIL_HOST || "";
 const EMAIL_PORT = process.env.EMAIL_PORT
@@ -644,85 +645,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     memoryUpload.single("video"),
     async (req, res) => {
       try {
-        if (!req.file)
+        console.log("=== REEL UPLOAD REQUEST ===");
+        console.log("Creating reel - Request body:", req.body);
+        console.log("Creating reel - File:", req.file);
+        console.log("Creating reel - User ID:", req.session.userId);
+
+        if (!req.file) {
+          console.log("❌ No file provided in request");
           return res.status(400).json({ message: "Video file is required" });
-        // Transcode to Instagram-like 9:16 (720x1280), H.264/AAC, ~3Mbps
-        // Write temp input
-        const tmpIn = path.join("uploads", `tmp-in-${Date.now()}.mp4`);
-        const tmpOut = path.join("uploads", `tmp-out-${Date.now()}.mp4`);
-        fs.writeFileSync(tmpIn, req.file.buffer);
+        }
 
-        const ffmpegArgs = [
-          "-y",
-          "-i",
-          tmpIn,
-          "-vf",
-          "scale=iw:ih,setsar=1:1,scale=720:-2:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:black",
-          "-c:v",
-          "libx264",
-          "-profile:v",
-          "high",
-          "-level:v",
-          "4.1",
-          "-preset",
-          "veryfast",
-          "-b:v",
-          "3000k",
-          "-maxrate",
-          "3200k",
-          "-bufsize",
-          "6000k",
-          "-pix_fmt",
-          "yuv420p",
-          "-r",
-          "30",
-          "-c:a",
-          "aac",
-          "-b:a",
-          "128k",
-          tmpOut,
-        ];
-
-        await new Promise<void>((resolve, reject) => {
-          const proc = spawn("ffmpeg", ffmpegArgs);
-          proc.on("error", reject);
-          proc.on("close", (code) => {
-            if (code === 0) resolve();
-            else reject(new Error(`ffmpeg exited with code ${code}`));
-          });
-        });
-
-        // Upload transcoded output to S3
-        const outBuffer = fs.readFileSync(tmpOut);
-        
-        // Check if S3 is configured
+        // Check if S3 is configured first
         if (!validateS3Config()) {
+          console.log("❌ S3 not configured");
           return res.status(500).json({ 
             message: "AWS S3 not configured properly. Please configure AWS credentials." 
           });
         }
 
+        console.log("✓ S3 configuration valid, processing video...");
+
+        // For now, skip FFmpeg transcoding and upload directly to S3
+        // This avoids FFmpeg dependency issues
+        console.log("Uploading reel directly to S3:", {
+          filename: req.file.originalname,
+          size: req.file.buffer.length,
+          mimetype: req.file.mimetype,
+        });
+
         const uploaded = await uploadToS3(
-          outBuffer,
-          req.file.originalname.replace(/\.[^/.]+$/, "-reel.mp4"),
-          "video/mp4",
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype,
           "reels"
         );
+        
         const videoUrl = uploaded.url;
-        // Cleanup temp input if still present
-        try {
-          fs.unlinkSync(tmpIn);
-        } catch {}
-        try {
-          if (fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut);
-        } catch {}
         const duration = 30;
+
+        console.log("✓ Reel uploaded to S3 successfully:", videoUrl);
+
         const {
           caption,
           privacy = "public",
           musicId,
           effects,
         } = req.body as any;
+
+        console.log("Creating reel in database with data:", {
+          userId: req.session.userId,
+          videoUrl,
+          caption,
+          musicId,
+          effects,
+          duration,
+          privacy,
+        });
 
         const reel = await storage.createReel({
           userId: req.session.userId,
@@ -734,10 +712,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           privacy,
         });
 
+        console.log("✓ Reel created successfully:", reel);
         res.json(reel);
       } catch (error) {
-        console.error("Create reel error:", error);
-        res.status(500).json({ message: "Failed to create reel" });
+        console.error("❌ Create reel error details:", error);
+        console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+        res.status(500).json({ 
+          message: "Failed to create reel",
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   );
@@ -1483,7 +1466,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Upload media files for messages
   app.post("/api/messages/upload", requireAuth, upload.single('file'), async (req, res) => {
     try {
+      console.log("=== MESSAGE UPLOAD REQUEST ===");
+      console.log("Request headers:", req.headers);
+      console.log("Request body:", req.body);
+      console.log("File:", req.file);
+      console.log("Session userId:", req.session.userId);
+
       if (!req.file) {
+        console.log("❌ No file uploaded");
         return res.status(400).json({ message: "No file uploaded" });
       }
 
@@ -1491,7 +1481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         originalName: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        path: req.file.path
+        bufferLength: req.file.buffer?.length
       });
 
       // Determine file type and folder
@@ -1499,14 +1489,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      req.file.mimetype.startsWith('video/') ? 'video' :
                      req.file.mimetype.startsWith('audio/') ? 'audio' : 'document';
       
+      console.log("Determined file type:", fileType);
+      
       // Check if S3 is configured
       if (!validateS3Config()) {
+        console.log("❌ S3 not configured");
         return res.status(500).json({ 
           message: "AWS S3 not configured properly. Please configure AWS credentials." 
         });
       }
 
-      console.log("Uploading message file to S3...");
+      console.log("✓ S3 configuration valid, uploading to S3...");
       const folder = `messages/${fileType}`;
       
       // Upload to S3 using buffer directly
@@ -1527,11 +1520,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileSize: req.file.size,
       };
 
-      console.log("Upload completed successfully:", result);
+      console.log("✓ Upload completed successfully:", result);
       res.json(result);
     } catch (error) {
-      console.error("File upload error:", error);
-      res.status(500).json({ message: "Failed to upload file" });
+      console.error("❌ File upload error:", error);
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      res.status(500).json({ 
+        message: "Failed to upload file",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

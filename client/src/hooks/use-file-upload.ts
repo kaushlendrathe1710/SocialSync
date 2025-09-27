@@ -35,11 +35,11 @@ export function useFileUpload(): UseFileUploadReturn {
         return null;
       }
 
-      // Validate file type
+      // Validate file type - match server-side validation
       const allowedTypes = [
-        'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
-        'video/mp4', 'video/mov', 'video/avi',
-        'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/aac', 'audio/webm'
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff', 'image/svg+xml', 'image/x-icon', 'image/heic', 'image/heif',
+        'video/mp4', 'video/mov', 'video/avi', 'video/x-msvideo', 'video/quicktime', 'video/x-matroska', 'video/webm', 'video/x-flv', 'video/x-ms-wmv', 'video/mp4', 'video/3gpp', 'video/ogg',
+        'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/aac', 'audio/flac', 'audio/x-ms-wma', 'audio/opus', 'audio/x-matroska', 'audio/webm'
       ];
 
       if (!allowedTypes.includes(file.type)) {
@@ -68,14 +68,21 @@ export function useFileUpload(): UseFileUploadReturn {
         credentials: 'include',
       });
 
+      console.log('Upload response status:', response.status);
+      console.log('Upload response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-        console.error('Upload failed:', errorData);
-        throw new Error(errorData.message || 'Upload failed');
+        console.error('❌ Upload failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(errorData.message || `Upload failed with status ${response.status}`);
       }
 
       const result: UploadResult = await response.json();
-      console.log('File upload successful:', result);
+      console.log('✅ File upload successful:', result);
       
       toast({
         title: "File uploaded",
