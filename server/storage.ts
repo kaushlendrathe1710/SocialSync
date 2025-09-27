@@ -3240,12 +3240,22 @@ export class DatabaseStorage implements IStorage {
   async createReelComment(
     reelId: number,
     userId: number,
-    content: string
+    content: string,
+    imageUrl?: string | null,
+    gifUrl?: string | null,
+    mediaType?: string | null
   ): Promise<any> {
     try {
       const [comment] = await db
         .insert(comments)
-        .values({ postId: reelId, userId, content })
+        .values({ 
+          postId: reelId, 
+          userId, 
+          content,
+          imageUrl: imageUrl || null,
+          gifUrl: gifUrl || null,
+          mediaType: mediaType || null
+        })
         .returning();
       await db
         .update(reels)
@@ -3273,10 +3283,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateReelComment(id: number, content: string): Promise<Comment | undefined> {
+  async updateReelComment(
+    id: number, 
+    content: string, 
+    imageUrl?: string | null, 
+    gifUrl?: string | null, 
+    mediaType?: string | null
+  ): Promise<Comment | undefined> {
     const [row] = await db
       .update(comments)
-      .set({ content })
+      .set({ 
+        content,
+        imageUrl: imageUrl || null,
+        gifUrl: gifUrl || null,
+        mediaType: mediaType || null
+      })
       .where(eq(comments.id, id))
       .returning();
     return row;

@@ -810,13 +810,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/reels/:id/comments", requireAuth, async (req, res) => {
     try {
       const reelId = parseInt(req.params.id);
-      const { content } = z
-        .object({ content: z.string().min(1, "Comment content is required") })
+      const { content, imageUrl, gifUrl, mediaType } = z
+        .object({ 
+          content: z.string().optional(),
+          imageUrl: z.string().optional(),
+          gifUrl: z.string().optional(),
+          mediaType: z.enum(['image', 'gif']).optional()
+        })
+        .refine((data) => {
+          // Either content must be provided, or media must be provided
+          return (data.content && data.content.trim().length > 0) || data.imageUrl || data.gifUrl;
+        }, {
+          message: "Either content or media (image/gif) must be provided"
+        })
         .parse(req.body);
+      
       const comment = await storage.createReelComment(
         reelId,
         req.session.userId!,
-        content
+        content || "",
+        imageUrl,
+        gifUrl,
+        mediaType
       );
       res.json(comment);
     } catch (error) {
@@ -829,8 +844,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/reel-comments/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { content } = z.object({ content: z.string().min(1) }).parse(req.body);
-      const updated = await storage.updateReelComment(id, content);
+      const { content, imageUrl, gifUrl, mediaType } = z.object({ 
+        content: z.string().optional(),
+        imageUrl: z.string().optional(),
+        gifUrl: z.string().optional(),
+        mediaType: z.enum(['image', 'gif']).optional()
+      })
+      .refine((data) => {
+        // Either content must be provided, or media must be provided
+        return (data.content && data.content.trim().length > 0) || data.imageUrl || data.gifUrl;
+      }, {
+        message: "Either content or media (image/gif) must be provided"
+      })
+      .parse(req.body);
+      
+      const updated = await storage.updateReelComment(
+        id, 
+        content || "", 
+        imageUrl, 
+        gifUrl, 
+        mediaType
+      );
       if (!updated) return res.status(404).json({ message: "Comment not found" });
       res.json(updated);
     } catch (error) {
