@@ -43,48 +43,29 @@ declare module "express-session" {
   }
 }
 
-// Local file storage function (fallback when S3 is not configured)
-async function saveFileLocally(file: Express.Multer.File, fileType: string): Promise<string> {
-  try {
-    // Create directory structure
-    const uploadDir = path.join(process.cwd(), 'uploads', 'messages', fileType);
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+// Note: Local file storage function removed - all files now stored in S3
 
-    // Generate unique filename
-    const fileExtension = path.extname(file.originalname);
-    const fileName = `${randomUUID()}${fileExtension}`;
-    const filePath = path.join(uploadDir, fileName);
-
-    // Copy file to permanent location
-    fs.copyFileSync(file.path, filePath);
-
-    // Return URL path (relative to server)
-    return `/uploads/messages/${fileType}/${fileName}`;
-  } catch (error) {
-    console.error('Error saving file locally:', error);
-    throw new Error('Failed to save file locally');
-  }
-}
-
-// Configure multer for file uploads
+// Configure multer for file uploads (memory storage for S3)
 const upload = multer({
-  dest: "uploads/",
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|mp3|wav|ogg|m4a|aac|webm/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Allow more comprehensive image, video, and audio formats
+    const allowedImageTypes = /jpeg|jpg|png|gif|webp|bmp|tiff|tif|svg|ico|heic|heif/;
+    const allowedVideoTypes = /mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv/;
+    const allowedAudioTypes = /mp3|wav|ogg|m4a|aac|flac|wma|opus|mka/;
+    
+    const fileExt = path.extname(file.originalname).toLowerCase().replace('.', '');
+    const isImage = allowedImageTypes.test(fileExt) || file.mimetype.startsWith('image/');
+    const isVideo = allowedVideoTypes.test(fileExt) || file.mimetype.startsWith('video/');
+    const isAudio = allowedAudioTypes.test(fileExt) || file.mimetype.startsWith('audio/');
 
-    if (mimetype && extname) {
+    if (isImage || isVideo || isAudio) {
       return cb(null, true);
     } else {
-      cb(new Error("Only images, videos, and audio files are allowed"));
+      cb(new Error(`File type not allowed. Supported formats: Images (jpg, png, gif, webp, bmp, tiff, svg, ico, heic), Videos (mp4, mov, avi, mkv, webm, flv, wmv, m4v, 3gp, ogv), Audio (mp3, wav, ogg, m4a, aac, flac, wma, opus, mka)`));
     }
   },
 });
@@ -94,13 +75,21 @@ const memoryUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|mp3|wav|ogg|m4a|aac|webm/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (mimetype && extname) return cb(null, true);
-    cb(new Error("Only images, videos, and audio files are allowed"));
+    // Allow more comprehensive image, video, and audio formats
+    const allowedImageTypes = /jpeg|jpg|png|gif|webp|bmp|tiff|tif|svg|ico|heic|heif/;
+    const allowedVideoTypes = /mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv/;
+    const allowedAudioTypes = /mp3|wav|ogg|m4a|aac|flac|wma|opus|mka/;
+    
+    const fileExt = path.extname(file.originalname).toLowerCase().replace('.', '');
+    const isImage = allowedImageTypes.test(fileExt) || file.mimetype.startsWith('image/');
+    const isVideo = allowedVideoTypes.test(fileExt) || file.mimetype.startsWith('video/');
+    const isAudio = allowedAudioTypes.test(fileExt) || file.mimetype.startsWith('audio/');
+
+    if (isImage || isVideo || isAudio) {
+      return cb(null, true);
+    } else {
+      cb(new Error(`File type not allowed. Supported formats: Images (jpg, png, gif, webp, bmp, tiff, svg, ico, heic), Videos (mp4, mov, avi, mkv, webm, flv, wmv, m4v, 3gp, ogv), Audio (mp3, wav, ogg, m4a, aac, flac, wma, opus, mka)`));
+    }
   },
 });
 
@@ -703,25 +692,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
 
-        // Upload transcoded output
+        // Upload transcoded output to S3
         const outBuffer = fs.readFileSync(tmpOut);
-        let videoUrl: string;
-        if (validateS3Config()) {
-          const uploaded = await uploadToS3(
-            outBuffer,
-            req.file.originalname.replace(/\.[^/.]+$/, "-reel.mp4"),
-            "video/mp4",
-            "reels"
-          );
-          videoUrl = uploaded.url;
-        } else {
-          const finalName = `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(7)}-reel.mp4`;
-          const finalPath = path.join("uploads", finalName);
-          fs.renameSync(tmpOut, finalPath);
-          videoUrl = `/uploads/${finalName}`;
+        
+        // Check if S3 is configured
+        if (!validateS3Config()) {
+          return res.status(500).json({ 
+            message: "AWS S3 not configured properly. Please configure AWS credentials." 
+          });
         }
+
+        const uploaded = await uploadToS3(
+          outBuffer,
+          req.file.originalname.replace(/\.[^/.]+$/, "-reel.mp4"),
+          "video/mp4",
+          "reels"
+        );
+        const videoUrl = uploaded.url;
         // Cleanup temp input if still present
         try {
           fs.unlinkSync(tmpIn);
@@ -894,23 +881,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           privacy: req.body.privacy || "public",
         };
 
-        // Handle file upload
+        // Handle file upload with S3 only
         if (req.file) {
+          // Check if S3 is configured
+          if (!validateS3Config()) {
+            return res.status(500).json({ 
+              message: "AWS S3 not configured properly. Please configure AWS credentials." 
+            });
+          }
+
           const fileExtension = path.extname(req.file.originalname);
-          const fileName = `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(7)}${fileExtension}`;
-          const filePath = path.join("uploads", fileName);
+          const isVideo = /\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/i.test(fileExtension);
+          const folder = isVideo ? "videos" : "images";
 
-          // Move file to permanent location
-          fs.renameSync(req.file.path, filePath);
+          // Upload to S3
+          const uploadResult = await uploadToS3(
+            req.file.buffer,
+            req.file.originalname,
+            req.file.mimetype,
+            folder
+          );
 
-          // Determine if it's an image or video
-          const isVideo = /\.(mp4|mov|avi)$/i.test(fileExtension);
           if (isVideo) {
-            postData.videoUrl = `/uploads/${fileName}`;
+            postData.videoUrl = uploadResult.url;
           } else {
-            postData.imageUrl = `/uploads/${fileName}`;
+            postData.imageUrl = uploadResult.url;
           }
         }
 
@@ -1117,28 +1112,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             mediaUrl = urls.join(",");
           }
         } else {
-          if (files.length === 1) {
-            const f = files[0];
-            const ext = path.extname(f.originalname);
-            const fileName = `${Date.now()}-${Math.random()
-              .toString(36)
-              .substring(7)}${ext}`;
-            const filePath = path.join("uploads", fileName);
-            fs.writeFileSync(filePath, f.buffer);
-            mediaUrl = `/uploads/${fileName}`;
-          } else {
-            const urls: string[] = [];
-            for (const f of files) {
-              const ext = path.extname(f.originalname);
-              const fileName = `${Date.now()}-${Math.random()
-                .toString(36)
-                .substring(7)}${ext}`;
-              const filePath = path.join("uploads", fileName);
-              fs.writeFileSync(filePath, f.buffer);
-              urls.push(`/uploads/${fileName}`);
-            }
-            mediaUrl = urls.join(",");
-          }
+          return res.status(500).json({ 
+            message: "AWS S3 not configured properly. Please configure AWS credentials." 
+          });
         }
       }
 
@@ -1445,21 +1421,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           expiresAt,
         };
 
-        // Handle file upload
+        // Handle file upload with S3 only
         if (req.file) {
+          // Check if S3 is configured
+          if (!validateS3Config()) {
+            return res.status(500).json({ 
+              message: "AWS S3 not configured properly. Please configure AWS credentials." 
+            });
+          }
+
           const fileExtension = path.extname(req.file.originalname);
-          const fileName = `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(7)}${fileExtension}`;
-          const filePath = path.join("uploads", fileName);
+          const isVideo = /\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/i.test(fileExtension);
+          const folder = isVideo ? "stories/videos" : "stories/images";
 
-          fs.renameSync(req.file.path, filePath);
+          // Upload to S3
+          const uploadResult = await uploadToS3(
+            req.file.buffer,
+            req.file.originalname,
+            req.file.mimetype,
+            folder
+          );
 
-          const isVideo = /\.(mp4|mov|avi)$/i.test(fileExtension);
           if (isVideo) {
-            storyData.videoUrl = `/uploads/${fileName}`;
+            storyData.videoUrl = uploadResult.url;
           } else {
-            storyData.imageUrl = `/uploads/${fileName}`;
+            storyData.imageUrl = uploadResult.url;
           }
         }
 
@@ -1513,45 +1499,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      req.file.mimetype.startsWith('video/') ? 'video' :
                      req.file.mimetype.startsWith('audio/') ? 'audio' : 'document';
       
-      let fileUrl: string;
-      
-      // Try S3 first, fallback to local storage
-      if (validateS3Config()) {
-        try {
-          console.log("Attempting S3 upload...");
-          // Read file buffer
-          const fileBuffer = fs.readFileSync(req.file.path);
-          const folder = `messages/${fileType}`;
-          
-          // Upload to S3
-          const uploadResult = await uploadToS3(
-            fileBuffer,
-            req.file.originalname,
-            req.file.mimetype,
-            folder
-          );
-          
-          fileUrl = uploadResult.url;
-          console.log("S3 upload successful:", uploadResult.url);
-        } catch (s3Error) {
-          console.error("S3 upload failed, falling back to local storage:", s3Error);
-          // Fallback to local storage
-          fileUrl = await saveFileLocally(req.file, fileType);
-          console.log("Local storage fallback successful:", fileUrl);
-        }
-      } else {
-        console.log("S3 not configured, using local storage");
-        // Use local storage
-        fileUrl = await saveFileLocally(req.file, fileType);
-        console.log("Local storage upload successful:", fileUrl);
+      // Check if S3 is configured
+      if (!validateS3Config()) {
+        return res.status(500).json({ 
+          message: "AWS S3 not configured properly. Please configure AWS credentials." 
+        });
       }
 
-      // Clean up temporary file
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (cleanupError) {
-        console.warn("Failed to clean up temporary file:", cleanupError);
-      }
+      console.log("Uploading message file to S3...");
+      const folder = `messages/${fileType}`;
+      
+      // Upload to S3 using buffer directly
+      const uploadResult = await uploadToS3(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype,
+        folder
+      );
+      
+      const fileUrl = uploadResult.url;
+      console.log("✓ Message file uploaded to S3 successfully:", fileUrl);
 
       const result = {
         url: fileUrl,
@@ -1568,8 +1535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve local uploaded files
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  // Note: Local file serving removed - all files now served from S3
 
   app.post("/api/messages", requireAuth, async (req, res) => {
     try {
