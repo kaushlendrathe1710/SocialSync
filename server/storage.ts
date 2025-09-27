@@ -3141,6 +3141,8 @@ export class DatabaseStorage implements IStorage {
 
   async createReel(data: any): Promise<any> {
     try {
+      console.log("Creating reel with data:", data);
+      
       const insertData: InsertReel = {
         userId: data.userId,
         videoUrl: data.videoUrl,
@@ -3149,12 +3151,16 @@ export class DatabaseStorage implements IStorage {
         duration: data.duration || 30,
         privacy: data.privacy || "public",
         musicId: data.musicId || null,
-        effects: data.effects || [],
+        effects: Array.isArray(data.effects) ? data.effects : [],
       };
 
+      console.log("Insert data for reel:", insertData);
+
       const [reel] = await db.insert(reels).values(insertData).returning();
+      console.log("Reel inserted to database:", reel);
 
       const user = await this.getUser(data.userId);
+      console.log("User data for reel:", user);
 
       const reelWithUser = {
         ...reel,
@@ -3177,7 +3183,9 @@ export class DatabaseStorage implements IStorage {
       console.log("Reel saved to database:", reel.id);
       return reelWithUser;
     } catch (error) {
-      console.error("Create reel error:", error);
+      console.error("❌ Create reel error details:", error);
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+      console.error("Data that caused error:", data);
       throw error;
     }
   }
