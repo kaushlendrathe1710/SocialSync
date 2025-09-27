@@ -157,23 +157,28 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit for cloud storage
   },
   fileFilter: (req, file, cb) => {
-    // Accept images and videos including MKV
+    // Allow more comprehensive image, video, and audio formats
     console.log("File filter check:", {
       originalName: file.originalname,
       mimeType: file.mimetype,
     });
 
-    // Check if it's an image or video file
-    if (
-      file.mimetype.startsWith("image/") ||
-      file.mimetype.startsWith("video/")
-    ) {
+    const allowedImageTypes = /jpeg|jpg|png|gif|webp|bmp|tiff|tif|svg|ico|heic|heif/;
+    const allowedVideoTypes = /mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv/;
+    const allowedAudioTypes = /mp3|wav|ogg|m4a|aac|flac|wma|opus|mka/;
+    
+    const fileExt = path.extname(file.originalname).toLowerCase().replace('.', '');
+    const isImage = allowedImageTypes.test(fileExt) || file.mimetype.startsWith('image/');
+    const isVideo = allowedVideoTypes.test(fileExt) || file.mimetype.startsWith('video/');
+    const isAudio = allowedAudioTypes.test(fileExt) || file.mimetype.startsWith('audio/');
+
+    if (isImage || isVideo || isAudio) {
       console.log("File accepted:", file.originalname);
       return cb(null, true);
     }
 
     console.log("File rejected:", file.originalname, file.mimetype);
-    cb(new Error("Only image and video files are allowed"));
+    cb(new Error(`File type not allowed. Supported formats: Images (jpg, png, gif, webp, bmp, tiff, svg, ico, heic), Videos (mp4, mov, avi, mkv, webm, flv, wmv, m4v, 3gp, ogv), Audio (mp3, wav, ogg, m4a, aac, flac, wma, opus, mka)`));
   },
 });
 
@@ -682,58 +687,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Post data before creation:", postData);
 
-      // Handle file upload with S3 fallback to local storage
+      // Handle file upload with S3 only
       if (req.file) {
         try {
           const fileExtension = path.extname(req.file.originalname);
-          const isVideo = /\.(mp4|mov|avi|mkv)$/i.test(fileExtension);
-          let fileUrl = null;
+          const isVideo = /\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/i.test(fileExtension);
 
-          // Try S3 upload first if configured
-          if (validateS3Config()) {
-            try {
-              const folder = isVideo ? "videos" : "images";
-              console.log("Attempting S3 upload:", {
-                folder,
-                filename: req.file.originalname,
-                size: req.file.buffer.length,
-                mimetype: req.file.mimetype,
-              });
-
-              const uploadResult = await uploadToS3(
-                req.file.buffer,
-                req.file.originalname,
-                req.file.mimetype,
-                folder
-              );
-              fileUrl = uploadResult.url;
-              console.log("✓ File uploaded to S3 successfully:", fileUrl);
-            } catch (s3Error) {
-              console.error("✗ S3 upload failed:", s3Error);
-              console.warn("Falling back to local storage");
-              fileUrl = null; // Will trigger local storage fallback
-            }
-          } else {
-            console.log("S3 not configured, using local storage");
+          // Check if S3 is configured
+          if (!validateS3Config()) {
+            return res.status(500).json({ 
+              message: "AWS S3 not configured properly. Please configure AWS credentials." 
+            });
           }
 
-          // Fallback to local storage if S3 failed or not configured
-          if (!fileUrl) {
-            const fileName = `${Date.now()}-${Math.random()
-              .toString(36)
-              .substring(7)}${fileExtension}`;
-            const uploadsDir = path.join(process.cwd(), "uploads");
+          const folder = isVideo ? "videos" : "images";
+          console.log("Uploading to S3:", {
+            folder,
+            filename: req.file.originalname,
+            size: req.file.buffer.length,
+            mimetype: req.file.mimetype,
+          });
 
-            // Ensure uploads directory exists
-            if (!fs.existsSync(uploadsDir)) {
-              fs.mkdirSync(uploadsDir, { recursive: true });
-            }
-
-            const filePath = path.join(uploadsDir, fileName);
-            fs.writeFileSync(filePath, req.file.buffer);
-            fileUrl = `/uploads/${fileName}`;
-            console.log("File saved locally:", fileUrl);
-          }
+          const uploadResult = await uploadToS3(
+            req.file.buffer,
+            req.file.originalname,
+            req.file.mimetype,
+            folder
+          );
+          
+          const fileUrl = uploadResult.url;
+          console.log("✓ File uploaded to S3 successfully:", fileUrl);
 
           // Set the appropriate URL based on file type
           if (isVideo) {
@@ -3618,28 +3601,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Video file is required" });
         }
 
-        // Save the file to disk so it can be served
-        const fileName = `${Date.now()}-${req.file.originalname}`;
-        const fs = await import("fs");
-        const path = await import("path");
-
-        // Ensure uploads directory exists
-        const uploadsDir = path.join(process.cwd(), "uploads");
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
+        // Check if S3 is configured
+        if (!validateS3Config()) {
+          return res.status(500).json({ 
+            message: "AWS S3 not configured properly. Please configure AWS credentials." 
+          });
         }
 
-        // Write the file to disk
-        const filePath = path.join(uploadsDir, fileName);
-        fs.writeFileSync(filePath, req.file.buffer);
+        // Upload to S3
+        console.log("Uploading reel to S3:", {
+          filename: req.file.originalname,
+          size: req.file.buffer.length,
+          mimetype: req.file.mimetype,
+        });
 
-        let videoUrl = `/uploads/${fileName}`;
+        const uploadResult = await uploadToS3(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype,
+          "reels"
+        );
+
+        const videoUrl = uploadResult.url;
         const duration = 30;
 
-        console.log("File saved to:", filePath);
-        console.log("Video URL will be:", videoUrl);
-
-        console.log("Video URL:", videoUrl);
+        console.log("✓ Reel uploaded to S3 successfully:", videoUrl);
 
         const reel = await storage.createReel({
           userId: req.session.userId,
