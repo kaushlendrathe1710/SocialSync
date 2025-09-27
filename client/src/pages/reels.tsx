@@ -179,7 +179,13 @@ export default function ReelsPage() {
     data: Array<{
       id: number;
       content: string;
+      imageUrl?: string | null;
+      gifUrl?: string | null;
+      mediaType?: string | null;
       user: { id: number; name: string; username?: string; avatar?: string };
+      likesCount: number | null;
+      repliesCount: number | null;
+      createdAt: string | Date | null;
     }>;
     isLoading: boolean;
   };
@@ -226,8 +232,25 @@ export default function ReelsPage() {
   });
 
   const updateReelCommentMutation = useMutation({
-    mutationFn: async ({ id, content }: { id: number; content: string }) => {
-      const res = await apiRequest('PUT', `/api/reel-comments/${id}`, { content });
+    mutationFn: async ({ 
+      id, 
+      content, 
+      imageUrl, 
+      gifUrl, 
+      mediaType 
+    }: { 
+      id: number; 
+      content: string; 
+      imageUrl?: string; 
+      gifUrl?: string; 
+      mediaType?: string; 
+    }) => {
+      const res = await apiRequest('PUT', `/api/reel-comments/${id}`, { 
+        content, 
+        imageUrl, 
+        gifUrl, 
+        mediaType 
+      });
       return await res.json();
     },
     onSuccess: () => {
@@ -998,7 +1021,13 @@ export default function ReelsPage() {
                     comment={c}
                     canEdit={c.user?.id === (reels[currentReelIndex]?.userId || -1) || true}
                     canDelete={c.user?.id === (reels[currentReelIndex]?.userId || -1) || true}
-                    onUpdate={(content) => updateReelCommentMutation.mutate({ id: c.id, content })}
+                    onUpdate={(content) => updateReelCommentMutation.mutate({ 
+                      id: c.id, 
+                      content,
+                      imageUrl: c.imageUrl,
+                      gifUrl: c.gifUrl,
+                      mediaType: c.mediaType
+                    })}
                     onDelete={() => deleteReelCommentMutation.mutate(c.id)}
                   />
                 ))}
