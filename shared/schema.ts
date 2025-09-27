@@ -59,6 +59,9 @@ export const comments = pgTable("comments", {
   postId: integer("post_id").notNull(),
   parentCommentId: integer("parent_comment_id"), // For nested comments
   content: text("content").notNull(),
+  imageUrl: text("image_url"), // For image comments
+  gifUrl: text("gif_url"), // For GIF comments
+  mediaType: text("media_type"), // 'image', 'gif', or null for text
   likesCount: integer("likes_count").default(0),
   repliesCount: integer("replies_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),

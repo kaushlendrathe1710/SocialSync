@@ -44,8 +44,8 @@ export const api = {
   // Comments
   getComments: (postId: number) =>
     apiRequest("GET", `/api/posts/${postId}/comments`),
-  createComment: (postId: number, content: string) =>
-    apiRequest("POST", `/api/posts/${postId}/comments`, { content }),
+  createComment: (postId: number, content: string, imageUrl?: string, gifUrl?: string, mediaType?: string) =>
+    apiRequest("POST", `/api/posts/${postId}/comments`, { content, imageUrl, gifUrl, mediaType }),
   updateComment: (commentId: number, content: string) =>
     apiRequest("PUT", `/api/comments/${commentId}`, { content }),
   deleteComment: (commentId: number) =>
