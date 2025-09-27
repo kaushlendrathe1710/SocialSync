@@ -188,7 +188,7 @@ export interface IStorage {
   getPostComments(postId: number): Promise<(Comment & { user: User })[]>;
   getCommentReplies(commentId: number): Promise<(Comment & { user: User })[]>;
   deleteComment(id: number): Promise<boolean>;
-  updateComment(id: number, content: string): Promise<Comment | undefined>;
+  updateComment(id: number, content: string, imageUrl?: string, gifUrl?: string, mediaType?: string): Promise<Comment | undefined>;
 
   // Comment like methods
   createCommentLike(commentLike: InsertCommentLike): Promise<CommentLike>;
@@ -1032,11 +1032,19 @@ export class DatabaseStorage implements IStorage {
 
   async updateComment(
     id: number,
-    content: string
+    content: string,
+    imageUrl?: string,
+    gifUrl?: string,
+    mediaType?: string
   ): Promise<Comment | undefined> {
+    const updateData: any = { content };
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (gifUrl !== undefined) updateData.gifUrl = gifUrl;
+    if (mediaType !== undefined) updateData.mediaType = mediaType;
+    
     const [updated] = await db
       .update(comments)
-      .set({ content })
+      .set(updateData)
       .where(eq(comments.id, id))
       .returning();
     return updated;

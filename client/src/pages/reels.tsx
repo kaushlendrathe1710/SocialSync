@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import EnhancedCommentInput from "@/components/enhanced-comment-input";
+import CommentWithMedia from "@/components/comment-with-media";
 import {
   Dialog,
   DialogContent,
@@ -187,12 +189,21 @@ export default function ReelsPage() {
     mutationFn: async ({
       reelId,
       content,
+      imageUrl,
+      gifUrl,
+      mediaType,
     }: {
       reelId: number;
       content: string;
+      imageUrl?: string;
+      gifUrl?: string;
+      mediaType?: string;
     }) => {
       const res = await apiRequest("POST", `/api/reels/${reelId}/comments`, {
         content,
+        imageUrl,
+        gifUrl,
+        mediaType,
       });
       return await res.json();
     },
@@ -982,34 +993,37 @@ export default function ReelsPage() {
             ) : (
               <div className="space-y-3">
                 {reelComments.map((c) => (
-                  <ReelCommentItem
+                  <CommentWithMedia
                     key={c.id}
                     comment={c}
                     canEdit={c.user?.id === (reels[currentReelIndex]?.userId || -1) || true}
+                    canDelete={c.user?.id === (reels[currentReelIndex]?.userId || -1) || true}
                     onUpdate={(content) => updateReelCommentMutation.mutate({ id: c.id, content })}
                     onDelete={() => deleteReelCommentMutation.mutate(c.id)}
                   />
                 ))}
               </div>
             )}
-            <div className="pt-2 flex items-center space-x-2">
-              <Input
+            <div className="pt-2">
+              <EnhancedCommentInput
                 placeholder="Write a comment…"
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-              />
-              <Button
-                onClick={() => {
-                  if (!activeReelId || !newComment.trim()) return;
+                onChange={setNewComment}
+                onSubmit={(data) => {
+                  if (!activeReelId) return;
                   createCommentMutation.mutate({
                     reelId: activeReelId,
-                    content: newComment.trim(),
+                    content: data.content,
+                    imageUrl: data.imageUrl,
+                    gifUrl: data.gifUrl,
+                    mediaType: data.mediaType,
                   });
                 }}
-                disabled={createCommentMutation.isPending || !newComment.trim()}
-              >
-                Post
-              </Button>
+                disabled={createCommentMutation.isPending}
+                isSubmitting={createCommentMutation.isPending}
+                maxLength={1000}
+                showMediaOptions={true}
+              />
             </div>
           </div>
         </DialogContent>

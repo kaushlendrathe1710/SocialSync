@@ -22,6 +22,8 @@ import {
   Send
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import EnhancedCommentInput from './enhanced-comment-input';
+import CommentWithMedia from './comment-with-media';
 
 interface PostCardProps {
   post: PostWithUser;
@@ -80,7 +82,7 @@ export default function PostCard({ post }: PostCardProps) {
             ? { 
                 ...p, 
                 isLiked: result.liked,
-                likesCount: result.liked ? p.likesCount + 1 : p.likesCount - 1
+                likesCount: result.liked ? (p.likesCount || 0) + 1 : (p.likesCount || 0) - 1
               }
             : p
         );
@@ -116,7 +118,8 @@ export default function PostCard({ post }: PostCardProps) {
   });
 
   const commentMutation = useMutation({
-    mutationFn: (content: string) => api.createComment(post.id, content),
+    mutationFn: (data: { content: string; imageUrl?: string; gifUrl?: string; mediaType?: string }) => 
+      api.createComment(post.id, data.content, data.imageUrl, data.gifUrl, data.mediaType),
     onSuccess: async (response) => {
       const newComment = await response.json();
       queryClient.setQueryData(['/api/posts', post.id, 'comments'], (oldData: any[] | undefined) => {
@@ -126,7 +129,7 @@ export default function PostCard({ post }: PostCardProps) {
         if (!oldData) return oldData;
         return oldData.map(p => 
           p.id === post.id 
-            ? { ...p, commentsCount: p.commentsCount + 1 }
+            ? { ...p, commentsCount: (p.commentsCount || 0) + 1 }
             : p
         );
       });
@@ -153,11 +156,13 @@ export default function PostCard({ post }: PostCardProps) {
     setShowComments(!showComments);
   };
 
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (commentText.trim()) {
-      commentMutation.mutate(commentText.trim());
-    }
+  const handleSubmitComment = (data: { 
+    content: string; 
+    imageUrl?: string; 
+    gifUrl?: string; 
+    mediaType?: string 
+  }) => {
+    commentMutation.mutate(data);
   };
 
   const handleShare = () => {
@@ -245,23 +250,23 @@ export default function PostCard({ post }: PostCardProps) {
         {/* Engagement Stats */}
         <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
           <div className="flex items-center space-x-1">
-            {post.likesCount > 0 && (
+            {(post.likesCount || 0) > 0 && (
               <>
                 <div className="flex -space-x-1">
                   <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
                     <Heart className="w-3 h-3 text-white fill-current" />
                   </div>
                 </div>
-                <span className="ml-2">{post.likesCount} likes</span>
+                <span className="ml-2">{post.likesCount || 0} likes</span>
               </>
             )}
           </div>
           <div className="flex space-x-4">
-            {post.commentsCount > 0 && (
-              <span>{post.commentsCount} comments</span>
+            {(post.commentsCount || 0) > 0 && (
+              <span>{post.commentsCount || 0} comments</span>
             )}
-            {post.sharesCount > 0 && (
-              <span>{post.sharesCount} shares</span>
+            {(post.sharesCount || 0) > 0 && (
+              <span>{post.sharesCount || 0} shares</span>
             )}
           </div>
         </div>
@@ -304,47 +309,37 @@ export default function PostCard({ post }: PostCardProps) {
         {showComments && (
           <div className="mt-4 space-y-3 border-t pt-3">
             {comments?.map((comment) => (
-              <div key={comment.id} className="flex space-x-2 items-start">
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={comment.user.avatar || undefined} />
-                  <AvatarFallback>
-                    {comment.user.name?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <CommentItem
-                  comment={comment}
-                  canEdit={user?.id === comment.userId}
-                  onUpdate={(content) => updateCommentMutation.mutate({ id: comment.id, content })}
-                  onDelete={() => deleteCommentMutation.mutate(comment.id)}
-                />
-              </div>
+              <CommentWithMedia
+                key={comment.id}
+                comment={comment}
+                canEdit={user?.id === comment.userId}
+                canDelete={user?.id === comment.userId}
+                onUpdate={(content) => updateCommentMutation.mutate({ id: comment.id, content })}
+                onDelete={() => deleteCommentMutation.mutate(comment.id)}
+              />
             ))}
 
             {/* Add Comment */}
-            <form onSubmit={handleSubmitComment} className="flex space-x-2">
+            <div className="flex space-x-2">
               <Avatar className="w-8 h-8">
                 <AvatarImage src={user?.avatar || undefined} />
                 <AvatarFallback>
                   {user?.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 flex space-x-2">
-                <Input
+              <div className="flex-1">
+                <EnhancedCommentInput
                   placeholder="Write a comment..."
                   value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  className="flex-1 bg-muted border-none"
+                  onChange={setCommentText}
+                  onSubmit={handleSubmitComment}
                   disabled={commentMutation.isPending}
+                  isSubmitting={commentMutation.isPending}
+                  maxLength={1000}
+                  showMediaOptions={true}
                 />
-                <Button 
-                  type="submit" 
-                  size="sm"
-                  disabled={!commentText.trim() || commentMutation.isPending}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
               </div>
-            </form>
+            </div>
           </div>
         )}
       </CardContent>

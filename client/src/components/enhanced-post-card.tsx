@@ -21,6 +21,8 @@ import CommentReactionPicker, {
   commentReactions,
 } from "@/components/comment-reaction-picker";
 import EmojiPicker from "@/components/emoji-picker";
+import EnhancedCommentInput from "@/components/enhanced-comment-input";
+import CommentWithMedia from "@/components/comment-with-media";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -545,7 +547,13 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   });
 
   const commentMutation = useMutation({
-    mutationFn: async (data: { content: string; parentCommentId?: number }) => {
+    mutationFn: async (data: { 
+      content: string; 
+      parentCommentId?: number;
+      imageUrl?: string;
+      gifUrl?: string;
+      mediaType?: string;
+    }) => {
       const response = await fetch(`/api/posts/${currentPost.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -562,6 +570,42 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       setNewComment("");
       setReplyToComment(null);
+    },
+  });
+
+  const updateCommentMutation = useMutation({
+    mutationFn: async (data: { id: number; content: string }) => {
+      const response = await fetch(`/api/comments/${data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: data.content }),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to update comment");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/posts/${currentPost.id}/comments`],
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/comments/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to delete comment");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/posts/${currentPost.id}/comments`],
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     },
   });
 
@@ -607,13 +651,19 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
     },
   });
 
-  const handleComment = () => {
-    if (newComment.trim()) {
-      commentMutation.mutate({
-        content: newComment.trim(),
-        parentCommentId: replyToComment || undefined,
-      });
-    }
+  const handleComment = (data: { 
+    content: string; 
+    imageUrl?: string; 
+    gifUrl?: string; 
+    mediaType?: string 
+  }) => {
+    commentMutation.mutate({
+      content: data.content,
+      parentCommentId: replyToComment || undefined,
+      imageUrl: data.imageUrl,
+      gifUrl: data.gifUrl,
+      mediaType: data.mediaType,
+    });
   };
 
   const handleEmojiSelect = (emoji: string) => {
@@ -1079,35 +1129,16 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                     </Button>
                   </Badge>
                 )}
-                <div className="relative">
-                  <Textarea
-                    placeholder={
-                      replyToComment ? "Write a reply..." : "Write a comment..."
-                    }
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[60px] pr-12"
-                  />
-                  <div className="absolute right-2 bottom-2">
-                    <EmojiPicker onEmojiSelect={handleEmojiSelect}>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <Smile className="w-4 h-4 text-gray-500" />
-                      </Button>
-                    </EmojiPicker>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="text-xs text-gray-500">
-                    {newComment.length}/1000
-                  </div>
-                  <Button
-                    onClick={handleComment}
-                    disabled={!newComment.trim() || commentMutation.isPending}
-                    size="sm"
-                  >
-                    {replyToComment ? "Reply" : "Comment"}
-                  </Button>
-                </div>
+                <EnhancedCommentInput
+                  placeholder={replyToComment ? "Write a reply..." : "Write a comment..."}
+                  value={newComment}
+                  onChange={setNewComment}
+                  onSubmit={handleComment}
+                  disabled={commentMutation.isPending}
+                  isSubmitting={commentMutation.isPending}
+                  maxLength={1000}
+                  showMediaOptions={true}
+                />
               </div>
             </div>
 
@@ -1115,11 +1146,14 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
               <div className="space-y-2">
                 {(comments as CommentWithUser[]).map(
                   (comment: CommentWithUser) => (
-                    <CommentItem
+                    <CommentWithMedia
                       key={comment.id}
                       comment={comment}
-                      postId={currentPost.id}
-                      onReply={handleReply}
+                      canEdit={user?.id === comment.userId}
+                      canDelete={user?.id === comment.userId}
+                      onUpdate={(content) => updateCommentMutation.mutate({ id: comment.id, content })}
+                      onDelete={() => deleteCommentMutation.mutate(comment.id)}
+                      onReply={() => handleReply(comment.id)}
                     />
                   )
                 )}
