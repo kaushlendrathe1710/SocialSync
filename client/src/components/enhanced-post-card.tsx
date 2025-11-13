@@ -12,6 +12,7 @@ import {
   Eye,
   Clock,
   Smile,
+  Repeat,
 } from "lucide-react";
 import ReactionPicker, {
   reactions,
@@ -448,6 +449,51 @@ function CommentItem({
   );
 }
 
+// Helper function to render post body content (text, images, video)
+function PostBody({ 
+  post, 
+  showPlaceholder = true,
+  isNested = false
+}: { 
+  post: PostWithUser; 
+  showPlaceholder?: boolean;
+  isNested?: boolean;
+}) {
+  if (!post) return null;
+
+  return (
+    <div className={isNested ? "pointer-events-none" : ""}>
+      {(post.content || (!post.content && !post.imageUrl && !post.videoUrl && showPlaceholder)) && (
+        <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+          {post.content || (showPlaceholder ? "This post has no content yet." : "")}
+        </p>
+      )}
+
+      {post.imageUrl && (
+        <div className="rounded-lg overflow-hidden">
+          <img
+            src={post.imageUrl}
+            alt="Post content"
+            className="w-full h-auto object-cover"
+          />
+        </div>
+      )}
+
+      {post.videoUrl && (
+        <div className="rounded-lg overflow-hidden">
+          <video
+            src={post.videoUrl}
+            controls={!isNested}
+            className="w-full h-auto"
+          >
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -707,6 +753,16 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
                 <h3 className="font-semibold">
                   {currentPost.user.username || currentPost.user.email}
                 </h3>
+                {currentPost.sharedPost && (
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center space-x-1"
+                    data-testid="badge-shared-post"
+                  >
+                    <Repeat className="w-3 h-3" />
+                    <span className="text-xs">shared a post</span>
+                  </Badge>
+                )}
                 {currentPost.liveStreamId && (
                   <Badge
                     variant="secondary"
@@ -1009,35 +1065,57 @@ export default function EnhancedPostCard({ post }: EnhancedPostCardProps) {
           </div>
         ) : (
           <>
-            {(currentPost.content ||
-              (!currentPost.content &&
-                !currentPost.imageUrl &&
-                !currentPost.videoUrl)) && (
-              <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-                {currentPost.content || "This post has no content yet."}
-              </p>
-            )}
-
-            {currentPost.imageUrl && (
-              <div className="rounded-lg overflow-hidden">
-                <img
-                  src={currentPost.imageUrl}
-                  alt="Post content"
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            )}
-
-            {currentPost.videoUrl && (
-              <div className="rounded-lg overflow-hidden">
-                <video
-                  src={currentPost.videoUrl}
-                  controls
-                  className="w-full h-auto"
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
+            {currentPost.sharedPost && 
+             currentPost.sharedPost.user && 
+             currentPost.sharedPost.id ? (
+              <>
+                {currentPost.content && (
+                  <p className="text-foreground leading-relaxed whitespace-pre-wrap mb-3">
+                    {currentPost.content}
+                  </p>
+                )}
+                
+                <Card className="border-muted cursor-pointer hover-elevate" data-testid={`shared-post-${currentPost.sharedPost.id}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center space-x-3">
+                      <Avatar>
+                        <AvatarImage src={currentPost.sharedPost.user?.avatar || undefined} />
+                        <AvatarFallback>
+                          {currentPost.sharedPost.user?.username?.charAt(0).toUpperCase() ||
+                            currentPost.sharedPost.user?.email?.charAt(0).toUpperCase() ||
+                            '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">
+                          {currentPost.sharedPost.user?.username || currentPost.sharedPost.user?.email || 'Unknown User'}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {currentPost.sharedPost.createdAt
+                            ? formatDistanceToNow(new Date(currentPost.sharedPost.createdAt), {
+                                addSuffix: true,
+                              })
+                            : 'Unknown time'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <PostBody 
+                      post={currentPost.sharedPost} 
+                      showPlaceholder={false} 
+                      isNested={true} 
+                    />
+                    <div className="pt-2">
+                      <p className="text-xs text-muted-foreground italic">
+                        This is a shared post. Interact with the actions below to engage with this share.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <PostBody post={currentPost} isNested={false} />
             )}
           </>
         )}
