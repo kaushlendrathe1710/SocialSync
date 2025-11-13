@@ -158,7 +158,8 @@ export interface IStorage {
   createPost(post: InsertPost): Promise<Post>;
   getPost(
     id: number,
-    currentUserId?: number
+    currentUserId?: number,
+    depth?: number
   ): Promise<PostWithUser | undefined>;
   getPosts(
     userId?: number,
@@ -655,7 +656,8 @@ export class DatabaseStorage implements IStorage {
 
   async getPost(
     id: number,
-    currentUserId?: number
+    currentUserId?: number,
+    depth: number = 1
   ): Promise<PostWithUser | undefined> {
     const result = await db
       .select({
@@ -707,7 +709,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(comments.postId, id));
     const commentsCount = commentsResult[0]?.count || 0;
 
-    return { ...post, user, likesCount, commentsCount };
+    // If this is a shared post, fetch the original post (max 1 level deep)
+    let sharedPost: PostWithUser | undefined;
+    if (post.sharedPostId && depth > 0) {
+      // Fetch the shared post with depth-1 to prevent infinite recursion
+      sharedPost = await this.getPost(post.sharedPostId, currentUserId, depth - 1);
+    }
+
+    return { ...post, user, likesCount, commentsCount, sharedPost };
   }
 
   async getPosts(
