@@ -1065,6 +1065,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Share post to timeline
+  app.post("/api/posts/:id/share", requireAuth, async (req, res) => {
+    try {
+      const originalPostId = parseInt(req.params.id);
+      const userId = req.session.userId;
+      const { content } = req.body; // Optional caption when sharing
+
+      // Check if original post exists
+      const originalPost = await storage.getPost(originalPostId, userId);
+      if (!originalPost) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      // Create a new post that references the original post
+      const sharedPost = await storage.createPost({
+        userId,
+        content: content || null, // Optional caption
+        sharedPostId: originalPostId,
+        privacy: "public",
+      });
+
+      // Increment the shares count on the original post
+      await storage.incrementPostShareCount(originalPostId);
+
+      // Create notification for the original post author
+      if (originalPost.userId !== userId) {
+        await storage.createNotification({
+          userId: originalPost.userId,
+          type: "share",
+          fromUserId: userId,
+          postId: originalPostId,
+          isRead: false,
+        });
+      }
+
+      // Get the shared post with all details
+      const sharedPostWithUser = await storage.getPost(sharedPost.id, userId);
+      res.json(sharedPostWithUser);
+    } catch (error) {
+      console.error("Share post error:", error);
+      res.status(500).json({ message: "Failed to share post" });
+    }
+  });
+
   // Comment routes
   app.get("/api/posts/:id/comments", async (req, res) => {
     try {

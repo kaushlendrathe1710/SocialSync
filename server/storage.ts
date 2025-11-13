@@ -283,6 +283,7 @@ export interface IStorage {
   recordPostView(postView: InsertPostView): Promise<PostView>;
   getPostViews(postId: number): Promise<number>;
   incrementPostViewCount(postId: number): Promise<void>;
+  incrementPostShareCount(postId: number): Promise<void>;
 
   // Friend request methods
   sendFriendRequest(
@@ -1582,6 +1583,15 @@ export class DatabaseStorage implements IStorage {
       .update(posts)
       .set({
         viewsCount: sql`${posts.viewsCount} + 1`,
+      })
+      .where(eq(posts.id, postId));
+  }
+
+  async incrementPostShareCount(postId: number): Promise<void> {
+    await db
+      .update(posts)
+      .set({
+        sharesCount: sql`${posts.sharesCount} + 1`,
       })
       .where(eq(posts.id, postId));
   }
