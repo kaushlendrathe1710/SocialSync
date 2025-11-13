@@ -36,6 +36,7 @@ export const posts = pgTable("posts", {
   imageUrl: text("image_url"),
   videoUrl: text("video_url"),
   liveStreamId: integer("live_stream_id"), // Reference to live stream
+  sharedPostId: integer("shared_post_id"), // Reference to original post if this is a share
   privacy: text("privacy").default("public"), // public, friends, private
   likesCount: integer("likes_count").default(0),
   commentsCount: integer("comments_count").default(0),
@@ -991,6 +992,7 @@ export type PostWithUser = Post & {
   isLiked?: boolean;
   userReaction?: string | null;
   comments?: CommentWithUser[];
+  sharedPost?: PostWithUser; // For shared posts, includes the original post
 };
 
 export type MessageWithUser = Message & {
@@ -1051,6 +1053,10 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
   user: one(users, {
     fields: [posts.userId],
     references: [users.id],
+  }),
+  sharedPost: one(posts, {
+    fields: [posts.sharedPostId],
+    references: [posts.id],
   }),
   likes: many(likes),
   comments: many(comments),
