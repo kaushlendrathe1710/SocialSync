@@ -399,7 +399,10 @@ export default function LiveStreamBroadcaster({
 
   const connectWebSocket = () => {
     console.log("Connecting to WebSocket for live stream:", streamId);
-    const ws = new WebSocket(`ws://localhost:5000/ws`);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host || 'localhost:5000';
+    const wsUrl = `${protocol}//${host}/ws`;
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
     
     ws.onopen = () => {
