@@ -8,13 +8,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/use-auth';
 import {
   Share2 as Share,
   Copy,
   MessageCircle,
   Mail,
   Bookmark,
-  Send
+  Send,
+  Repeat2
 } from 'lucide-react';
 import type { PostWithUser } from '@shared/schema';
 
@@ -25,12 +29,42 @@ interface ShareDropdownProps {
 
 export default function ShareDropdown({ post, className }: ShareDropdownProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   // Generate the post URL
   const postUrl = `${window.location.origin}/posts/${post.id}`;
   const shareText = post.content || 'Check out this post on Social!';
   const shareTitle = `${post.user.name || post.user.username} on Social`;
+
+  // Share to timeline mutation
+  const shareToTimelineMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest<PostWithUser>(`/api/posts/${post.id}/share`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/public/posts'] });
+      toast({
+        title: "Shared!",
+        description: "Post has been shared to your timeline.",
+      });
+      setIsOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to share post to timeline.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleCopyLink = async () => {
     try {
@@ -108,6 +142,13 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
     setIsOpen(false);
   };
 
+  const handleShareToTimeline = () => {
+    shareToTimelineMutation.mutate();
+  };
+
+  // Check if this is the user's own post
+  const isOwnPost = user?.id === post.userId;
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -117,6 +158,21 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
+        {/* Share to Timeline - only show for other users' posts */}
+        {!isOwnPost && (
+          <>
+            <DropdownMenuItem 
+              onClick={handleShareToTimeline}
+              disabled={shareToTimelineMutation.isPending}
+              data-testid="menuitem-share-timeline"
+            >
+              <Repeat2 className="h-4 w-4 mr-3" />
+              {shareToTimelineMutation.isPending ? 'Sharing...' : 'Share to Timeline'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        
         {/* Quick share options */}
         {typeof navigator !== 'undefined' && 'share' in navigator && (
           <>
