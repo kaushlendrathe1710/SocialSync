@@ -552,6 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(posts);
     } catch (error) {
+      console.error("Getting Posts error:", error);
       res.status(500).json({ message: "Failed to get posts" });
     }
   });

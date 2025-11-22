@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, serial, json, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -286,6 +286,7 @@ export const liveStreams = pgTable("live_streams", {
   startedAt: timestamp("started_at").defaultNow(),
   endedAt: timestamp("ended_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  streamKey: text("stream_key").unique(),
 });
 
 // Live stream chat messages
@@ -565,6 +566,13 @@ export const mentorshipRequests = pgTable("mentorship_requests", {
   preferredDate: timestamp("preferred_date"),
   createdAt: timestamp("created_at").defaultNow(),
   respondedAt: timestamp("responded_at"),
+});
+
+//session table for express-session with connect-pg-simple
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", {precision: 6}).notNull(),
 });
 
 // Insert schemas
