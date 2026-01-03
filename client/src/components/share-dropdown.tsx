@@ -40,13 +40,7 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
   // Share to timeline mutation
   const shareToTimelineMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest<PostWithUser>(`/api/posts/${post.id}/share`, {
-        method: 'POST',
-        body: JSON.stringify({}),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      return await apiRequest<PostWithUser>('POST', `/api/posts/${post.id}/share`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
@@ -57,10 +51,11 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
       });
       setIsOpen(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error sharing post to timeline:', error);
       toast({
         title: "Error",
-        description: "Failed to share post to timeline.",
+        description: `Failed to share post to timeline.`,
         variant: "destructive",
       });
     },
