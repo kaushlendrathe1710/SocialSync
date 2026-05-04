@@ -232,24 +232,24 @@ export default function ReelsPage() {
   });
 
   const updateReelCommentMutation = useMutation({
-    mutationFn: async ({ 
-      id, 
-      content, 
-      imageUrl, 
-      gifUrl, 
-      mediaType 
-    }: { 
-      id: number; 
-      content: string; 
-      imageUrl?: string; 
-      gifUrl?: string; 
-      mediaType?: string; 
+    mutationFn: async ({
+      id,
+      content,
+      imageUrl,
+      gifUrl,
+      mediaType
+    }: {
+      id: number;
+      content: string;
+      imageUrl?: string;
+      gifUrl?: string;
+      mediaType?: string;
     }) => {
-      const res = await apiRequest('PUT', `/api/reel-comments/${id}`, { 
-        content, 
-        imageUrl, 
-        gifUrl, 
-        mediaType 
+      const res = await apiRequest('PUT', `/api/reel-comments/${id}`, {
+        content,
+        imageUrl,
+        gifUrl,
+        mediaType
       });
       return await res.json();
     },
@@ -574,7 +574,7 @@ export default function ReelsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="h-[calc(100vh-3.5rem)] flex items-center justify-center bg-black">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Loading Reels...</p>
@@ -584,9 +584,9 @@ export default function ReelsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <div className="relative h-full bg-black text-white overflow-hidden">
       {/* Header */}
-      <div className="fixed top-16 left-0 right-0 z-20 bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 backdrop-blur-sm">
+      <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 backdrop-blur-sm">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <h1 className="text-3xl font-bold text-white">Reels</h1>
@@ -614,7 +614,7 @@ export default function ReelsPage() {
       </div>
 
       {/* Create Reel Button - Better Positioned */}
-      <div className="fixed top-24 right-4 z-30">
+      <div className="fixed top-28 right-4 z-30">
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
           <DialogTrigger asChild>
             <Button
@@ -626,25 +626,25 @@ export default function ReelsPage() {
             </Button>
           </DialogTrigger>
           <DialogContent
-            className="w-[96vw] sm:max-w-lg md:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+            className="w-[96vw] sm:max-w-lg md:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 dark:bg-gray-800 dark:border-gray-700"
             aria-describedby="create-reel-description"
           >
             <DialogHeader>
-              <DialogTitle className="flex items-center">
+              <DialogTitle className="flex items-center dark:text-white">
                 <Video className="w-5 h-5 mr-2" />
                 Create New Reel
               </DialogTitle>
-              <p id="create-reel-description" className="text-sm text-gray-600">
+              <p id="create-reel-description" className="text-sm text-gray-600 dark:text-gray-400">
                 Upload a video file to create and share your reel with the
                 community.
               </p>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 dark:text-gray-200">
                   Upload Video
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-gray-400 transition-colors break-words">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-gray-400 transition-colors break-words dark:border-gray-600 dark:bg-gray-700/50">
                   <input
                     type="file"
                     accept="video/*"
@@ -661,21 +661,21 @@ export default function ReelsPage() {
                       <div className="flex items-center justify-center space-x-2 max-w-full">
                         <Video className="w-8 h-8 text-green-500" />
                         <div>
-                          <p className="text-sm font-medium text-green-600 break-all whitespace-normal">
+                          <p className="text-sm font-medium text-green-600 break-all whitespace-normal dark:text-green-400">
                             {selectedVideoFile.current.name}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             Click to change video
                           </p>
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                        <p className="text-sm text-gray-600">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-gray-500" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           Click to upload video
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                           MP4, MOV, AVI up to 100MB
                         </p>
                       </div>
@@ -684,7 +684,7 @@ export default function ReelsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 dark:text-gray-200">
                   Caption
                 </label>
                 <Textarea
@@ -693,10 +693,10 @@ export default function ReelsPage() {
                   onChange={(e) =>
                     setNewReel({ ...newReel, caption: e.target.value })
                   }
-                  className="min-h-[80px] w-full"
+                  className="min-h-[80px] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                   maxLength={150}
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">
                   {newReel.caption.length}/150 characters
                 </p>
               </div>
@@ -723,35 +723,20 @@ export default function ReelsPage() {
         </Dialog>
       </div>
 
-      {/* Quick Upload Button - Floating */}
-      <div className="fixed bottom-6 right-6 z-20">
-        <div className="relative">
-          <Button
-            onClick={() => setShowCreateModal(true)}
-            size="lg"
-            className="rounded-full w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 border-3 border-white/30"
-          >
-            <Plus className="w-7 h-7" />
-          </Button>
-          {/* Pulse animation */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 animate-ping opacity-20"></div>
-        </div>
-      </div>
-
       {/* Reels Container */}
       <div
-        className="h-screen snap-y snap-mandatory overflow-y-auto pt-24"
+        className="h-full snap-y snap-mandatory overflow-y-auto"
         onWheel={handleScroll}
       >
         {reels.map((reel: Reel, index: number) => (
           <div
             key={reel.id}
-            className="relative h-screen snap-start flex items-center justify-center"
+            className="relative h-full snap-start flex items-center justify-center"
           >
             {/* Video with double-tap to like */}
             <div className="relative w-full h-full flex items-center justify-center">
               <div
-                className="relative w-[56.25vh] max-w-full"
+                className="relative h-full max-w-full"
                 style={{ aspectRatio: "9 / 16" }}
               >
                 <video
@@ -808,7 +793,7 @@ export default function ReelsPage() {
             {/* Reel Info */}
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
+                <div className="flex-1 self-end">
                   {/* User Info */}
                   <div className="flex items-center space-x-3 mb-2">
                     <Avatar className="w-12 h-12 ring-2 ring-white/20">
@@ -1000,17 +985,17 @@ export default function ReelsPage() {
       {/* Comments Modal */}
       <Dialog open={commentsOpen} onOpenChange={setCommentsOpen}>
         <DialogContent
-          className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6"
+          className="w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6 dark:bg-gray-800 dark:border-gray-700"
           aria-describedby="reel-comments"
         >
           <DialogHeader>
-            <DialogTitle>Comments</DialogTitle>
+            <DialogTitle className="dark:text-white">Comments</DialogTitle>
           </DialogHeader>
           <div id="reel-comments" className="space-y-4">
             {commentsLoading ? (
-              <div className="text-sm text-gray-400">Loading comments…</div>
+              <div className="text-sm text-gray-400 dark:text-gray-500">Loading comments…</div>
             ) : reelComments.length === 0 ? (
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-gray-400 dark:text-gray-500">
                 Be the first to comment.
               </div>
             ) : (
@@ -1021,8 +1006,8 @@ export default function ReelsPage() {
                     comment={c}
                     canEdit={c.user?.id === (reels[currentReelIndex]?.userId || -1) || true}
                     canDelete={c.user?.id === (reels[currentReelIndex]?.userId || -1) || true}
-                    onUpdate={(content) => updateReelCommentMutation.mutate({ 
-                      id: c.id, 
+                    onUpdate={(content) => updateReelCommentMutation.mutate({
+                      id: c.id,
                       content,
                       imageUrl: c.imageUrl,
                       gifUrl: c.gifUrl,

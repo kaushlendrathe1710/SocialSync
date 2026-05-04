@@ -10,14 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Heart, 
-  Moon, 
-  Zap, 
-  Brain, 
-  Droplets, 
-  Activity, 
-  Plus, 
+import {
+  Heart,
+  Moon,
+  Zap,
+  Brain,
+  Droplets,
+  Activity,
+  Plus,
   Target,
   TrendingUp,
   Calendar,
@@ -104,14 +104,14 @@ export function WellnessDashboard() {
   });
 
   // Get today's wellness record
-  const todayRecord = wellnessData.find((record: WellnessRecord) => 
+  const todayRecord = wellnessData.find((record: WellnessRecord) =>
     record.date.split('T')[0] === selectedDate
   );
 
   // Calculate wellness insights
   const getWellnessInsights = () => {
     if (wellnessData.length === 0) return null;
-    
+
     const last7Days = wellnessData.slice(0, 7);
     const avgMood = last7Days.reduce((sum, record) => sum + (record.moodRating || 0), 0) / last7Days.length;
     const avgEnergy = last7Days.reduce((sum, record) => sum + (record.energyLevel || 0), 0) / last7Days.length;
@@ -142,9 +142,9 @@ export function WellnessDashboard() {
         notes: data.notes || null,
         isPrivate: true,
       };
-      
+
       console.log("Sending wellness data:", payload);
-      
+
       const response = await fetch("/api/wellness-tracking", {
         method: "POST",
         headers: {
@@ -153,12 +153,12 @@ export function WellnessDashboard() {
         credentials: "include",
         body: JSON.stringify(payload),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to record wellness data");
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -276,7 +276,7 @@ export function WellnessDashboard() {
   };
 
   const isHabitCompletedForDate = (habitId: number, date: string) => {
-    const log = habitLogs.find((log: HabitLog) => 
+    const log = habitLogs.find((log: HabitLog) =>
       log.habitId === habitId && log.date.split('T')[0] === date
     );
     return log?.completed || false;
@@ -308,18 +308,18 @@ export function WellnessDashboard() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="w-full mx-auto p-6 space-y-6 dark:bg-gray-900 overflow-y-auto h-[calc(100vh-3.5rem)]">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Heart className="h-6 w-6 text-pink-500" />
-          <h1 className="text-2xl font-bold">Wellness Dashboard</h1>
+          <h1 className="text-2xl font-bold dark:text-white">Wellness Dashboard</h1>
         </div>
         <div className="flex gap-2">
           <Input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-40"
+            className="w-40 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
           />
           <Dialog open={showWellnessDialog} onOpenChange={setShowWellnessDialog}>
             <DialogTrigger asChild>
@@ -333,56 +333,56 @@ export function WellnessDashboard() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="habits">Habits</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 dark:bg-gray-800">
+          <TabsTrigger value="overview" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700">Overview</TabsTrigger>
+          <TabsTrigger value="habits" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700">Habits</TabsTrigger>
+          <TabsTrigger value="insights" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700">Insights</TabsTrigger>
+          <TabsTrigger value="history" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700">History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           {/* Today's Wellness */}
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Today's Wellness - {new Date(selectedDate).toLocaleDateString()}</CardTitle>
+              <CardTitle className="dark:text-white">Today's Wellness - {new Date(selectedDate).toLocaleDateString()}</CardTitle>
             </CardHeader>
             <CardContent>
               {todayRecord ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   <div className="text-center">
                     <div className="text-3xl mb-2">{getMoodEmoji(todayRecord.moodRating || 3)}</div>
-                    <p className="text-sm text-gray-500">Mood</p>
-                    <p className="font-semibold">{todayRecord.moodRating || "Not logged"}/5</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Mood</p>
+                    <p className="font-semibold dark:text-white">{todayRecord.moodRating || "Not logged"}/5</p>
                   </div>
                   <div className="text-center">
                     <Zap className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
-                    <p className="text-sm text-gray-500">Energy</p>
-                    <p className="font-semibold">{todayRecord.energyLevel || "Not logged"}/5</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Energy</p>
+                    <p className="font-semibold dark:text-white">{todayRecord.energyLevel || "Not logged"}/5</p>
                   </div>
                   <div className="text-center">
                     <Brain className="h-8 w-8 mx-auto mb-2 text-red-500" />
-                    <p className="text-sm text-gray-500">Stress</p>
-                    <p className="font-semibold">{todayRecord.stressLevel || "Not logged"}/5</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Stress</p>
+                    <p className="font-semibold dark:text-white">{todayRecord.stressLevel || "Not logged"}/5</p>
                   </div>
                   <div className="text-center">
                     <Moon className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                    <p className="text-sm text-gray-500">Sleep</p>
-                    <p className="font-semibold">{todayRecord.sleepHours || "Not logged"}h</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Sleep</p>
+                    <p className="font-semibold dark:text-white">{todayRecord.sleepHours || "Not logged"}h</p>
                   </div>
                   <div className="text-center">
                     <Droplets className="h-8 w-8 mx-auto mb-2 text-cyan-500" />
-                    <p className="text-sm text-gray-500">Water</p>
-                    <p className="font-semibold">{todayRecord.waterIntake || "Not logged"} glasses</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Water</p>
+                    <p className="font-semibold dark:text-white">{todayRecord.waterIntake || "Not logged"} glasses</p>
                   </div>
                   <div className="text-center">
                     <Activity className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                    <p className="text-sm text-gray-500">Exercise</p>
-                    <p className="font-semibold">{todayRecord.exerciseMinutes || "Not logged"} min</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Exercise</p>
+                    <p className="font-semibold dark:text-white">{todayRecord.exerciseMinutes || "Not logged"} min</p>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">No wellness data logged for this date</p>
+                  <p className="text-gray-500 mb-4 dark:text-gray-400">No wellness data logged for this date</p>
                   <Button onClick={() => setShowWellnessDialog(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Log Your Wellness
@@ -393,9 +393,9 @@ export function WellnessDashboard() {
           </Card>
 
           {/* Quick Habits */}
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between dark:text-white">
                 Today's Habits
                 <Dialog open={showHabitDialog} onOpenChange={setShowHabitDialog}>
                   <DialogTrigger asChild>
@@ -425,7 +425,7 @@ export function WellnessDashboard() {
                   {habits.slice(0, 5).map((habit: Habit) => {
                     const isCompleted = isHabitCompletedForDate(habit.id, selectedDate);
                     const streak = getHabitStreak(habit.id);
-                    
+
                     return (
                       <div key={habit.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center space-x-3">
@@ -443,8 +443,8 @@ export function WellnessDashboard() {
                           <Badge variant="secondary">
                             {streak} day streak
                           </Badge>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant={isCompleted ? "default" : "outline"}
                             onClick={() => toggleHabitCompletion(habit.id)}
                             disabled={markHabitMutation.isPending}

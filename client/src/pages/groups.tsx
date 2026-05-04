@@ -14,10 +14,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Users, 
-  Plus, 
-  Search, 
+import {
+  Users,
+  Plus,
+  Search,
   Filter,
   Calendar,
   FileText,
@@ -73,7 +73,7 @@ export default function GroupsPage() {
   const { user } = useAuth();
   const params = useParams();
   const groupId = params.id;
-  
+
   const [activeTab, setActiveTab] = useState('discover');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -191,10 +191,10 @@ export default function GroupsPage() {
   if (groupId) {
     if (groupLoading) {
       return (
-        <div className="p-6 flex items-center justify-center">
+        <div className="p-6 flex items-center justify-center dark:bg-gray-900 h-[calc(100vh-3.5rem)]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading group...</p>
+            <p className="text-muted-foreground dark:text-gray-400">Loading group...</p>
           </div>
         </div>
       );
@@ -202,40 +202,40 @@ export default function GroupsPage() {
 
     if (!currentGroup) {
       return (
-        <div className="p-6 flex items-center justify-center">
+        <div className="p-6 flex items-center justify-center dark:bg-gray-900 h-[calc(100vh-3.5rem)] overflow-y-auto">
           <div className="text-center">
-            <p className="text-muted-foreground">Group not found</p>
+            <p className="text-muted-foreground dark:text-gray-400">Group not found</p>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)] overflow-y-auto">
         {/* Group Header */}
         <div className="relative">
           {currentGroup.coverImage && (
-            <img 
-              src={currentGroup.coverImage} 
+            <img
+              src={currentGroup.coverImage}
               alt={currentGroup.name}
               className="w-full h-64 object-cover rounded-lg"
             />
           )}
-          <div className="bg-white rounded-lg shadow-lg p-6 mt-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-4 dark:border-gray-700">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
-                  <h1 className="text-3xl font-bold">{currentGroup.name}</h1>
+                  <h1 className="text-3xl font-bold dark:text-white">{currentGroup.name}</h1>
                   {currentGroup.isVerified && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
                       <Shield className="w-3 h-3 mr-1" />
                       Verified
                     </Badge>
                   )}
-                  <Badge variant="outline">{currentGroup.privacy}</Badge>
+                  <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">{currentGroup.privacy}</Badge>
                 </div>
-                <p className="text-gray-600 mb-4">{currentGroup.description}</p>
-                <div className="flex items-center space-x-6 text-sm text-gray-500">
+                <p className="text-gray-600 mb-4 dark:text-gray-400">{currentGroup.description}</p>
+                <div className="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
                   <span className="flex items-center">
                     <Users className="w-4 h-4 mr-1" />
                     {currentGroup.memberCount} members
@@ -260,12 +260,12 @@ export default function GroupsPage() {
 
         {/* Group Content Tabs */}
         <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="files">Files</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger id="tab-chat" value="chat">Chat</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 dark:bg-gray-800">
+            <TabsTrigger value="posts" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Posts</TabsTrigger>
+            <TabsTrigger value="events" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Events</TabsTrigger>
+            <TabsTrigger value="files" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Files</TabsTrigger>
+            <TabsTrigger value="members" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Members</TabsTrigger>
+            <TabsTrigger id="tab-chat" value="chat" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Chat</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="space-y-4">
@@ -369,9 +369,9 @@ export default function GroupsPage() {
 
   // Main groups list view
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)] overflow-y-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Groups</h1>
+        <h1 className="text-2xl font-bold dark:text-white">Groups</h1>
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
           <DialogTrigger asChild>
             <Button>
@@ -379,26 +379,28 @@ export default function GroupsPage() {
               Create Group
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md dark:bg-gray-800 dark:border-gray-700">
             <DialogHeader>
-              <DialogTitle>Create New Group</DialogTitle>
+              <DialogTitle className="dark:text-white">Create New Group</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <Input
                 placeholder="Group name"
                 value={newGroup.name}
                 onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
               />
               <Textarea
                 placeholder="Group description"
                 value={newGroup.description}
                 onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
               />
               <Select value={newGroup.category} onValueChange={(value) => setNewGroup({ ...newGroup, category: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   {groupCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.icon} {category.name}
@@ -407,10 +409,10 @@ export default function GroupsPage() {
                 </SelectContent>
               </Select>
               <Select value={newGroup.privacy} onValueChange={(value: any) => setNewGroup({ ...newGroup, privacy: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   <SelectItem value="public">Public</SelectItem>
                   <SelectItem value="private">Private</SelectItem>
                   <SelectItem value="request_to_join">Request to Join</SelectItem>
@@ -427,20 +429,20 @@ export default function GroupsPage() {
       {/* Search and Filter */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 dark:text-gray-400" />
           <Input
             placeholder="Search groups..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400"
           />
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-48 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
             <Filter className="w-4 h-4 mr-2" />
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
             <SelectItem value="all">All Categories</SelectItem>
             {groupCategories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
@@ -453,9 +455,9 @@ export default function GroupsPage() {
 
       {/* Groups Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="discover">Discover</TabsTrigger>
-          <TabsTrigger value="my-groups">My Groups</TabsTrigger>
+        <TabsList className="dark:bg-gray-800">
+          <TabsTrigger value="discover" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Discover</TabsTrigger>
+          <TabsTrigger value="my-groups" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">My Groups</TabsTrigger>
         </TabsList>
 
         <TabsContent value="discover" className="space-y-4">
@@ -474,30 +476,31 @@ export default function GroupsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {groups.map((group: Group) => (
-                <Card key={group.id} className="hover:shadow-lg transition-shadow">
+                <Card key={group.id} className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
                   {group.coverImage && (
                     <img src={group.coverImage} alt={group.name} className="w-full h-32 object-cover rounded-t-lg" />
                   )}
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-lg truncate">{group.name}</h3>
+                      <h3 className="font-semibold text-lg truncate dark:text-white">{group.name}</h3>
                       {group.isVerified && <Shield className="w-4 h-4 text-blue-600 flex-shrink-0" />}
                     </div>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{group.description}</p>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2 dark:text-gray-400">{group.description}</p>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center text-sm text-gray-500">
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <Users className="w-4 h-4 mr-1" />
                         {group.memberCount} members
                       </div>
                       <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => window.location.href = `/groups/${group.id}`}
+                          className="dark:border-gray-600 dark:text-gray-200"
                         >
                           View Group
                         </Button>
-                        <Button 
+                        <Button
                           size="sm"
                           onClick={() => joinGroupMutation.mutate(group.id)}
                           disabled={group.isJoined || joinGroupMutation.isPending}
@@ -515,11 +518,11 @@ export default function GroupsPage() {
 
         <TabsContent value="my-groups" className="space-y-4">
           {groups.filter((group: Group) => group.isJoined || group.membershipStatus).length === 0 ? (
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="p-8 text-center">
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Groups Yet</h3>
-                <p className="text-gray-500 mb-4">You haven't joined any groups yet. Discover and join groups that interest you!</p>
+                <h3 className="text-lg font-medium mb-2 dark:text-white">No Groups Yet</h3>
+                <p className="text-gray-500 mb-4 dark:text-gray-400">You haven't joined any groups yet. Discover and join groups that interest you!</p>
                 <Button onClick={() => setActiveTab('discover')}>
                   Discover Groups
                 </Button>
@@ -528,29 +531,30 @@ export default function GroupsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {groups.filter((group: Group) => group.isJoined || group.membershipStatus).map((group: Group) => (
-                <Card key={group.id} className="hover:shadow-lg transition-shadow">
+                <Card key={group.id} className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
                   {group.coverImage && (
                     <img src={group.coverImage} alt={group.name} className="w-full h-32 object-cover rounded-t-lg" />
                   )}
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-lg truncate">{group.name}</h3>
+                      <h3 className="font-semibold text-lg truncate dark:text-white">{group.name}</h3>
                       <div className="flex items-center space-x-1">
                         {group.membershipStatus === 'admin' && <Crown className="w-4 h-4 text-yellow-600" />}
                         {group.isVerified && <Shield className="w-4 h-4 text-blue-600" />}
                       </div>
                     </div>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{group.description}</p>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2 dark:text-gray-400">{group.description}</p>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center text-sm text-gray-500">
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <Users className="w-4 h-4 mr-1" />
                         {group.memberCount} members
                       </div>
                       <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => window.location.href = `/groups/${group.id}`}
+                          className="dark:border-gray-600 dark:text-gray-200"
                         >
                           View Group
                         </Button>
@@ -579,29 +583,29 @@ function MembersList({ groupId, creatorId }: { groupId: number; creatorId: numbe
   });
 
   if (isLoading) {
-    return <p className="text-center text-gray-500">Loading members…</p>;
+    return <p className="text-center text-gray-500 dark:text-gray-400">Loading members…</p>;
   }
 
   if (!members.length) {
-    return <p className="text-center text-gray-500">No members yet</p>;
+    return <p className="text-center text-gray-500 dark:text-gray-400">No members yet</p>;
   }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {members.map((m: any) => (
-        <div key={m.id} className="flex items-center justify-between p-3 border rounded-lg">
+        <div key={m.id} className="flex items-center justify-between p-3 border rounded-lg dark:border-gray-700 dark:bg-gray-700/50">
           <div className="flex items-center gap-3 min-w-0">
             <UIAvatar className="h-8 w-8 shrink-0">
               <UIAvatarImage src={m.avatar || undefined} />
-              <UIAvatarFallback>{m.name?.[0] || '?'}</UIAvatarFallback>
+              <UIAvatarFallback className="dark:bg-gray-700">{m.name?.[0] || '?'}</UIAvatarFallback>
             </UIAvatar>
             <div className="min-w-0">
-              <div className="font-medium truncate">{m.name}</div>
-              <div className="text-xs text-gray-500 truncate">@{m.username}</div>
+              <div className="font-medium truncate dark:text-white">{m.name}</div>
+              <div className="text-xs text-gray-500 truncate dark:text-gray-400">@{m.username}</div>
             </div>
           </div>
           {m.id === creatorId && (
-            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">Owner</span>
+            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">Owner</span>
           )}
         </div>
       ))}
@@ -615,8 +619,8 @@ function ItemsList({ endpoint, queryKey, empty, renderItem }: { endpoint: string
     queryFn: () => fetch(endpoint).then(res => res.json()),
     refetchInterval: 5000,
   });
-  if (isLoading) return <p className="text-center text-gray-500">Loading…</p>;
-  if (!data.length) return <p className="text-center text-gray-500">{empty}</p>;
+  if (isLoading) return <p className="text-center text-gray-500 dark:text-gray-400">Loading…</p>;
+  if (!data.length) return <p className="text-center text-gray-500 dark:text-gray-400">{empty}</p>;
   return <div className="space-y-3">{data.map(renderItem)}</div>;
 }
 

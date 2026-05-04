@@ -51,16 +51,16 @@ export default function SavedPage() {
     // Search filter
     const matchesSearch = post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.user.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (searchQuery && !matchesSearch) return false;
-    
+
     // Date range filter
     if (filterOptions.dateRange !== 'all') {
       const postDate = new Date(post.createdAt || new Date());
       const now = new Date();
       const timeDiff = now.getTime() - postDate.getTime();
       const daysDiff = timeDiff / (1000 * 3600 * 24);
-      
+
       switch (filterOptions.dateRange) {
         case 'week':
           if (daysDiff > 7) return false;
@@ -73,7 +73,7 @@ export default function SavedPage() {
           break;
       }
     }
-    
+
     // Post type filter
     if (filterOptions.postType !== 'all') {
       switch (filterOptions.postType) {
@@ -88,7 +88,7 @@ export default function SavedPage() {
           break;
       }
     }
-    
+
     return true;
   });
 
@@ -143,7 +143,7 @@ export default function SavedPage() {
     try {
       const colors = ["bg-blue-500", "bg-green-500", "bg-orange-500", "bg-purple-500", "bg-pink-500", "bg-indigo-500", "bg-red-500"];
       const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      
+
       const newCollection = {
         id: collections.length + 1,
         name: newCollectionName.trim(),
@@ -184,8 +184,8 @@ export default function SavedPage() {
       return;
     }
 
-    setCollections(collections.map(collection => 
-      collection.id === editingCollection.id 
+    setCollections(collections.map(collection =>
+      collection.id === editingCollection.id
         ? { ...collection, name: editCollectionName.trim() }
         : collection
     ));
@@ -213,7 +213,7 @@ export default function SavedPage() {
       }
 
       setCollections(collections.filter(collection => collection.id !== collectionId));
-      
+
       toast({
         title: "Success",
         description: `Collection "${collectionName}" deleted successfully`,
@@ -234,22 +234,22 @@ export default function SavedPage() {
   }));
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="w-full mx-auto px-4 py-6 dark:bg-gray-900 overflow-y-auto h-[calc(100vh-3.5rem)]">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center dark:text-white">
           <Bookmark className="w-8 h-8 mr-3" />
           Saved
         </h1>
-        <p className="text-gray-600">Keep track of posts you want to see again</p>
+        <p className="text-gray-600 dark:text-gray-400">Keep track of posts you want to see again</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="posts">
+        <TabsList className="grid w-full grid-cols-3 dark:bg-gray-800">
+          <TabsTrigger value="posts" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">
             Saved Posts ({(savedPosts as PostWithUser[])?.length || 0})
           </TabsTrigger>
-          <TabsTrigger value="collections">Collections</TabsTrigger>
-          <TabsTrigger value="search">Search Saved</TabsTrigger>
+          <TabsTrigger value="collections" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Collections</TabsTrigger>
+          <TabsTrigger value="search" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Search Saved</TabsTrigger>
         </TabsList>
 
         <TabsContent value="posts" className="space-y-6">
@@ -272,8 +272,8 @@ export default function SavedPage() {
                 List
               </Button>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setShowFilterDialog(true)}
             >
@@ -305,11 +305,11 @@ export default function SavedPage() {
               ))}
             </div>
           ) : (savedPosts as PostWithUser[])?.length === 0 ? (
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="text-center py-12">
                 <Bookmark className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No saved posts yet</h3>
-                <p className="text-gray-500 mb-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No saved posts yet</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
                   When you save posts, they'll appear here so you can easily find them later
                 </p>
                 <Button onClick={() => window.location.href = '/'}>Explore Posts</Button>
@@ -320,7 +320,7 @@ export default function SavedPage() {
               {sortedFilteredPosts.map((post: PostWithUser) => (
                 <div key={post.id} className="relative group">
                   {viewMode === 'grid' ? (
-                    <Card className="hover:shadow-lg transition-shadow">
+                    <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-2">
@@ -328,27 +328,27 @@ export default function SavedPage() {
                               {post.user.name?.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-medium text-sm">{post.user.name}</p>
-                              <p className="text-xs text-gray-500">@{post.user.username}</p>
+                              <p className="font-medium text-sm dark:text-white">{post.user.name}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">@{post.user.username}</p>
                             </div>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleUnsavePost(post.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity dark:text-gray-200"
                           >
                             <Bookmark className="w-4 h-4 fill-current" />
                           </Button>
                         </div>
-                        <p className="text-sm text-gray-700 mb-3 line-clamp-3">{post.content}</p>
-                        
+                        <p className="text-sm text-gray-700 mb-3 line-clamp-3 dark:text-gray-300">{post.content}</p>
+
                         {/* Display image if exists */}
                         {post.imageUrl && (
                           <div className="mb-3">
-                            <img 
-                              src={post.imageUrl} 
-                              alt="Post image" 
+                            <img
+                              src={post.imageUrl}
+                              alt="Post image"
                               className="w-full h-48 object-cover rounded-lg"
                               onError={(e) => {
                                 console.error('Image failed to load:', post.imageUrl);
@@ -357,13 +357,13 @@ export default function SavedPage() {
                             />
                           </div>
                         )}
-                        
+
                         {/* Display video if exists */}
                         {post.videoUrl && (
                           <div className="mb-3">
-                            <video 
-                              src={post.videoUrl} 
-                              controls 
+                            <video
+                              src={post.videoUrl}
+                              controls
                               className="w-full h-48 object-cover rounded-lg"
                               onError={(e) => {
                                 console.error('Video failed to load:', post.videoUrl);
@@ -372,7 +372,7 @@ export default function SavedPage() {
                             />
                           </div>
                         )}
-                        
+
                         <div className="flex items-center justify-between text-xs text-gray-500">
                           <div className="flex items-center space-x-4">
                             <span className="flex items-center">
@@ -404,16 +404,16 @@ export default function SavedPage() {
         </TabsContent>
 
         <TabsContent value="collections" className="space-y-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Your Collections</CardTitle>
+              <CardTitle className="dark:text-white">Your Collections</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {savedCollections.map((collection) => (
-                  <Card 
-                    key={collection.id} 
-                    className="hover:shadow-md transition-shadow cursor-pointer group"
+                  <Card
+                    key={collection.id}
+                    className="hover:shadow-md transition-shadow cursor-pointer group dark:bg-gray-700 dark:border-gray-600"
                     onClick={() => {
                       if (collection.name === "All Saved") {
                         setActiveTab("posts");
@@ -427,11 +427,11 @@ export default function SavedPage() {
                             <Bookmark className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-medium text-gray-900">{collection.name}</h3>
-                            <p className="text-sm text-gray-500">{collection.count} saved</p>
+                            <h3 className="font-medium text-gray-900 dark:text-white">{collection.name}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{collection.count} saved</p>
                           </div>
                         </div>
-                        
+
                         {/* Collection Actions */}
                         {collection.name !== "All Saved" && (
                           <div className="flex items-center space-x-1">
@@ -445,7 +445,7 @@ export default function SavedPage() {
                             >
                               <Edit className="w-3 h-3" />
                             </Button>
-                            
+
                             {/* Delete Button with Confirmation */}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -480,7 +480,7 @@ export default function SavedPage() {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="grid grid-cols-3 gap-1">
                         {[...Array(3)].map((_, i) => (
                           <div key={i} className="aspect-square bg-gray-100 rounded"></div>
@@ -489,22 +489,22 @@ export default function SavedPage() {
                     </CardContent>
                   </Card>
                 ))}
-                
+
                 <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                   <DialogTrigger asChild>
-                    <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors cursor-pointer">
+                    <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors cursor-pointer dark:border-gray-600 dark:bg-gray-700/50">
                       <CardContent className="p-4 flex flex-col items-center justify-center h-full text-center">
-                        <div className="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center mb-2">
+                        <div className="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center mb-2 dark:border-gray-500">
                           <Plus className="w-5 h-5 text-gray-400" />
                         </div>
-                        <p className="text-sm font-medium text-gray-700">Create Collection</p>
-                        <p className="text-xs text-gray-500">Organize your saved posts</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Create Collection</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Organize your saved posts</p>
                       </CardContent>
                     </Card>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className="sm:max-w-md dark:bg-gray-800 dark:border-gray-700">
                     <DialogHeader>
-                      <DialogTitle>Create New Collection</DialogTitle>
+                      <DialogTitle className="dark:text-white">Create New Collection</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
@@ -538,37 +538,37 @@ export default function SavedPage() {
         </TabsContent>
 
         <TabsContent value="search" className="space-y-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center dark:text-white">
                 <Search className="w-5 h-5 mr-2" />
                 Search Your Saved Posts
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 dark:text-gray-400" />
                 <Input
                   placeholder="Search saved posts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 />
               </div>
 
               {searchQuery && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {filteredSavedPosts.length} results for "{searchQuery}"
                     </p>
-                    <Badge variant="secondary">{filteredSavedPosts.length}</Badge>
+                    <Badge variant="secondary" className="dark:bg-gray-700 dark:text-gray-200">{filteredSavedPosts.length}</Badge>
                   </div>
-                  
+
                   {filteredSavedPosts.length === 0 ? (
                     <div className="text-center py-8">
                       <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No saved posts match your search</p>
+                      <p className="text-gray-500 dark:text-gray-400">No saved posts match your search</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -586,9 +586,9 @@ export default function SavedPage() {
 
       {/* Edit Collection Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="dark:bg-gray-800 dark:border-gray-700">
           <DialogHeader>
-            <DialogTitle>Edit Collection</DialogTitle>
+            <DialogTitle className="dark:text-white">Edit Collection</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -607,8 +607,8 @@ export default function SavedPage() {
             </div>
           </div>
           <div className="flex justify-end space-x-2 mt-6">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setShowEditDialog(false);
                 setEditingCollection(null);
@@ -626,21 +626,21 @@ export default function SavedPage() {
 
       {/* Filter Dialog */}
       <Dialog open={showFilterDialog} onOpenChange={setShowFilterDialog}>
-        <DialogContent>
+        <DialogContent className="dark:bg-gray-800 dark:border-gray-700">
           <DialogHeader>
-            <DialogTitle>Filter Saved Posts</DialogTitle>
+            <DialogTitle className="dark:text-white">Filter Saved Posts</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div>
-              <Label>Date Range</Label>
-              <Select 
-                value={filterOptions.dateRange} 
+              <Label className="dark:text-gray-200">Date Range</Label>
+              <Select
+                value={filterOptions.dateRange}
                 onValueChange={(value) => setFilterOptions(prev => ({ ...prev, dateRange: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   <SelectItem value="all">All Time</SelectItem>
                   <SelectItem value="week">Past Week</SelectItem>
                   <SelectItem value="month">Past Month</SelectItem>
@@ -650,15 +650,15 @@ export default function SavedPage() {
             </div>
 
             <div>
-              <Label>Post Type</Label>
-              <Select 
-                value={filterOptions.postType} 
+              <Label className="dark:text-gray-200">Post Type</Label>
+              <Select
+                value={filterOptions.postType}
                 onValueChange={(value) => setFilterOptions(prev => ({ ...prev, postType: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   <SelectItem value="all">All Posts</SelectItem>
                   <SelectItem value="text">Text Only</SelectItem>
                   <SelectItem value="image">With Images</SelectItem>
@@ -668,15 +668,15 @@ export default function SavedPage() {
             </div>
 
             <div>
-              <Label>Sort By</Label>
-              <Select 
-                value={filterOptions.sortBy} 
+              <Label className="dark:text-gray-200">Sort By</Label>
+              <Select
+                value={filterOptions.sortBy}
                 onValueChange={(value) => setFilterOptions(prev => ({ ...prev, sortBy: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   <SelectItem value="newest">Newest First</SelectItem>
                   <SelectItem value="oldest">Oldest First</SelectItem>
                   <SelectItem value="most-liked">Most Liked</SelectItem>
@@ -686,7 +686,7 @@ export default function SavedPage() {
           </div>
 
           <div className="flex justify-between mt-6">
-            <Button 
+            <Button
               variant="outline"
               onClick={() => {
                 setFilterOptions({
@@ -699,17 +699,19 @@ export default function SavedPage() {
                   description: "All filters have been reset to default",
                 });
               }}
+              className="dark:border-gray-600 dark:text-gray-200"
             >
               Clear Filters
             </Button>
             <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowFilterDialog(false)}
+                className="dark:border-gray-600 dark:text-gray-200"
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   setShowFilterDialog(false);
                   toast({

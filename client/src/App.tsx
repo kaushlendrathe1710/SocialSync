@@ -42,7 +42,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen overflow-hidden flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading...</p>
@@ -80,7 +80,7 @@ function AppContent() {
   // If impersonating, always show the regular user interface regardless of URL
   if (impersonation?.isImpersonating) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen overflow-hidden bg-gray-100 dark:bg-gray-800">
         <Navigation />
         <div className="flex pt-14">
           <Sidebar />
@@ -126,7 +126,7 @@ function AppContent() {
 
   if (isAdminUser && isAdminRoute) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
         <Switch>
           <Route path="/admin" component={AdminDashboard} />
           <Route component={NotFound} />
@@ -136,11 +136,11 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen overflow-hidden bg-gray-100">
       <Navigation />
       <div className="flex pt-14">
         <Sidebar />
-        <main className="flex-1 ml-64 min-h-screen">
+        <main className="flex-1 min-h-[calc(100vh-12rem)]">
           <Switch>
             <Route path="/" component={FeedPage} />
             <Route path="/reels" component={ReelsPage} />

@@ -92,10 +92,10 @@ export default function VirtualRoomsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="w-full mx-auto p-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)]">
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+            <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
           ))}
         </div>
       </div>
@@ -103,31 +103,31 @@ export default function VirtualRoomsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full mx-auto p-6 space-y-6 dark:bg-gray-900 overflow-y-auto h-[calc(100vh-3.5rem)]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Virtual Rooms</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold dark:text-white">Virtual Rooms</h1>
+          <p className="text-gray-600 mt-1 dark:text-gray-400">
             Join live video rooms and connect with others
           </p>
         </div>
-        <Badge variant="secondary" className="flex items-center space-x-1">
+        <Badge variant="secondary" className="flex items-center space-x-1 dark:bg-gray-700 dark:text-gray-200">
           <Radio className="w-3 h-3" />
           <span>{virtualRooms.length} Live</span>
         </Badge>
       </div>
 
-      <Separator />
+      <Separator className="dark:bg-gray-700" />
 
       {/* Virtual Rooms Grid */}
       {virtualRooms.length === 0 ? (
         <div className="text-center py-12">
           <Video className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             No virtual rooms available
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-4 dark:text-gray-400">
             Create a live video to start your own virtual room
           </p>
           <Button onClick={() => {
@@ -143,31 +143,31 @@ export default function VirtualRoomsPage() {
           {virtualRooms.map((room: VirtualRoom) => (
             <Card
               key={room.id}
-              className="overflow-hidden hover:shadow-lg transition-shadow"
+              className="overflow-hidden hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700"
             >
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 dark:bg-gray-800">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3 flex-1">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={room.user.avatar || undefined} />
-                      <AvatarFallback>
+                      <AvatarFallback className="dark:bg-gray-700 dark:text-white">
                         {room.user.name?.charAt(0) ||
                           room.user.username?.charAt(0) ||
                           "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-medium text-sm truncate">
+                      <h3 className="font-medium text-sm truncate dark:text-white">
                         {room.user.name || room.user.username}
                       </h3>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         @{room.user.username}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
                     {room.isActive && (
-                      <Badge variant="destructive" className="text-xs">
+                      <Badge variant="destructive" className="text-xs dark:bg-red-600">
                         <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-1"></div>
                         LIVE
                       </Badge>
@@ -181,21 +181,21 @@ export default function VirtualRoomsPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 dark:bg-gray-800">
                 {/* Room Title */}
                 <div>
-                  <h4 className="font-medium text-base mb-1 line-clamp-2">
+                  <h4 className="font-medium text-base mb-1 line-clamp-2 dark:text-white">
                     {room.title}
                   </h4>
                   {room.description && (
-                    <p className="text-sm text-gray-600 line-clamp-2">
+                    <p className="text-sm text-gray-600 line-clamp-2 dark:text-gray-400">
                       {room.description}
                     </p>
                   )}
                 </div>
 
                 {/* Room Stats */}
-                <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-1">
                       <Eye className="w-4 h-4" />

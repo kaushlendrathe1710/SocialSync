@@ -12,16 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { 
-  Settings, 
-  User, 
-  Shield, 
-  Bell, 
-  Palette, 
-  Globe, 
-  Eye, 
-  Lock, 
-  Smartphone, 
+import {
+  Settings,
+  User,
+  Shield,
+  Bell,
+  Palette,
+  Globe,
+  Eye,
+  Lock,
+  Smartphone,
   Download,
   Trash2,
   AlertTriangle,
@@ -32,7 +32,7 @@ import {
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  
+
   const [accountData, setAccountData] = useState({
     name: user?.name || '',
     username: user?.username || '',
@@ -282,7 +282,7 @@ export default function SettingsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         toast({
           title: "Data Usage",
           description: `Posts: ${data.postsCount || 0}, Comments: ${data.commentsCount || 0}, Storage: ${data.storageUsed || '0 MB'}`,
@@ -304,7 +304,7 @@ export default function SettingsPage() {
     input.type = 'file';
     input.accept = 'image/*';
     input.style.display = 'none';
-    
+
     input.onchange = async (event) => {
       const target = event.target as HTMLInputElement;
       const file = target.files?.[0];
@@ -312,13 +312,13 @@ export default function SettingsPage() {
         try {
           const formData = new FormData();
           formData.append('profilePicture', file);
-          
+
           const response = await fetch(`/api/users/${user.id}/profile-picture`, {
             method: 'POST',
             body: formData,
             credentials: 'include',
           });
-          
+
           if (response.ok) {
             const result = await response.json();
             toast({
@@ -339,7 +339,7 @@ export default function SettingsPage() {
         }
       }
     };
-    
+
     document.body.appendChild(input);
     input.click();
     document.body.removeChild(input);
@@ -348,28 +348,28 @@ export default function SettingsPage() {
 
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="w-full mx-auto px-4 py-6 dark:bg-gray-900 overflow-y-auto h-[calc(100vh-3.5rem)]">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center dark:text-white">
           <Settings className="w-8 h-8 mr-3" />
           Settings
         </h1>
-        <p className="text-gray-600">Manage your account settings and preferences</p>
+        <p className="text-gray-600 dark:text-gray-400">Manage your account settings and preferences</p>
       </div>
 
       <Tabs defaultValue="account" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="data">Data</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 dark:bg-gray-800">
+          <TabsTrigger value="account" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Account</TabsTrigger>
+          <TabsTrigger value="privacy" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Privacy</TabsTrigger>
+          <TabsTrigger value="notifications" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Notifications</TabsTrigger>
+          <TabsTrigger value="security" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Security</TabsTrigger>
+          <TabsTrigger value="data" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account" className="space-y-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center dark:text-white">
                 <User className="w-5 h-5 mr-2" />
                 Profile Information
               </CardTitle>
@@ -379,23 +379,23 @@ export default function SettingsPage() {
                 <div className="relative">
                   <Avatar className="w-20 h-20">
                     <AvatarImage src={user?.avatar || undefined} />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white text-xl">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white text-xl dark:bg-gray-700">
                       {user?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full p-0"
+                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full p-0 dark:bg-gray-700"
                     onClick={handlePhotoUpload}
                   >
                     <Camera className="w-4 h-4" />
                   </Button>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{user?.name}</h3>
-                  <p className="text-sm text-gray-500">@{user?.username}</p>
-                  <Button variant="outline" size="sm" className="mt-2" onClick={handlePhotoUpload}>
+                  <h3 className="font-medium text-gray-900 dark:text-white">{user?.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">@{user?.username}</p>
+                  <Button variant="outline" size="sm" className="mt-2 dark:border-gray-600 dark:text-gray-200" onClick={handlePhotoUpload}>
                     Change Photo
                   </Button>
                 </div>
@@ -403,39 +403,42 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name" className="dark:text-gray-200">Full Name</Label>
                   <Input
                     id="name"
                     value={accountData.name}
                     onChange={(e) => setAccountData({...accountData, name: e.target.value})}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username" className="dark:text-gray-200">Username</Label>
                   <Input
                     id="username"
                     value={accountData.username}
                     onChange={(e) => setAccountData({...accountData, username: e.target.value})}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="dark:text-gray-200">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={accountData.email}
                     onChange={(e) => setAccountData({...accountData, email: e.target.value})}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="website" className="dark:text-gray-200">Website</Label>
                   <Input
                     id="website"
                     value={accountData.website}
                     onChange={(e) => {
                       const value = e.target.value;
                       setAccountData({...accountData, website: value});
-                      
+
                       // Real-time validation
                       if (value && !isValidUrl(value)) {
                         setWebsiteError('Please enter a valid URL (starting with http:// or https://)');
@@ -444,7 +447,7 @@ export default function SettingsPage() {
                       }
                     }}
                     placeholder="https://yourwebsite.com"
-                    className={websiteError ? 'border-red-500 focus:border-red-500' : ''}
+                    className={`${websiteError ? 'border-red-500 focus:border-red-500' : ''} dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
                   />
                   {websiteError && (
                     <p className="text-sm text-red-500 flex items-center gap-1">
@@ -456,23 +459,25 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio" className="dark:text-gray-200">Bio</Label>
                 <Textarea
                   id="bio"
                   value={accountData.bio}
                   onChange={(e) => setAccountData({...accountData, bio: e.target.value})}
                   placeholder="Tell people about yourself..."
                   rows={3}
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location" className="dark:text-gray-200">Location</Label>
                 <Input
                   id="location"
                   value={accountData.location}
                   onChange={(e) => setAccountData({...accountData, location: e.target.value})}
                   placeholder="Your location"
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
 
@@ -484,9 +489,9 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="privacy" className="space-y-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center dark:text-white">
                 <Shield className="w-5 h-5 mr-2" />
                 Privacy Settings
               </CardTitle>
@@ -495,16 +500,16 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Profile Visibility</h4>
-                    <p className="text-sm text-gray-500">Who can see your profile</p>
+                    <h4 className="font-medium dark:text-white">Profile Visibility</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Who can see your profile</p>
                   </div>
-                  <Select value={privacySettings.profileVisibility} onValueChange={(value) => 
+                  <Select value={privacySettings.profileVisibility} onValueChange={(value) =>
                     setPrivacySettings({...privacySettings, profileVisibility: value})
                   }>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                       <SelectItem value="public">Public</SelectItem>
                       <SelectItem value="friends">Friends</SelectItem>
                       <SelectItem value="private">Private</SelectItem>
@@ -512,35 +517,35 @@ export default function SettingsPage() {
                   </Select>
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Search Visibility</h4>
-                    <p className="text-sm text-gray-500">Allow others to find you in search</p>
+                    <h4 className="font-medium dark:text-white">Search Visibility</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Allow others to find you in search</p>
                   </div>
                   <Switch
                     checked={privacySettings.searchVisibility}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setPrivacySettings({...privacySettings, searchVisibility: checked})
                     }
                   />
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Message Permissions</h4>
-                    <p className="text-sm text-gray-500">Who can send you messages</p>
+                    <h4 className="font-medium dark:text-white">Message Permissions</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Who can send you messages</p>
                   </div>
-                  <Select value={privacySettings.messagePermissions} onValueChange={(value) => 
+                  <Select value={privacySettings.messagePermissions} onValueChange={(value) =>
                     setPrivacySettings({...privacySettings, messagePermissions: value})
                   }>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                       <SelectItem value="everyone">Everyone</SelectItem>
                       <SelectItem value="friends">Friends</SelectItem>
                       <SelectItem value="nobody">Nobody</SelectItem>
@@ -548,46 +553,46 @@ export default function SettingsPage() {
                   </Select>
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Online Status</h4>
-                    <p className="text-sm text-gray-500">Show when you're active</p>
+                    <h4 className="font-medium dark:text-white">Online Status</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Show when you're active</p>
                   </div>
                   <Switch
                     checked={privacySettings.onlineStatus}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setPrivacySettings({...privacySettings, onlineStatus: checked})
                     }
                   />
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Read Receipts</h4>
-                    <p className="text-sm text-gray-500">Let others know when you've read their messages</p>
+                    <h4 className="font-medium dark:text-white">Read Receipts</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Let others know when you've read their messages</p>
                   </div>
                   <Switch
                     checked={privacySettings.readReceipts}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setPrivacySettings({...privacySettings, readReceipts: checked})
                     }
                   />
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Activity Status</h4>
-                    <p className="text-sm text-gray-500">Show your activity status to friends</p>
+                    <h4 className="font-medium dark:text-white">Activity Status</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Show your activity status to friends</p>
                   </div>
                   <Switch
                     checked={privacySettings.activityStatus}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setPrivacySettings({...privacySettings, activityStatus: checked})
                     }
                   />
@@ -598,9 +603,9 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center dark:text-white">
                 <Bell className="w-5 h-5 mr-2" />
                 Notification Preferences
               </CardTitle>
@@ -609,92 +614,92 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Email Notifications</h4>
-                    <p className="text-sm text-gray-500">Receive notifications via email</p>
+                    <h4 className="font-medium dark:text-white">Email Notifications</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications via email</p>
                   </div>
                   <Switch
                     checked={notificationSettings.emailNotifications}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setNotificationSettings({...notificationSettings, emailNotifications: checked})
                     }
                   />
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Push Notifications</h4>
-                    <p className="text-sm text-gray-500">Receive push notifications on your device</p>
+                    <h4 className="font-medium dark:text-white">Push Notifications</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Receive push notifications on your device</p>
                   </div>
                   <Switch
                     checked={notificationSettings.pushNotifications}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setNotificationSettings({...notificationSettings, pushNotifications: checked})
                     }
                   />
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="space-y-3">
-                  <h4 className="font-medium">Notification Types</h4>
-                  
+                  <h4 className="font-medium dark:text-white">Notification Types</h4>
+
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Likes and Comments</span>
+                    <span className="text-sm dark:text-gray-300">Likes and Comments</span>
                     <Switch
                       checked={notificationSettings.likesComments}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotificationSettings({...notificationSettings, likesComments: checked})
                       }
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Mentions</span>
+                    <span className="text-sm dark:text-gray-300">Mentions</span>
                     <Switch
                       checked={notificationSettings.mentions}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotificationSettings({...notificationSettings, mentions: checked})
                       }
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">New Followers</span>
+                    <span className="text-sm dark:text-gray-300">New Followers</span>
                     <Switch
                       checked={notificationSettings.follows}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotificationSettings({...notificationSettings, follows: checked})
                       }
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Messages</span>
+                    <span className="text-sm dark:text-gray-300">Messages</span>
                     <Switch
                       checked={notificationSettings.messages}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotificationSettings({...notificationSettings, messages: checked})
                       }
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Posts from Friends</span>
+                    <span className="text-sm dark:text-gray-300">Posts from Friends</span>
                     <Switch
                       checked={notificationSettings.posts}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotificationSettings({...notificationSettings, posts: checked})
                       }
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Marketing Emails</span>
+                    <span className="text-sm dark:text-gray-300">Marketing Emails</span>
                     <Switch
                       checked={notificationSettings.marketing}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotificationSettings({...notificationSettings, marketing: checked})
                       }
                     />
@@ -706,9 +711,9 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center dark:text-white">
                 <Lock className="w-5 h-5 mr-2" />
                 Security Settings
               </CardTitle>
@@ -717,13 +722,13 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Two-Factor Authentication</h4>
-                    <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+                    <h4 className="font-medium dark:text-white">Two-Factor Authentication</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Add an extra layer of security to your account</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={securitySettings.twoFactorAuth}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setSecuritySettings({...securitySettings, twoFactorAuth: checked})
                       }
                     />
@@ -733,50 +738,50 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Login Alerts</h4>
-                    <p className="text-sm text-gray-500">Get notified when someone logs into your account</p>
+                    <h4 className="font-medium dark:text-white">Login Alerts</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Get notified when someone logs into your account</p>
                   </div>
                   <Switch
                     checked={securitySettings.loginAlerts}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setSecuritySettings({...securitySettings, loginAlerts: checked})
                     }
                   />
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Device Approvals</h4>
-                    <p className="text-sm text-gray-500">Require approval for new device logins</p>
+                    <h4 className="font-medium dark:text-white">Device Approvals</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Require approval for new device logins</p>
                   </div>
                   <Switch
                     checked={securitySettings.deviceApprovals}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setSecuritySettings({...securitySettings, deviceApprovals: checked})
                     }
                   />
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="space-y-3">
-                  <h4 className="font-medium">Active Sessions</h4>
+                  <h4 className="font-medium dark:text-white">Active Sessions</h4>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center justify-between p-3 border rounded-lg dark:border-gray-700 dark:bg-gray-700/50">
                       <div className="flex items-center space-x-3">
                         <Smartphone className="w-5 h-5 text-gray-400" />
                         <div>
-                          <p className="font-medium">Current Device</p>
-                          <p className="text-sm text-gray-500">Chrome on Windows • Active now</p>
+                          <p className="font-medium dark:text-white">Current Device</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Chrome on Windows • Active now</p>
                         </div>
                       </div>
-                      <span className="text-xs text-green-600 font-medium">CURRENT</span>
+                      <span className="text-xs text-green-600 font-medium dark:text-green-400">CURRENT</span>
                     </div>
                   </div>
                 </div>
@@ -786,9 +791,9 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="data" className="space-y-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center dark:text-white">
                 <Download className="w-5 h-5 mr-2" />
                 Data Management
               </CardTitle>
@@ -797,42 +802,42 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Download Your Data</h4>
-                    <p className="text-sm text-gray-500">Get a copy of your information</p>
+                    <h4 className="font-medium dark:text-white">Download Your Data</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Get a copy of your information</p>
                   </div>
-                  <Button variant="outline" onClick={handleDownloadData}>
+                  <Button variant="outline" onClick={handleDownloadData} className="dark:border-gray-600 dark:text-gray-200">
                     <Download className="w-4 h-4 mr-2" />
                     Download
                   </Button>
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium">Data Usage</h4>
-                    <p className="text-sm text-gray-500">See how much storage you're using</p>
+                    <h4 className="font-medium dark:text-white">Data Usage</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">See how much storage you're using</p>
                   </div>
-                  <Button variant="outline" onClick={handleViewDataUsage}>View Details</Button>
+                  <Button variant="outline" onClick={handleViewDataUsage} className="dark:border-gray-600 dark:text-gray-200">View Details</Button>
                 </div>
 
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
 
                 <div className="space-y-3">
-                  <h4 className="font-medium text-red-600 flex items-center">
+                  <h4 className="font-medium text-red-600 flex items-center dark:text-red-400">
                     <AlertTriangle className="w-4 h-4 mr-2" />
                     Danger Zone
                   </h4>
-                  <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                  <div className="p-4 border border-red-200 rounded-lg bg-red-50 dark:border-red-900 dark:bg-red-900/20">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h5 className="font-medium text-red-800">Delete Account</h5>
-                        <p className="text-sm text-red-600">
+                        <h5 className="font-medium text-red-800 dark:text-red-300">Delete Account</h5>
+                        <p className="text-sm text-red-600 dark:text-red-400">
                           Permanently delete your account and all associated data
                         </p>
                       </div>
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         onClick={handleDeleteAccount}
                         className="ml-4"
                       >
@@ -850,28 +855,29 @@ export default function SettingsPage() {
 
       {/* Secure Delete Account Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={resetDeleteFlow}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:bg-gray-800 dark:border-gray-700">
           <DialogHeader>
-            <DialogTitle className="text-red-600 flex items-center">
+            <DialogTitle className="text-red-600 flex items-center dark:text-red-400">
               <AlertTriangle className="w-5 h-5 mr-2" />
               Delete Account - Step {deleteStep === 'password' ? '1' : deleteStep === 'otp' ? '2' : '3'} of 3
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {deleteStep === 'password' && (
               <div className="space-y-3">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   To delete your account, first confirm your password:
                 </p>
                 <div className="space-y-2">
-                  <Label htmlFor="delete-password">Current Password</Label>
+                  <Label htmlFor="delete-password" className="dark:text-gray-200">Current Password</Label>
                   <Input
                     id="delete-password"
                     type="password"
                     value={deleteData.password}
                     onChange={(e) => setDeleteData({...deleteData, password: e.target.value})}
                     placeholder="Enter your current password"
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -879,11 +885,11 @@ export default function SettingsPage() {
 
             {deleteStep === 'otp' && (
               <div className="space-y-3">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   We've sent a verification code to your email. Enter it below:
                 </p>
                 <div className="space-y-2">
-                  <Label htmlFor="delete-otp">Verification Code</Label>
+                  <Label htmlFor="delete-otp" className="dark:text-gray-200">Verification Code</Label>
                   <Input
                     id="delete-otp"
                     type="text"
@@ -891,7 +897,7 @@ export default function SettingsPage() {
                     value={deleteData.otp}
                     onChange={(e) => setDeleteData({...deleteData, otp: e.target.value.replace(/\D/g, '')})}
                     placeholder="Enter 6-digit code"
-                    className="text-center text-lg tracking-widest"
+                    className="text-center text-lg tracking-widest dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
               </div>
@@ -899,44 +905,44 @@ export default function SettingsPage() {
 
             {deleteStep === 'confirm' && (
               <div className="space-y-3">
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-800 font-medium">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-900">
+                  <p className="text-sm text-red-800 font-medium dark:text-red-300">
                     ⚠️ This action cannot be undone!
                   </p>
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-red-600 mt-1 dark:text-red-400">
                     All your data, posts, messages, and account information will be permanently deleted.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="delete-confirm">Type "DELETE" to confirm</Label>
+                  <Label htmlFor="delete-confirm" className="dark:text-gray-200">Type "DELETE" to confirm</Label>
                   <Input
                     id="delete-confirm"
                     type="text"
                     value={deleteData.confirmText}
                     onChange={(e) => setDeleteData({...deleteData, confirmText: e.target.value})}
                     placeholder="Type DELETE to confirm"
-                    className="font-mono"
+                    className="font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
               </div>
             )}
 
             {deleteError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{deleteError}</p>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-900">
+                <p className="text-sm text-red-600 dark:text-red-400">{deleteError}</p>
               </div>
             )}
 
             <div className="flex justify-between pt-4">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={resetDeleteFlow}
                 disabled={deleteLoading}
               >
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={handleDeleteStep}
                 disabled={deleteLoading}
               >

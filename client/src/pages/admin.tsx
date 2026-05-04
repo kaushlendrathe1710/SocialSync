@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Users, 
-  FileText, 
-  MessageSquare, 
+import {
+  Users,
+  FileText,
+  MessageSquare,
   Activity,
   Search,
   Trash2,
@@ -72,6 +73,7 @@ export default function AdminDashboard() {
   const [userSearch, setUserSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPosts, setSelectedPosts] = useState<number[]>([]);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ['/api/admin/stats'],
@@ -134,7 +136,7 @@ export default function AdminDashboard() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Delete failed", 
+        title: "Delete failed",
         description: error.message,
         variant: "destructive",
       });
@@ -232,8 +234,8 @@ export default function AdminDashboard() {
   };
 
   const handleSelectPost = (postId: number) => {
-    setSelectedPosts(prev => 
-      prev.includes(postId) 
+    setSelectedPosts(prev =>
+      prev.includes(postId)
         ? prev.filter(id => id !== postId)
         : [...prev, postId]
     );
@@ -241,9 +243,9 @@ export default function AdminDashboard() {
 
   const handleSelectAllPosts = () => {
     if (!posts || !Array.isArray(posts)) return;
-    
+
     const allPostIds = posts.map((post: AdminPost) => post.id);
-    setSelectedPosts(prev => 
+    setSelectedPosts(prev =>
       prev.length === allPostIds.length ? [] : allPostIds
     );
   };
@@ -282,9 +284,18 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    window.location.href = '/';
+  const handleLogout = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      setShowLogoutDialog(false);
+      await logout();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const goToMainSite = () => {
@@ -305,7 +316,7 @@ export default function AdminDashboard() {
 
   if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center h-[calc(100vh-3.5rem)] overflow-y-auto">
         <Card>
           <CardContent className="p-8">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Access Denied</h2>
@@ -317,7 +328,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-[calc(100vh-3.5rem)] overflow-y-auto bg-gray-50 dark:bg-gray-900">
       {/* Impersonation Banner */}
       {impersonation?.isImpersonating && (
         <div className="bg-orange-500 text-white px-6 py-3">
@@ -358,7 +369,7 @@ export default function AdminDashboard() {
                 {user.isSuperAdmin ? 'Super Admin' : 'Admin'}
               </Badge>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
@@ -390,44 +401,44 @@ export default function AdminDashboard() {
             <button
               onClick={() => setActiveTab("overview")}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                activeTab === "overview" 
-                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" 
+                activeTab === "overview"
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               }`}
             >
               <BarChart3 className="h-5 w-5" />
               <span className="font-medium">Dashboard</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab("users")}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                activeTab === "users" 
-                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" 
+                activeTab === "users"
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               }`}
             >
               <Users className="h-5 w-5" />
               <span className="font-medium">User Management</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab("posts")}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                activeTab === "posts" 
-                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" 
+                activeTab === "posts"
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               }`}
             >
               <FileText className="h-5 w-5" />
               <span className="font-medium">Content Moderation</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab("settings")}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                activeTab === "settings" 
-                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" 
+                activeTab === "settings"
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               }`}
             >
@@ -457,43 +468,43 @@ export default function AdminDashboard() {
           {activeTab === "overview" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
+                <Card className="dark:bg-gray-800 dark:border-gray-700">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium dark:text-gray-200">Total Users</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground dark:text-gray-400" />
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{(stats as AdminStats)?.totalUsers || 0}</div>
+                  <CardContent className="dark:bg-gray-800">
+                    <div className="text-2xl font-bold dark:text-white">{(stats as AdminStats)?.totalUsers || 0}</div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="dark:bg-gray-800 dark:border-gray-700">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium dark:text-gray-200">Total Posts</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground dark:text-gray-400" />
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{(stats as AdminStats)?.totalPosts || 0}</div>
+                  <CardContent className="dark:bg-gray-800">
+                    <div className="text-2xl font-bold dark:text-white">{(stats as AdminStats)?.totalPosts || 0}</div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="dark:bg-gray-800 dark:border-gray-700">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Comments</CardTitle>
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium dark:text-gray-200">Total Comments</CardTitle>
+                    <MessageSquare className="h-4 w-4 text-muted-foreground dark:text-gray-400" />
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{(stats as AdminStats)?.totalComments || 0}</div>
+                  <CardContent className="dark:bg-gray-800">
+                    <div className="text-2xl font-bold dark:text-white">{(stats as AdminStats)?.totalComments || 0}</div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="dark:bg-gray-800 dark:border-gray-700">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Today</CardTitle>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium dark:text-gray-200">Active Today</CardTitle>
+                    <Activity className="h-4 w-4 text-muted-foreground dark:text-gray-400" />
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{(stats as AdminStats)?.activeUsersToday || 0}</div>
+                  <CardContent className="dark:bg-gray-800">
+                    <div className="text-2xl font-bold dark:text-white">{(stats as AdminStats)?.activeUsersToday || 0}</div>
                   </CardContent>
                 </Card>
               </div>
@@ -502,37 +513,37 @@ export default function AdminDashboard() {
 
           {activeTab === "users" && (
             <div className="space-y-6">
-              <Card>
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle>User Management</CardTitle>
+                  <CardTitle className="dark:text-white">User Management</CardTitle>
                   <div className="flex items-center space-x-2">
                     <Search className="h-4 w-4 text-gray-400" />
                     <Input
                       placeholder="Search users..."
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
-                      className="max-w-sm"
+                      className="max-w-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {users && Array.isArray(users) && users.map((adminUser: AdminUser) => (
-                      <div key={adminUser.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div key={adminUser.id} className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700 dark:bg-gray-700/50">
                         <div className="flex items-center space-x-4">
-                          <Avatar>
-                            <AvatarFallback>
+                          <Avatar className="dark:bg-gray-700">
+                            <AvatarFallback className="dark:bg-gray-600 dark:text-white">
                               {adminUser.username.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <div className="flex items-center space-x-2">
-                              <h3 className="font-medium">{adminUser.name || adminUser.username}</h3>
+                              <h3 className="font-medium dark:text-white">{adminUser.name || adminUser.username}</h3>
                               {getRoleIcon(adminUser.role, adminUser.isSuperAdmin)}
                               {getRoleBadge(adminUser.role, adminUser.isSuperAdmin)}
                             </div>
-                            <p className="text-sm text-gray-500">{adminUser.email}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{adminUser.email}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">
                               Joined {formatDistanceToNow(new Date(adminUser.createdAt))} ago
                             </p>
                           </div>
@@ -550,14 +561,14 @@ export default function AdminDashboard() {
                               <span>Impersonate</span>
                             </Button>
                           )}
-                          
+
                           {user?.role === 'super_admin' && !adminUser.isSuperAdmin && (
                             <div className="flex space-x-2">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleUpdateUserRole(
-                                  adminUser.id, 
+                                  adminUser.id,
                                   adminUser.role === 'admin' ? 'user' : 'admin',
                                   adminUser.role !== 'admin'
                                 )}
@@ -586,13 +597,13 @@ export default function AdminDashboard() {
 
           {activeTab === "posts" && (
             <div className="space-y-6">
-              <Card>
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>Post Management</CardTitle>
+                    <CardTitle className="dark:text-white">Post Management</CardTitle>
                     <div className="flex items-center space-x-3">
                       {selectedPosts.length > 0 && (
-                        <Badge variant="secondary" className="px-3 py-1">
+                        <Badge variant="secondary" className="px-3 py-1 dark:bg-gray-700 dark:text-gray-200">
                           {selectedPosts.length} selected
                         </Badge>
                       )}
@@ -612,6 +623,7 @@ export default function AdminDashboard() {
                           size="sm"
                           variant="outline"
                           onClick={handleSelectAllPosts}
+                          className="dark:border-gray-600 dark:text-gray-200"
                         >
                           {selectedPosts.length === posts.length ? (
                             <>
@@ -632,28 +644,28 @@ export default function AdminDashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {posts && Array.isArray(posts) && posts.map((post: AdminPost) => (
-                      <div key={post.id} className="flex items-start space-x-3 p-4 border rounded-lg">
+                      <div key={post.id} className="flex items-start space-x-3 p-4 border rounded-lg dark:border-gray-700 dark:bg-gray-700/50">
                         <div className="flex items-center pt-1">
                           <button
                             onClick={() => handleSelectPost(post.id)}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            className="text-gray-400 hover:text-gray-600 transition-colors dark:hover:text-gray-300"
                           >
                             {selectedPosts.includes(post.id) ? (
                               <CheckSquare className="h-5 w-5 text-blue-600" />
                             ) : (
-                              <Square className="h-5 w-5" />
+                              <Square className="h-5 w-5 dark:text-gray-500" />
                             )}
                           </button>
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback>
+                            <Avatar className="h-6 w-6 dark:bg-gray-700">
+                              <AvatarFallback className="dark:bg-gray-600 dark:text-white">
                                 {post.user.username.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-sm font-medium">{post.user.username}</span>
-                            <span className="text-xs text-gray-400">
+                            <span className="text-sm font-medium dark:text-white">{post.user.username}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
                               {formatDistanceToNow(new Date(post.createdAt))} ago
                             </span>
                           </div>
@@ -699,44 +711,44 @@ export default function AdminDashboard() {
 
           {activeTab === "settings" && (
             <div className="space-y-6">
-              <Card>
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle>Platform Settings</CardTitle>
+                  <CardTitle className="dark:text-white">Platform Settings</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700 dark:bg-gray-700/50">
                       <div>
-                        <h3 className="font-medium">Super Admin Status</h3>
-                        <p className="text-sm text-gray-500">
+                        <h3 className="font-medium dark:text-white">Super Admin Status</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           You have {user.isSuperAdmin ? 'full' : 'limited'} administrative privileges
                         </p>
                       </div>
-                      <Badge variant={user.isSuperAdmin ? "default" : "outline"}>
+                      <Badge variant={user.isSuperAdmin ? "default" : "outline"} className="dark:border-gray-600 dark:text-gray-200">
                         {user.isSuperAdmin ? 'Super Admin' : 'Admin'}
                       </Badge>
                     </div>
-                    
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700 dark:bg-gray-700/50">
                       <div>
-                        <h3 className="font-medium">Delete Permissions</h3>
-                        <p className="text-sm text-gray-500">
+                        <h3 className="font-medium dark:text-white">Delete Permissions</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           Ability to delete users and content
                         </p>
                       </div>
-                      <Badge variant={user.canDelete ? "destructive" : "outline"}>
+                      <Badge variant={user.canDelete ? "destructive" : "outline"} className="dark:border-gray-600 dark:text-gray-200">
                         {user.canDelete ? 'Enabled' : 'Disabled'}
                       </Badge>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700 dark:bg-gray-700/50">
                       <div>
-                        <h3 className="font-medium">Account Protection</h3>
-                        <p className="text-sm text-gray-500">
+                        <h3 className="font-medium dark:text-white">Account Protection</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           Super admin accounts cannot be deleted
                         </p>
                       </div>
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-200">
                         <ShieldCheck className="h-4 w-4 mr-1" />
                         Protected
                       </Badge>
@@ -748,6 +760,20 @@ export default function AdminDashboard() {
           )}
         </main>
       </div>
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent className="max-w-sm dark:bg-gray-800 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="dark:text-white">Confirm Logout</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="dark:text-gray-400">
+            Are you sure you want to sign out? You'll need to sign in again to access your account.
+          </DialogDescription>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowLogoutDialog(false)} className="dark:text-gray-200">Cancel</Button>
+            <Button variant="destructive" onClick={confirmLogout}>Logout</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

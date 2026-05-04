@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -44,6 +45,7 @@ export default function Navigation() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsModalType, setSettingsModalType] = useState<'settings' | 'privacy' | 'help' | 'display'>('settings');
   const [showLiveStreamModal, setShowLiveStreamModal] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Get real-time counts for notifications and messages
   const { data: notifications = [] } = useQuery({
@@ -64,9 +66,15 @@ export default function Navigation() {
     ? conversations.filter((c: any) => !c.readAt && c.receiverId === user?.id).length 
     : 0;
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = async () => {
     try {
+      setShowLogoutDialog(false);
       await logout();
+      window.location.href = '/';
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -97,7 +105,7 @@ export default function Navigation() {
         </div>
       )}
 
-      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm z-[60]">
+      <nav className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm z-[60]">
           <div className="flex items-center justify-between h-14 px-4">
             {/* Left: Logo */}
         <div className="flex items-center space-x-4">
@@ -234,26 +242,26 @@ export default function Navigation() {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full dark:hover:bg-gray-700">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user?.avatar || ""} />
-                  <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-semibold">
+                  <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-sm font-semibold">
                     {getUserInitials(user)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem className="flex flex-col items-start p-3">
-                <div className="font-medium">{user?.name || user?.username}</div>
-                <div className="text-sm text-muted-foreground">@{user?.username}</div>
+            <DropdownMenuContent className="w-56 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700" align="end" forceMount>
+              <DropdownMenuItem className="flex flex-col items-start p-3 dark:hover:bg-gray-700">
+                <div className="font-medium dark:text-white">{user?.name || user?.username}</div>
+                <div className="text-sm text-muted-foreground dark:text-gray-400">@{user?.username}</div>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/profile" className="w-full">
+                <Link href="/profile" className="w-full dark:text-gray-200">
                   <div className="flex items-center">
                     <Avatar className="h-4 w-4 mr-2">
                       <AvatarImage src={user?.avatar || ""} />
-                      <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
+                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs">
                         {getUserInitials(user)}
                       </AvatarFallback>
                     </Avatar>
@@ -264,25 +272,25 @@ export default function Navigation() {
               <DropdownMenuItem onClick={() => {
                 setSettingsModalType('privacy');
                 setShowSettingsModal(true);
-              }}>
+              }} className="dark:text-gray-200 dark:hover:bg-gray-700">
                 <Shield className="mr-2 h-4 w-4" />
                 <span>Settings & Privacy</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 setSettingsModalType('help');
                 setShowSettingsModal(true);
-              }}>
+              }} className="dark:text-gray-200 dark:hover:bg-gray-700">
                 <HelpCircle className="mr-2 h-4 w-4" />
                 <span>Help & Support</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 setSettingsModalType('display');
                 setShowSettingsModal(true);
-              }}>
+              }} className="dark:text-gray-200 dark:hover:bg-gray-700">
                 <Monitor className="mr-2 h-4 w-4" />
                 <span>Display & Accessibility</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
+              <DropdownMenuItem className="text-red-600 dark:text-red-400 dark:hover:bg-gray-700" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
@@ -301,6 +309,20 @@ export default function Navigation() {
         isOpen={showLiveStreamModal}
         onClose={() => setShowLiveStreamModal(false)}
       />
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent className="max-w-sm dark:bg-gray-800">
+          <DialogHeader>
+            <DialogTitle className="dark:text-white">Confirm Logout</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="dark:text-gray-400">
+            Are you sure you want to sign out? You'll need to sign in again to access your account.
+          </DialogDescription>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowLogoutDialog(false)} className="dark:hover:bg-gray-700">Cancel</Button>
+            <Button variant="destructive" onClick={confirmLogout}>Logout</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </nav>
     </>
   );

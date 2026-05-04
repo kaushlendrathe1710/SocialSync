@@ -10,13 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Users, 
-  Plus, 
-  Heart, 
-  Sparkles, 
-  Briefcase, 
-  Baby, 
+import {
+  Users,
+  Plus,
+  Heart,
+  Sparkles,
+  Briefcase,
+  Baby,
   BookOpen,
   Dumbbell,
   Brain,
@@ -123,13 +123,13 @@ export function CommunityGroups() {
           tags: data.tags ? data.tags.split(",").map((tag: string) => tag.trim()) : [],
         }),
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Community creation failed:', errorText);
         throw new Error(errorText || 'Failed to create community group');
       }
-      
+
       const result = await response.json();
       console.log('Community created successfully:', result);
       return result;
@@ -162,12 +162,12 @@ export function CommunityGroups() {
         },
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || 'Failed to join community');
       }
-      
+
       return response.json();
     },
     onSuccess: (_data, groupId) => {
@@ -276,12 +276,12 @@ export function CommunityGroups() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="w-full mx-auto p-6 space-y-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)] overflow-y-auto">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-6 w-6 text-purple-500" />
-          <h1 className="text-2xl font-bold">Community Groups</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Community Groups</h1>
         </div>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
@@ -301,7 +301,7 @@ export function CommunityGroups() {
             placeholder="Search communities..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full"
+            className="pl-10 w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
           />
         </div>
       </div>
@@ -317,7 +317,7 @@ export function CommunityGroups() {
                 variant={selectedCategory === category.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(category.id)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 dark:border-gray-600 dark:text-gray-200"
               >
                 <IconComponent className="h-3 w-3" />
                 {category.label}
@@ -328,9 +328,9 @@ export function CommunityGroups() {
       </div>
 
       {/* Featured Communities */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 dark:text-white">
             <Crown className="h-5 w-5 text-yellow-500" />
             Featured Communities
           </CardTitle>
@@ -343,21 +343,21 @@ export function CommunityGroups() {
               .map((group: CommunityGroup, index: number) => {
                 const IconComponent = getCategoryIcon(group.category);
                 return (
-                  <Card key={`${group.id}-${index}`} className="p-4 border-2 border-yellow-200">
+                  <Card key={`${group.id}-${index}`} className="p-4 border-2 border-yellow-200 dark:border-yellow-900 dark:bg-gray-700/50">
                     <div className="space-y-3 overflow-hidden">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
                           <IconComponent className="h-5 w-5 text-purple-500" />
                           <Crown className="h-4 w-4 text-yellow-500" />
                         </div>
-                        <Badge className={getCategoryColor(group.category)}>
+                        <Badge className={`${getCategoryColor(group.category)} dark:bg-gray-600 dark:text-gray-200`}>
                           {group.category}
                         </Badge>
                       </div>
-                      
+
                       <div>
-                        <h3 className="font-semibold text-lg">{group.name}</h3>
-                        <p className="text-sm text-gray-600 line-clamp-2">
+                        <h3 className="font-semibold text-lg dark:text-white">{group.name}</h3>
+                        <p className="text-sm text-gray-600 line-clamp-2 dark:text-gray-400">
                           {group.description || "No description available"}
                         </p>
                       </div>
@@ -365,11 +365,11 @@ export function CommunityGroups() {
                       <div className="flex items-center space-x-2">
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={group.creator.avatar || undefined} />
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-xs dark:bg-gray-600 dark:text-white">
                             {group.creator.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
                           by {group.creator.name}
                         </span>
                       </div>
@@ -433,10 +433,10 @@ export function CommunityGroups() {
       </Card>
 
       {/* All Communities */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>
-            {selectedCategory === "all" ? "All Communities" : 
+          <CardTitle className="dark:text-white">
+            {selectedCategory === "all" ? "All Communities" :
              categories.find(cat => cat.id === selectedCategory)?.label}
           </CardTitle>
         </CardHeader>
@@ -445,14 +445,14 @@ export function CommunityGroups() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="bg-gray-200 rounded-lg h-48"></div>
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-lg h-48"></div>
                 </div>
               ))}
             </div>
           ) : filteredGroups.length === 0 ? (
             <div className="text-center py-12">
               <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-500 mb-4 dark:text-gray-400">
                 {searchTerm ? "No communities found matching your search" : "No communities in this category yet"}
               </p>
               <Button onClick={() => setShowCreateDialog(true)}>
@@ -465,21 +465,21 @@ export function CommunityGroups() {
               {filteredGroups.map((group: CommunityGroup, index: number) => {
                 const IconComponent = getCategoryIcon(group.category);
                 return (
-                  <Card key={`${group.id}-${index}`} className="p-4 hover:shadow-md transition-shadow">
+                  <Card key={`${group.id}-${index}`} className="p-4 hover:shadow-md transition-shadow dark:bg-gray-700 dark:border-gray-600">
                     <div className="space-y-3 overflow-hidden">
                       <div className="flex items-start justify-between">
                         <IconComponent className="h-5 w-5 text-purple-500" />
                         <div className="flex items-center gap-2">
                           {group.isVerified && <Crown className="h-4 w-4 text-yellow-500" />}
-                          <Badge className={getCategoryColor(group.category)}>
+                          <Badge className={`${getCategoryColor(group.category)} dark:bg-gray-600 dark:text-gray-200`}>
                             {group.category}
                           </Badge>
                         </div>
                       </div>
-                      
+
                       <div>
-                        <h3 className="font-semibold text-lg">{group.name}</h3>
-                        <p className="text-sm text-gray-600 line-clamp-2">
+                        <h3 className="font-semibold text-lg dark:text-white">{group.name}</h3>
+                        <p className="text-sm text-gray-600 line-clamp-2 dark:text-gray-400">
                           {group.description || "No description available"}
                         </p>
                       </div>
@@ -487,7 +487,7 @@ export function CommunityGroups() {
                       {group.tags && group.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {group.tags.slice(0, 3).map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
+                            <Badge key={index} variant="outline" className="text-xs dark:border-gray-600 dark:text-gray-200">
                               #{tag}
                             </Badge>
                           ))}
@@ -497,21 +497,21 @@ export function CommunityGroups() {
                       <div className="flex items-center space-x-2">
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={group.creator.avatar || undefined} />
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-xs dark:bg-gray-600 dark:text-white">
                             {group.creator.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
                           by {group.creator.name}
                         </span>
                       </div>
 
                       <div className="flex flex-wrap items-start sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                           <Users className="h-4 w-4" />
                           <span>{group.memberCount} members</span>
                           {user && group.creator && user.id === group.creator.id && (
-                            <Badge variant="secondary" className="text-xs">Owner</Badge>
+                            <Badge variant="secondary" className="text-xs dark:bg-gray-600 dark:text-gray-200">Owner</Badge>
                           )}
                         </div>
                         {group.isJoined ? (
@@ -520,7 +520,7 @@ export function CommunityGroups() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleViewGroup(group.id)}
-                              className="flex items-center gap-1 w-full sm:w-auto shrink-0"
+                              className="flex items-center gap-1 w-full sm:w-auto shrink-0 dark:border-gray-600 dark:text-gray-200"
                             >
                               <ArrowRight className="h-3 w-3" />
                               Enter Group
@@ -567,39 +567,41 @@ export function CommunityGroups() {
 
       {/* Create Community Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl dark:bg-gray-800 dark:border-gray-700">
           <DialogHeader>
-            <DialogTitle>Create New Community</DialogTitle>
+            <DialogTitle className="dark:text-white">Create New Community</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="groupName">Community Name</Label>
+                <Label htmlFor="groupName" className="dark:text-gray-200">Community Name</Label>
                 <Input
                   id="groupName"
                   placeholder="e.g., Skincare Enthusiasts"
                   value={createForm.name}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 />
               </div>
 
               <div>
-                <Label htmlFor="groupDescription">Description</Label>
+                <Label htmlFor="groupDescription" className="dark:text-gray-200">Description</Label>
                 <Textarea
                   id="groupDescription"
                   placeholder="What is your community about? What can members expect?"
                   value={createForm.description}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category" className="dark:text-gray-200">Category</Label>
                   <select
                     id="category"
-                    className="w-full p-2 border rounded-md"
+                    className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     aria-label="Category"
                     value={createForm.category}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, category: e.target.value }))}
@@ -612,10 +614,10 @@ export function CommunityGroups() {
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="privacy">Privacy</Label>
+                  <Label htmlFor="privacy" className="dark:text-gray-200">Privacy</Label>
                   <select
                     id="privacy"
-                    className="w-full p-2 border rounded-md"
+                    className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     aria-label="Privacy"
                     value={createForm.privacy}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, privacy: e.target.value }))}
@@ -628,25 +630,26 @@ export function CommunityGroups() {
               </div>
 
               <div>
-                <Label htmlFor="tags">Tags (comma-separated)</Label>
+                <Label htmlFor="tags" className="dark:text-gray-200">Tags (comma-separated)</Label>
                 <Input
                   id="tags"
                   placeholder="e.g., skincare, beauty, tips, routine"
                   value={createForm.tags}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, tags: e.target.value }))}
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
                   Add relevant tags to help people find your community
                 </p>
               </div>
             </div>
 
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              <Button variant="outline" onClick={() => setShowCreateDialog(false)} className="dark:border-gray-600 dark:text-gray-200">
                 Cancel
               </Button>
-              <Button 
-                onClick={handleCreateGroup} 
+              <Button
+                onClick={handleCreateGroup}
                 disabled={createGroupMutation.isPending}
               >
                 {createGroupMutation.isPending ? "Creating..." : "Create Community"}

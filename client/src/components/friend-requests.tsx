@@ -230,24 +230,24 @@ export function FriendRequests() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full mx-auto p-6 space-y-6 dark:bg-gray-900 overflow-y-auto h-[calc(100vh-3.5rem)]">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Users className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Friends & Connections</h1>
+          <Users className="h-6 w-6 text-gray-700 dark:text-gray-200" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Friends & Connections</h1>
         </div>
         {currentUser && (
-          <div className="text-sm text-gray-600">{friends.length} friends</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{friends.length} friends</div>
         )}
       </div>
 
       <Tabs defaultValue="suggestions" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="suggestions" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-4 dark:bg-gray-800">
+          <TabsTrigger value="suggestions" className="flex items-center gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700">
             <UserPlus className="h-4 w-4" />
             Suggestions
           </TabsTrigger>
-          <TabsTrigger value="received" className="flex items-center gap-2">
+          <TabsTrigger value="received" className="flex items-center gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700">
             <Clock className="h-4 w-4" />
             Received
             {receivedRequests.length > 0 && (
@@ -256,20 +256,20 @@ export function FriendRequests() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="sent" className="flex items-center gap-2">
+          <TabsTrigger value="sent" className="flex items-center gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700">
             <UserCheck className="h-4 w-4" />
             Sent
           </TabsTrigger>
-          <TabsTrigger value="friends" className="flex items-center gap-2">
+          <TabsTrigger value="friends" className="flex items-center gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700">
             <Users className="h-4 w-4" />
             Friends ({friends.length})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="suggestions" className="space-y-4">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>People You May Know</CardTitle>
+              <CardTitle className="dark:text-white">People You May Know</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="mb-4">
@@ -279,7 +279,7 @@ export function FriendRequests() {
                     placeholder="Search for users to add as friends..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -287,13 +287,13 @@ export function FriendRequests() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...Array(6)].map((_, i) => (
                     <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 rounded-lg h-32"></div>
+                      <div className="bg-gray-200 dark:bg-gray-700 rounded-lg h-32"></div>
                     </div>
                   ))}
                 </div>
               ) : (searchQuery.length > 2 ? searchResults : friendSuggestions)
                   .length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
                   {searchQuery.length > 2
                     ? "No users found matching your search"
                     : "No friend suggestions available"}
@@ -304,7 +304,7 @@ export function FriendRequests() {
                     ? searchResults
                     : friendSuggestions
                   ).map((user: User) => (
-                    <Card key={user.id} className="p-4">
+                    <Card key={user.id} className="p-4 dark:bg-gray-700 dark:border-gray-600">
                       <div className="flex flex-col items-center text-center space-y-3">
                         <Link
                           href={`/profile/${user.id}`}
@@ -312,20 +312,15 @@ export function FriendRequests() {
                         >
                           <Avatar className="h-16 w-16">
                             <AvatarImage src={user.avatar || undefined} />
-                            <AvatarFallback>
+                            <AvatarFallback className="dark:bg-gray-600 dark:text-white">
                               {user.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <h3 className="font-semibold">{user.name}</h3>
-                            <p className="text-sm text-gray-500">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{user.name}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               @{user.username}
                             </p>
-                            {user.bio && (
-                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">
-                                {user.bio}
-                              </p>
-                            )}
                           </div>
                         </Link>
                         <Button
@@ -347,9 +342,9 @@ export function FriendRequests() {
         </TabsContent>
 
         <TabsContent value="received" className="space-y-4">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Friend Requests</CardTitle>
+              <CardTitle className="dark:text-white">Friend Requests</CardTitle>
             </CardHeader>
             <CardContent>
               {loadingReceived ? (
@@ -359,16 +354,16 @@ export function FriendRequests() {
                       key={i}
                       className="animate-pulse flex items-center space-x-4"
                     >
-                      <div className="bg-gray-200 rounded-full h-12 w-12"></div>
+                      <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-12 w-12"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="bg-gray-200 h-4 rounded w-1/4"></div>
-                        <div className="bg-gray-200 h-3 rounded w-1/2"></div>
+                        <div className="bg-gray-200 dark:bg-gray-700 h-4 rounded w-1/4"></div>
+                        <div className="bg-gray-200 dark:bg-gray-700 h-3 rounded w-1/2"></div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : receivedRequests.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
                   No pending friend requests
                 </p>
               ) : (
@@ -376,7 +371,7 @@ export function FriendRequests() {
                   {receivedRequests.map((request: FriendRequest) => (
                     <div
                       key={request.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
+                      className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600 dark:bg-gray-700"
                     >
                       <div className="flex items-center space-x-4">
                         <Link
@@ -387,7 +382,7 @@ export function FriendRequests() {
                             <AvatarImage
                               src={request.sender.avatar || undefined}
                             />
-                            <AvatarFallback>
+                            <AvatarFallback className="dark:bg-gray-600 dark:text-white">
                               {request.sender.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
@@ -397,19 +392,19 @@ export function FriendRequests() {
                             href={`/profile/${request.sender.id}`}
                             className="cursor-pointer hover:opacity-80"
                           >
-                            <h3 className="font-semibold">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
                               {request.sender.name}
                             </h3>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               @{request.sender.username}
                             </p>
                           </Link>
                           {request.message && (
-                            <p className="text-sm text-gray-600 mt-1 italic">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 italic">
                               "{request.message}"
                             </p>
                           )}
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
                             {new Date(request.createdAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -432,6 +427,7 @@ export function FriendRequests() {
                           disabled={respondToRequestMutation.isPending}
                           variant="outline"
                           size="sm"
+                          className="dark:border-gray-600 dark:text-gray-200"
                         >
                           <XCircle className="h-4 w-4 mr-1" />
                           Decline
@@ -446,9 +442,9 @@ export function FriendRequests() {
         </TabsContent>
 
         <TabsContent value="sent" className="space-y-4">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Sent Requests</CardTitle>
+              <CardTitle className="dark:text-white">Sent Requests</CardTitle>
             </CardHeader>
             <CardContent>
               {loadingSent ? (
@@ -458,16 +454,16 @@ export function FriendRequests() {
                       key={i}
                       className="animate-pulse flex items-center space-x-4"
                     >
-                      <div className="bg-gray-200 rounded-full h-12 w-12"></div>
+                      <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-12 w-12"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="bg-gray-200 h-4 rounded w-1/4"></div>
-                        <div className="bg-gray-200 h-3 rounded w-1/2"></div>
+                        <div className="bg-gray-200 dark:bg-gray-700 h-4 rounded w-1/4"></div>
+                        <div className="bg-gray-200 dark:bg-gray-700 h-3 rounded w-1/2"></div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : sentRequests.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
                   No sent friend requests
                 </p>
               ) : (
@@ -475,7 +471,7 @@ export function FriendRequests() {
                   {sentRequests.map((request: FriendRequest) => (
                     <div
                       key={request.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
+                      className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600 dark:bg-gray-700"
                     >
                       <div className="flex items-center space-x-4">
                         <Link
@@ -486,7 +482,7 @@ export function FriendRequests() {
                             <AvatarImage
                               src={request.receiver.avatar || undefined}
                             />
-                            <AvatarFallback>
+                            <AvatarFallback className="dark:bg-gray-600 dark:text-white">
                               {request.receiver.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
@@ -496,19 +492,19 @@ export function FriendRequests() {
                             href={`/profile/${request.receiver.id}`}
                             className="cursor-pointer hover:opacity-80"
                           >
-                            <h3 className="font-semibold">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
                               {request.receiver.name}
                             </h3>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               @{request.receiver.username}
                             </p>
                           </Link>
                           {request.message && (
-                            <p className="text-sm text-gray-600 mt-1 italic">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 italic">
                               "{request.message}"
                             </p>
                           )}
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
                             Sent{" "}
                             {new Date(request.createdAt).toLocaleDateString()}
                           </p>
@@ -516,7 +512,7 @@ export function FriendRequests() {
                       </div>
                       <Badge
                         variant="secondary"
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 dark:bg-gray-600 dark:text-gray-200"
                       >
                         <Clock className="h-3 w-3" />
                         Pending
@@ -530,27 +526,27 @@ export function FriendRequests() {
         </TabsContent>
 
         <TabsContent value="friends" className="space-y-4">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Your Friends</CardTitle>
+              <CardTitle className="dark:text-white">Your Friends</CardTitle>
             </CardHeader>
             <CardContent>
               {loadingFriends ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 rounded-lg h-40"></div>
+                      <div className="bg-gray-200 dark:bg-gray-700 rounded-lg h-40"></div>
                     </div>
                   ))}
                 </div>
               ) : friends.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
                   You haven't added any friends yet
                 </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {friends.map((friend: User) => (
-                    <Card key={friend.id} className="p-4">
+                    <Card key={friend.id} className="p-4 dark:bg-gray-700 dark:border-gray-600">
                       <div className="flex flex-col items-center text-center space-y-3">
                         <Link
                           href={`/profile/${friend.id}`}
@@ -558,17 +554,17 @@ export function FriendRequests() {
                         >
                           <Avatar className="h-16 w-16">
                             <AvatarImage src={friend.avatar || undefined} />
-                            <AvatarFallback>
+                            <AvatarFallback className="dark:bg-gray-600 dark:text-white">
                               {friend.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <h3 className="font-semibold">{friend.name}</h3>
-                            <p className="text-sm text-gray-500">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{friend.name}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               @{friend.username}
                             </p>
                             {friend.bio && (
-                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-2">
                                 {friend.bio}
                               </p>
                             )}
@@ -577,7 +573,7 @@ export function FriendRequests() {
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="secondary"
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 dark:bg-gray-600 dark:text-gray-200"
                           >
                             <UserCheck className="h-3 w-3" />
                             Friends
@@ -587,7 +583,7 @@ export function FriendRequests() {
                             disabled={removeFriendMutation.isPending}
                             variant="outline"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 dark:text-red-400 dark:border-gray-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -604,26 +600,26 @@ export function FriendRequests() {
 
       {/* Send Friend Request Dialog */}
       <Dialog open={showSendDialog} onOpenChange={setShowSendDialog}>
-        <DialogContent>
+        <DialogContent className="dark:bg-gray-800">
           <DialogHeader>
-            <DialogTitle>Send Friend Request</DialogTitle>
+            <DialogTitle className="dark:text-white">Send Friend Request</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={selectedUser.avatar || undefined} />
-                  <AvatarFallback>{selectedUser.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="dark:bg-gray-600 dark:text-white">{selectedUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold">{selectedUser.name}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{selectedUser.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     @{selectedUser.username}
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="message">Optional Message</Label>
+                <Label htmlFor="message" className="dark:text-gray-200">Optional Message</Label>
                 <Textarea
                   id="message"
                   placeholder="Say something nice..."
@@ -635,12 +631,14 @@ export function FriendRequests() {
                     }))
                   }
                   rows={3}
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 />
               </div>
               <div className="flex justify-end space-x-2">
                 <Button
                   variant="outline"
                   onClick={() => setShowSendDialog(false)}
+                  className="dark:border-gray-600 dark:text-gray-200"
                 >
                   Cancel
                 </Button>

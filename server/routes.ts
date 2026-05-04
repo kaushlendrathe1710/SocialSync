@@ -57,7 +57,7 @@ const upload = multer({
     const allowedImageTypes = /jpeg|jpg|png|gif|webp|bmp|tiff|tif|svg|ico|heic|heif/;
     const allowedVideoTypes = /mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv/;
     const allowedAudioTypes = /mp3|wav|ogg|m4a|aac|flac|wma|opus|mka/;
-    
+
     const fileExt = path.extname(file.originalname).toLowerCase().replace('.', '');
     const isImage = allowedImageTypes.test(fileExt) || file.mimetype.startsWith('image/');
     const isVideo = allowedVideoTypes.test(fileExt) || file.mimetype.startsWith('video/');
@@ -80,7 +80,7 @@ const memoryUpload = multer({
     const allowedImageTypes = /jpeg|jpg|png|gif|webp|bmp|tiff|tif|svg|ico|heic|heif/;
     const allowedVideoTypes = /mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv/;
     const allowedAudioTypes = /mp3|wav|ogg|m4a|aac|flac|wma|opus|mka/;
-    
+
     const fileExt = path.extname(file.originalname).toLowerCase().replace('.', '');
     const isImage = allowedImageTypes.test(fileExt) || file.mimetype.startsWith('image/');
     const isVideo = allowedVideoTypes.test(fileExt) || file.mimetype.startsWith('video/');
@@ -116,7 +116,7 @@ export const transporter = nodemailer.createTransport({
 async function verifySMTPConnection(): Promise<boolean> {
   try {
     console.log("🔍 Verifying SMTP connection...");
-    
+
     // Detailed environment variable logging
     console.log("📧 EMAIL Environment Variables:");
     console.log("  EMAIL_HOST:", process.env.EMAIL_HOST || "❌ NOT SET");
@@ -124,7 +124,7 @@ async function verifySMTPConnection(): Promise<boolean> {
     console.log("  EMAIL_USER:", process.env.EMAIL_USER || "❌ NOT SET");
     console.log("  EMAIL_PASS:", process.env.EMAIL_PASS ? "✅ SET (hidden)" : "❌ NOT SET");
     console.log("  EMAIL_FROM:", process.env.EMAIL_FROM || "❌ NOT SET");
-    
+
     // Parsed configuration logging
     console.log("⚙️ Parsed SMTP Configuration:");
     console.log("  Host:", EMAIL_HOST || "❌ EMPTY");
@@ -133,7 +133,7 @@ async function verifySMTPConnection(): Promise<boolean> {
     console.log("  Pass:", EMAIL_PASS ? "✅ SET" : "❌ EMPTY");
     console.log("  From:", EMAIL_FROM || "❌ EMPTY");
     console.log("  Secure:", EMAIL_PORT === 465);
-    
+
     // Transporter configuration logging
     console.log("🚀 Transporter Configuration:");
     console.log("  Host:", EMAIL_HOST);
@@ -155,20 +155,20 @@ async function verifySMTPConnection(): Promise<boolean> {
     console.error("  Response:", error.response);
     console.error("  ResponseCode:", error.responseCode);
     console.error("  Stack:", error.stack);
-    
+
     // Additional debugging info
     console.error("🔍 Debug Information:");
     console.error("  Node Environment:", process.env.NODE_ENV);
     console.error("  Platform:", process.platform);
     console.error("  Node Version:", process.version);
-    
+
     return false;
   }
 }
 
 // Generate 6-digit OTP
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();    
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 // Live stream viewer tracking
@@ -196,6 +196,11 @@ async function sendOtpEmail(
     throw new Error(
       "Email configuration incomplete. Please configure EMAIL_HOST, EMAIL_USER, EMAIL_PASS, and FROM_EMAIL environment variables."
     );
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`📧 [DEV MODE] Simulating sending ${purpose} email to ${email} with OTP: ${otp}`);
+    return;
   }
 
   await transporter.sendMail({
@@ -226,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Log email configuration on startup
   console.log("📧 Email Configuration Check:");
   console.log("Email configuration: HOST=" + EMAIL_HOST + ", PORT=" + EMAIL_PORT + ", USER=" + EMAIL_USER + ", FROM=" + EMAIL_FROM);
-  
+
   // Verify SMTP connection on startup
   console.log("🚀 Starting server...");
   const smtpConnected = await verifySMTPConnection();
@@ -263,7 +268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ];
 
     const results = [];
-    
+
     for (const config of testConfigs) {
       try {
         const testTransporter = nodemailer.createTransport({
@@ -274,19 +279,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           greetingTimeout: 5000,
           socketTimeout: 10000,
         });
-        
+
         await testTransporter.verify();
         results.push({ ...config, status: "✅ SUCCESS" });
       } catch (error: any) {
-        results.push({ 
-          ...config, 
-          status: "❌ FAILED", 
+        results.push({
+          ...config,
+          status: "❌ FAILED",
           error: error.message,
-          code: error.code 
+          code: error.code
         });
       }
     }
-    
+
     res.json({ smtpTests: results });
   });
 
@@ -659,8 +664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if S3 is configured first
         if (!validateS3Config()) {
           console.log("❌ S3 not configured");
-          return res.status(500).json({ 
-            message: "AWS S3 not configured properly. Please configure AWS credentials." 
+          return res.status(500).json({
+            message: "AWS S3 not configured properly. Please configure AWS credentials."
           });
         }
 
@@ -680,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.file.mimetype,
           "reels"
         );
-        
+
         const videoUrl = uploaded.url;
         const duration = 30;
 
@@ -718,7 +723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("❌ Create reel error details:", error);
         console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
-        res.status(500).json({ 
+        res.status(500).json({
           message: "Failed to create reel",
           error: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -812,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const reelId = parseInt(req.params.id);
       const { content, imageUrl, gifUrl, mediaType } = z
-        .object({ 
+        .object({
           content: z.string().optional(),
           imageUrl: z.string().optional(),
           gifUrl: z.string().optional(),
@@ -825,7 +830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Either content or media (image/gif) must be provided"
         })
         .parse(req.body);
-      
+
       const comment = await storage.createReelComment(
         reelId,
         req.session.userId!,
@@ -845,7 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/reel-comments/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { content, imageUrl, gifUrl, mediaType } = z.object({ 
+      const { content, imageUrl, gifUrl, mediaType } = z.object({
         content: z.string().optional(),
         imageUrl: z.string().optional(),
         gifUrl: z.string().optional(),
@@ -858,12 +863,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Either content or media (image/gif) must be provided"
       })
       .parse(req.body);
-      
+
       const updated = await storage.updateReelComment(
-        id, 
-        content || "", 
-        imageUrl, 
-        gifUrl, 
+        id,
+        content || "",
+        imageUrl,
+        gifUrl,
         mediaType
       );
       if (!updated) return res.status(404).json({ message: "Comment not found" });
@@ -902,10 +907,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Validate that either content or media is provided
         const hasContent = req.body.content && req.body.content.trim().length > 0;
         const hasMedia = req.files && (req.files as Express.Multer.File[]).length > 0;
-        
+
         if (!hasContent && !hasMedia) {
-          return res.status(400).json({ 
-            message: "Either content or media must be provided" 
+          return res.status(400).json({
+            message: "Either content or media must be provided"
           });
         }
 
@@ -914,8 +919,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (files && files.length > 0) {
           // Check if S3 is configured
           if (!validateS3Config()) {
-            return res.status(500).json({ 
-              message: "AWS S3 not configured properly. Please configure AWS credentials." 
+            return res.status(500).json({
+              message: "AWS S3 not configured properly. Please configure AWS credentials."
             });
           }
 
@@ -968,6 +973,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(post);
     } catch (error) {
       res.status(500).json({ message: "Failed to get post" });
+    }
+  });
+
+  // Public post endpoint (no authentication required)
+  app.get("/api/posts/:id/public", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPost(postId);
+
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      // Return post with limited user data
+      res.json({
+        ...post,
+        user: {
+          id: post.user.id,
+          name: post.user.name,
+          username: post.user.username,
+          avatar: post.user.avatar,
+        },
+      });
+    } catch (error) {
+      console.error("Get public post error:", error);
+      res.status(500).json({ message: "Failed to get post" });
+    }
+  });
+
+  // Public comments endpoint (no authentication required)
+  app.get("/api/posts/:id/comments/public", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const comments = await storage.getPostComments(postId);
+
+      // Return comments with limited user data
+      const publicComments = comments.map((comment) => ({
+        ...comment,
+        user: {
+          id: comment.user.id,
+          name: comment.user.name,
+          username: comment.user.username,
+          avatar: comment.user.avatar,
+        },
+      }));
+
+      res.json(publicComments);
+    } catch (error) {
+      console.error("Get public comments error:", error);
+      res.status(500).json({ message: "Failed to get comments" });
     }
   });
 
@@ -1110,6 +1165,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Saved posts endpoints
+  app.post("/api/posts/:id/save", requireAuth, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const userId = req.session.userId!;
+
+      await storage.savePost(userId, postId);
+      res.json({ message: "Post saved successfully" });
+    } catch (error) {
+      console.error("Save post error:", error);
+      res.status(500).json({ message: "Failed to save post" });
+    }
+  });
+
+  app.delete("/api/posts/:id/save", requireAuth, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const userId = req.session.userId!;
+
+      await storage.unsavePost(userId, postId);
+      res.json({ message: "Post unsaved successfully" });
+    } catch (error) {
+      console.error("Unsave post error:", error);
+      res.status(500).json({ message: "Failed to unsave post" });
+    }
+  });
+
+  app.get("/api/saved-posts", requireAuth, async (req, res) => {
+    try {
+      const savedPosts = await storage.getSavedPosts(req.session.userId!);
+      res.json(savedPosts);
+    } catch (error) {
+      console.error("Get saved posts error:", error);
+      res.status(500).json({ message: "Failed to get saved posts" });
+    }
+  });
+
   // Comment routes
   app.get("/api/posts/:id/comments", async (req, res) => {
     try {
@@ -1187,8 +1279,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             mediaUrl = urls.join(",");
           }
         } else {
-          return res.status(500).json({ 
-            message: "AWS S3 not configured properly. Please configure AWS credentials." 
+          return res.status(500).json({
+            message: "AWS S3 not configured properly. Please configure AWS credentials."
           });
         }
       }
@@ -1354,7 +1446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const postId = parseInt(req.params.id);
       const { content, imageUrl, gifUrl, mediaType } = z
-        .object({ 
+        .object({
           content: z.string().optional(),
           imageUrl: z.string().optional(),
           gifUrl: z.string().optional(),
@@ -1404,7 +1496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/comments/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { content, imageUrl, gifUrl, mediaType } = z.object({ 
+      const { content, imageUrl, gifUrl, mediaType } = z.object({
         content: z.string().optional(),
         imageUrl: z.string().optional(),
         gifUrl: z.string().optional(),
@@ -1526,8 +1618,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (req.file) {
           // Check if S3 is configured
           if (!validateS3Config()) {
-            return res.status(500).json({ 
-              message: "AWS S3 not configured properly. Please configure AWS credentials." 
+            return res.status(500).json({
+              message: "AWS S3 not configured properly. Please configure AWS credentials."
             });
           }
 
@@ -1606,20 +1698,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileType = req.file.mimetype.startsWith('image/') ? 'image' :
                      req.file.mimetype.startsWith('video/') ? 'video' :
                      req.file.mimetype.startsWith('audio/') ? 'audio' : 'document';
-      
+
       console.log("Determined file type:", fileType);
-      
+
       // Check if S3 is configured
       if (!validateS3Config()) {
         console.log("❌ S3 not configured");
-        return res.status(500).json({ 
-          message: "AWS S3 not configured properly. Please configure AWS credentials." 
+        return res.status(500).json({
+          message: "AWS S3 not configured properly. Please configure AWS credentials."
         });
       }
 
       console.log("✓ S3 configuration valid, uploading to S3...");
       const folder = `messages/${fileType}`;
-      
+
       // Upload to S3 using buffer directly
       const uploadResult = await uploadToS3(
         req.file.buffer,
@@ -1627,7 +1719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.file.mimetype,
         folder
       );
-      
+
       const fileUrl = uploadResult.url;
       console.log("✓ Message file uploaded to S3 successfully:", fileUrl);
 
@@ -1646,7 +1738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to upload file",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -1659,7 +1751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Message request body:", req.body);
       console.log("Session userId:", req.session.userId);
-      
+
       const { receiverId, content, imageUrl, videoUrl, audioUrl, fileType, fileName, fileSize } = z
         .object({
           receiverId: z.number(),
@@ -2277,15 +2369,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/events/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // First check if the event exists and user is the creator
       const existingEvent = await storage.getEvents();
       const event = existingEvent.find(e => e.id === id);
-      
+
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
-      
+
       if (event.creatorId !== req.session.userId) {
         return res.status(403).json({ message: "You can only edit your own events" });
       }
@@ -2303,13 +2395,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .parse(req.body);
 
       const updates: Partial<InsertEvent> = {};
-      
+
       if (parsed.title) updates.title = parsed.title;
       if (parsed.description !== undefined) updates.description = parsed.description;
       if (parsed.eventType) updates.eventType = parsed.eventType;
       if (parsed.location !== undefined) updates.location = parsed.location;
       if (parsed.maxAttendees !== undefined) updates.maxAttendees = parsed.maxAttendees;
-      
+
       if (parsed.date) {
         const startDate = new Date(
           parsed.time
@@ -2330,15 +2422,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/events/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // First check if the event exists and user is the creator
       const existingEvent = await storage.getEvents();
       const event = existingEvent.find(e => e.id === id);
-      
+
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
-      
+
       if (event.creatorId !== req.session.userId) {
         return res.status(403).json({ message: "You can only delete your own events" });
       }
@@ -2473,11 +2565,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const streamId = parseInt(req.params.id);
       const stream = await storage.getLiveStreamById(streamId);
-      
+
       if (!stream) {
         return res.status(404).json({ message: "Live stream not found" });
       }
-      
+
       res.json(stream);
     } catch (error) {
       console.error("Get live stream error:", error);
@@ -2491,7 +2583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const streamId = parseInt(req.params.id);
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
-      
+
       const messages = await storage.getLiveStreamChatMessages(streamId, limit, offset);
       res.json(messages);
     } catch (error) {
@@ -2507,9 +2599,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const streamId = parseInt(req.params.id);
         const userId = req.session.userId!;
-        
+
         console.log("Ending live stream:", { streamId, userId });
-        
+
         const success = await storage.endLiveStream(
           streamId,
           userId
@@ -2882,7 +2974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 userId: currentUserId,
                 isHost: true,
               });
-              
+
               console.log("Host connected to stream:", currentStreamId);
               console.log("Total hosts connected:", liveStreamHosts.size);
 
@@ -3160,17 +3252,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log('📞 SERVER: WebRTC signaling message received!');
               console.log('📞 SERVER: Current user ID:', currentUserId);
               console.log('📞 SERVER: Data:', data);
-              
+
               if (!currentUserId) {
                 console.log('❌ SERVER: No current user ID set! User needs to join first.');
                 break;
               }
-              
+
               const signalingData = data.data;
-              
+
               console.log('📞 SERVER: WebRTC signaling received from user', currentUserId);
               console.log('📞 SERVER: Signaling data:', signalingData);
-              
+
               // Handle different signaling message structures
               let targetUserId;
               if (signalingData.to) {
@@ -3178,9 +3270,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } else if (signalingData.data && signalingData.data.to) {
                 targetUserId = signalingData.data.to;
               }
-              
+
               console.log('📞 SERVER: Target user ID:', targetUserId);
-              
+
               // Forward signaling message to the target user
               if (wss && targetUserId) {
                 wss.clients.forEach((client) => {

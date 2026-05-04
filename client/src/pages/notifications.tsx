@@ -9,12 +9,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 import { NotificationWithUser } from '@shared/schema';
-import { 
-  Heart, 
-  MessageCircle, 
-  UserPlus, 
-  Share2, 
-  Users, 
+import {
+  Heart,
+  MessageCircle,
+  UserPlus,
+  Share2,
+  Users,
   Cake,
   Check,
   X
@@ -144,12 +144,12 @@ export default function NotificationsPage() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="w-full mx-auto px-4 py-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)] overflow-y-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Notifications</h2>
+        <h2 className="text-2xl font-bold dark:text-white">Notifications</h2>
         {unreadCount > 0 && (
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={handleMarkAllRead}
             disabled={markAllReadMutation.isPending}
@@ -159,21 +159,21 @@ export default function NotificationsPage() {
           </Button>
         )}
       </div>
-      
+
       {/* Notification Filters */}
-      <Card className="p-4 mb-6">
+      <Card className="p-4 mb-6 dark:bg-gray-800 dark:border-gray-700">
         <div className="flex space-x-2 overflow-x-auto">
           {filterOptions.map((option) => (
             <Button
               key={option.key}
               variant={filter === option.key ? "default" : "outline"}
               size="sm"
-              className="whitespace-nowrap"
+              className="whitespace-nowrap dark:border-gray-600 dark:text-gray-200"
               onClick={() => setFilter(option.key)}
             >
               {option.label}
               {(option.count || 0) > 0 && (
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="secondary" className="ml-2 dark:bg-gray-700 dark:text-gray-200">
                   {option.count}
                 </Badge>
               )}
@@ -181,17 +181,17 @@ export default function NotificationsPage() {
           ))}
         </div>
       </Card>
-      
+
       {/* Notifications List */}
       {isLoading ? (
         <div className="space-y-2">
           {[...Array(10)].map((_, i) => (
-            <Card key={i} className="p-4">
+            <Card key={i} className="p-4 dark:bg-gray-800 dark:border-gray-700">
               <div className="flex items-start space-x-3">
-                <Skeleton className="w-12 h-12 rounded-full" />
+                <Skeleton className="w-12 h-12 rounded-full dark:bg-gray-700" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-full dark:bg-gray-700" />
+                  <Skeleton className="h-3 w-24 dark:bg-gray-700" />
                 </div>
               </div>
             </Card>
@@ -200,17 +200,17 @@ export default function NotificationsPage() {
       ) : filteredNotifications.length > 0 ? (
         <div className="space-y-2">
           {filteredNotifications.map((notification) => (
-            <Card 
-              key={notification.id} 
-              className={`transition-colors hover:bg-muted/50 cursor-pointer ${
-                !notification.isRead ? 'bg-blue-50 border-l-4 border-[hsl(221,44%,41%)]' : ''
+            <Card
+              key={notification.id}
+              className={`transition-colors hover:bg-muted/50 cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
+                !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-[hsl(221,44%,41%)] dark:border-blue-400' : ''
               }`}
               onClick={() => {
                 // Mark as read if unread
                 if (!notification.isRead) {
                   handleMarkRead(notification.id);
                 }
-                
+
                 // Navigate based on notification type
                 if (notification.type === 'like' || notification.type === 'comment') {
                   if (notification.post) {
@@ -228,34 +228,34 @@ export default function NotificationsPage() {
                   <div className="relative">
                     <Avatar className="w-12 h-12">
                       <AvatarImage src={notification.fromUser.avatar || undefined} />
-                      <AvatarFallback>
+                      <AvatarFallback className="dark:bg-gray-700 dark:text-white">
                         {notification.fromUser.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-background">
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center border-2 border-background dark:border-gray-700">
                       {getNotificationIcon(notification.type)}
                     </div>
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm">
+                    <p className="text-sm dark:text-white">
                       <span className="font-medium">
                         {notification.fromUser.name}
                       </span>
-                      <span className="ml-1">
+                      <span className="ml-1 dark:text-gray-300">
                         {getNotificationMessage(notification).replace(notification.fromUser.name, '')}
                       </span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground dark:text-gray-400">
                       {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) : 'Recently'}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     {!notification.isRead && (
-                      <div className="w-3 h-3 bg-[hsl(221,44%,41%)] rounded-full"></div>
+                      <div className="w-3 h-3 bg-[hsl(221,44%,41%)] dark:bg-blue-400 rounded-full"></div>
                     )}
-                    
+
                     {!notification.isRead && (
                       <Button
                         variant="ghost"
@@ -271,11 +271,11 @@ export default function NotificationsPage() {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Post preview for post-related notifications */}
                 {notification.post && (
-                  <div className="mt-3 ml-15 p-3 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                  <div className="mt-3 ml-15 p-3 bg-muted dark:bg-gray-700 rounded-lg">
+                    <p className="text-sm text-muted-foreground line-clamp-2 dark:text-gray-300">
                       {notification.post.content || 'Post content'}
                     </p>
                   </div>
@@ -285,24 +285,24 @@ export default function NotificationsPage() {
           ))}
         </div>
       ) : (
-        <Card className="p-8 text-center">
-          <div className="text-muted-foreground">
-            <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+        <Card className="p-8 text-center dark:bg-gray-800 dark:border-gray-700">
+          <div className="text-muted-foreground dark:text-gray-400">
+            <div className="w-16 h-16 mx-auto mb-4 bg-muted dark:bg-gray-700 rounded-full flex items-center justify-center">
               {getNotificationIcon('default')}
             </div>
-            <p className="text-lg font-medium mb-2">
+            <p className="text-lg font-medium mb-2 dark:text-white">
               {filter === 'all' ? 'No notifications yet' : `No ${filter} notifications`}
             </p>
             <p>
-              {filter === 'all' 
-                ? "When people interact with your posts, you'll see it here." 
+              {filter === 'all'
+                ? "When people interact with your posts, you'll see it here."
                 : `No ${filter} notifications to show.`
               }
             </p>
           </div>
         </Card>
       )}
-      
+
       {/* Load More */}
       {filteredNotifications.length > 0 && (
         <div className="text-center mt-8">

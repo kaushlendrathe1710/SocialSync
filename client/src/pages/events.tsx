@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
   Plus,
   User,
   CalendarDays,
@@ -116,7 +116,7 @@ export default function EventsPage() {
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
     const isTomorrow = date.toDateString() === new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
-    
+
     if (isToday) {
       return `Today at ${format(date, 'h:mm a')}`;
     } else if (isTomorrow) {
@@ -129,7 +129,7 @@ export default function EventsPage() {
   const getEventStatus = (startDate: string) => {
     const eventDate = new Date(startDate);
     const now = new Date();
-    
+
     if (eventDate < now) {
       return { status: 'past', color: 'bg-gray-100 text-gray-800' };
     } else if (eventDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000) {
@@ -141,12 +141,12 @@ export default function EventsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="w-full mx-auto p-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)]">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
           <div className="grid gap-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
+              <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
             ))}
           </div>
         </div>
@@ -155,14 +155,14 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full mx-auto p-6 space-y-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)] overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-8 w-8 text-purple-500" />
           <div>
-            <h1 className="text-3xl font-bold">Events</h1>
-            <p className="text-gray-600">Discover and create events in your community</p>
+            <h1 className="text-3xl font-bold dark:text-white">Events</h1>
+            <p className="text-gray-600 dark:text-gray-400">Discover and create events in your community</p>
           </div>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
@@ -173,10 +173,10 @@ export default function EventsPage() {
 
       {/* Events List */}
       {events.length === 0 ? (
-        <Card className="p-8 text-center">
+        <Card className="p-8 text-center dark:bg-gray-800 dark:border-gray-700">
           <CalendarDays className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-xl font-semibold mb-2">No Events Yet</h3>
-          <p className="text-gray-600 mb-4">
+          <h3 className="text-xl font-semibold mb-2 dark:text-white">No Events Yet</h3>
+          <p className="text-gray-600 mb-4 dark:text-gray-400">
             Be the first to create an event and bring your community together.
           </p>
           <Button onClick={() => setShowCreateModal(true)}>
@@ -188,39 +188,39 @@ export default function EventsPage() {
         <div className="grid gap-6">
           {events.map((event: Event) => {
             const eventStatus = getEventStatus(event.startDate);
-            
+
             return (
-              <Card key={event.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-4">
+              <Card key={event.id} className="hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700">
+                <CardHeader className="pb-4 dark:bg-gray-800">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <CardTitle className="text-xl">{event.title}</CardTitle>
-                        <Badge className={eventStatus.color}>
+                        <CardTitle className="text-xl dark:text-white">{event.title}</CardTitle>
+                        <Badge className={`${eventStatus.color} dark:bg-gray-700 dark:text-gray-200`}>
                           {eventStatus.status}
                         </Badge>
                         {user && event.creatorId !== user.id && event.attendeeStatus !== 'none' && (
-                          <Badge variant="secondary">
-                            {event.attendeeStatus === 'going' ? 'Going' : 
-                             event.attendeeStatus === 'interested' ? 'Interested' : 
+                          <Badge variant="secondary" className="dark:bg-gray-700 dark:text-gray-200">
+                            {event.attendeeStatus === 'going' ? 'Going' :
+                             event.attendeeStatus === 'interested' ? 'Interested' :
                              event.attendeeStatus === 'not_going' ? 'Not Going' : ''}
                           </Badge>
                         )}
                       </div>
-                      
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
+
+                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           {formatEventDate(event.startDate)}
                         </div>
-                        
+
                         {event.location && (
                           <div className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
                             {event.location}
                           </div>
                         )}
-                        
+
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4" />
                           {event.currentAttendees} attending
@@ -231,23 +231,23 @@ export default function EventsPage() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 dark:bg-gray-800">
                   {event.description && (
-                    <p className="text-gray-700">{event.description}</p>
+                    <p className="text-gray-700 dark:text-gray-300">{event.description}</p>
                   )}
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={event.creator.avatar || undefined} />
-                        <AvatarFallback>
+                        <AvatarFallback className="dark:bg-gray-700 dark:text-white">
                           {event.creator.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="text-sm">
-                        <span className="text-gray-500">Created by </span>
-                        <span className="font-medium">{event.creator.name}</span>
-                        <span className="text-gray-500">
+                        <span className="text-gray-500 dark:text-gray-400">Created by </span>
+                        <span className="font-medium dark:text-white">{event.creator.name}</span>
+                        <span className="text-gray-500 dark:text-gray-400">
                           {' · ' + formatDistanceToNow(new Date(event.createdAt), { addSuffix: true })}
                         </span>
                       </div>
@@ -256,16 +256,16 @@ export default function EventsPage() {
                     <div className="flex gap-2">
                       {user && event.creatorId === user.id && (
                         <>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             onClick={() => setEditingEvent(event)}
                           >
                             <Edit className="w-4 h-4 mr-1" />
                             Edit
                           </Button>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="destructive"
                             onClick={() => handleDeleteEvent(event.id)}
                           >
@@ -277,8 +277,8 @@ export default function EventsPage() {
                       {user && event.creatorId !== user.id && eventStatus.status !== 'past' && (
                         <>
                           {event.attendeeStatus === 'going' ? (
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="outline"
                               onClick={() => handleRSVP(event.id, 'not_going')}
                             >
@@ -287,15 +287,15 @@ export default function EventsPage() {
                             </Button>
                           ) : event.attendeeStatus === 'interested' ? (
                             <>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 onClick={() => handleRSVP(event.id, 'going')}
                               >
                                 <User className="w-4 h-4 mr-1" />
                                 Join Event
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() => handleRSVP(event.id, 'not_going')}
                               >
@@ -304,15 +304,15 @@ export default function EventsPage() {
                             </>
                           ) : event.attendeeStatus === 'not_going' ? (
                             <>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 onClick={() => handleRSVP(event.id, 'going')}
                               >
                                 <User className="w-4 h-4 mr-1" />
                                 Join Event
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() => handleRSVP(event.id, 'interested')}
                               >
@@ -321,15 +321,15 @@ export default function EventsPage() {
                             </>
                           ) : (
                             <>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 onClick={() => handleRSVP(event.id, 'going')}
                               >
                                 <User className="w-4 h-4 mr-1" />
                                 Join Event
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() => handleRSVP(event.id, 'interested')}
                               >
@@ -354,16 +354,16 @@ export default function EventsPage() {
         </div>
       )}
 
-      <CreateEventModal 
-        isOpen={showCreateModal} 
+      <CreateEventModal
+        isOpen={showCreateModal}
         onClose={() => {
           setShowCreateModal(false);
           queryClient.invalidateQueries({ queryKey: ["/api/events"] });
-        }} 
+        }}
       />
 
-      <EditEventModal 
-        isOpen={!!editingEvent} 
+      <EditEventModal
+        isOpen={!!editingEvent}
         onClose={() => {
           setEditingEvent(null);
           queryClient.invalidateQueries({ queryKey: ["/api/events"] });

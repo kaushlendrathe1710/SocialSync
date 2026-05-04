@@ -50,7 +50,7 @@ export default function VideoCallPage() {
 
   if (!user || !pageState || !wsConnection) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="h-[calc(100vh-3.5rem)] overflow-y-auto bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Loading video call...</p>
@@ -61,7 +61,7 @@ export default function VideoCallPage() {
 
   if (!isCallActive) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="h-[calc(100vh-3.5rem)] overflow-y-auto bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-green-500 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +76,7 @@ export default function VideoCallPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="h-[calc(100vh-3.5rem)] overflow-y-auto bg-gray-900">
       {/* Debug Info */}
       <div className="fixed top-4 left-4 z-50 bg-black/80 text-white p-4 rounded-lg text-sm">
         <div>User: {user?.name}</div>
@@ -85,7 +85,7 @@ export default function VideoCallPage() {
         <div>WebSocket: {wsConnection ? 'Connected' : 'Disconnected'}</div>
         <div>Call ID: {pageState.callId || 'None'}</div>
       </div>
-      
+
       <VideoCall
         isOpen={true}
         onClose={handleCallEnd}

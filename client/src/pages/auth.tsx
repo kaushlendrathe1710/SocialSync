@@ -37,9 +37,8 @@ export default function AuthPage() {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [needsSignup, setNeedsSignup] = useState(false);
-  const [verificationToken, setVerificationToken] = useState<string | null>(
-    null
-  );
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const { sendOTP, login } = useAuth();
   const { toast } = useToast();
@@ -62,6 +61,16 @@ export default function AuthPage() {
     try {
       await sendOTP(email);
       setStep("otp");
+      setResendCooldown(60);
+      const interval = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
       toast({
         title: "OTP sent!",
         description: "Check your email for the verification code",
@@ -183,7 +192,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[hsl(210,36%,96%)] p-4">
+    <div className="h-[calc(100vh-3.5rem)] overflow-y-auto flex items-center justify-center bg-[hsl(210,36%,96%)] p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-[hsl(221,44%,41%)]">
@@ -262,15 +271,53 @@ export default function AuthPage() {
               >
                 {isLoading ? "Verifying..." : "Verify & Continue"}
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={handleBackToEmail}
-                disabled={isLoading}
-              >
-                Back to email
-              </Button>
+              <div className="flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-muted-foreground"
+                  onClick={handleBackToEmail}
+                  disabled={isLoading}
+                >
+                  Back to email
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-blue-600 hover:text-blue-800"
+                  disabled={isLoading || resendCooldown > 0}
+                  onClick={async () => {
+                    setIsLoading(true);
+                    try {
+                      await sendOTP(email);
+                      setResendCooldown(60);
+                      const interval = setInterval(() => {
+                        setResendCooldown((prev) => {
+                          if (prev <= 1) {
+                            clearInterval(interval);
+                            return 0;
+                          }
+                          return prev - 1;
+                        });
+                      }, 1000);
+                      toast({
+                        title: "OTP resent!",
+                        description: "Check your email for a new code",
+                      });
+                    } catch (error: any) {
+                      toast({
+                        title: "Error",
+                        description: error.message || "Failed to resend OTP",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
+                </Button>
+              </div>
             </form>
           )}
 

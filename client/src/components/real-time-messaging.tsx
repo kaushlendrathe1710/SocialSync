@@ -15,12 +15,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/contexts/notification-context';
 import { api } from '@/lib/api';
 import { MessageWithUser, User } from '@shared/schema';
-import { 
-  Search, 
-  Send, 
-  Phone, 
-  Video, 
-  Info, 
+import {
+  Search,
+  Send,
+  Phone,
+  Video,
+  Info,
   MoreHorizontal,
   ArrowLeft,
   Smile,
@@ -82,7 +82,7 @@ export default function RealTimeMessaging() {
     fileType: string;
     fileSize: number;
   }>>([]);
-  
+
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -91,13 +91,13 @@ export default function RealTimeMessaging() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  
+
   // Refs for voice recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
-  
+
   // File upload hook
   const { uploadFile, isUploading } = useFileUpload();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -106,7 +106,7 @@ export default function RealTimeMessaging() {
   const lastConvIdRef = useRef<number | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const [showNewConversation, setShowNewConversation] = useState(false);
-  
+
   // Video call functionality - use the WebSocket from notification context
   const {
     callState,
@@ -119,7 +119,7 @@ export default function RealTimeMessaging() {
     handleCallRejected,
     handleCallEnded
   } = useVideoCall(wsConnection);
-  
+
 
   // Add error boundary to catch rendering issues
   if (!user) {
@@ -140,11 +140,11 @@ export default function RealTimeMessaging() {
       outgoingCall: callState.outgoingCall?.callId,
       incomingCall: callState.incomingCall?.callId
     });
-    
+
     if (callState.isInCall) {
       // Determine the other user for the call
       const otherUser = selectedConversation || callState.incomingCall?.from || callState.outgoingCall?.to;
-      
+
       if (otherUser) {
         console.log('🎬 Navigating to video call page with user:', otherUser.id);
         // Store state in sessionStorage since wouter doesn't support state passing
@@ -182,17 +182,17 @@ export default function RealTimeMessaging() {
     const handleMessage = (event: MessageEvent) => {
       try {
         const message = JSON.parse(event.data);
-        
+
         // Handle new incoming messages
         if (message.type === 'new_message' || message.type === 'message') {
           // Immediately refresh conversations and messages
           queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
           if (selectedConversation) {
-            queryClient.invalidateQueries({ 
-              queryKey: ['/api/conversations', selectedConversation.id] 
+            queryClient.invalidateQueries({
+              queryKey: ['/api/conversations', selectedConversation.id]
             });
           }
-          
+
           // Show notification for new messages from others
           if (message.data.senderId !== user.id) {
             toast({
@@ -201,20 +201,20 @@ export default function RealTimeMessaging() {
             });
           }
         }
-        
+
         // Handle message sent confirmation
         if (message.type === 'message_sent') {
           // Refresh only if it's our message
           if (message.data.senderId === user.id) {
             queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
             if (selectedConversation) {
-              queryClient.invalidateQueries({ 
-                queryKey: ['/api/conversations', selectedConversation.id] 
+              queryClient.invalidateQueries({
+                queryKey: ['/api/conversations', selectedConversation.id]
               });
             }
           }
         }
-        
+
         // Handle WebRTC signaling messages
         if (message.type === 'webrtc-signaling') {
           const signalingData = message.data;
@@ -222,7 +222,7 @@ export default function RealTimeMessaging() {
           console.log('Signaling type:', signalingData.type);
           console.log('From user:', signalingData.from);
           console.log('To user:', signalingData.to);
-          
+
           switch (signalingData.type) {
             case 'call-request':
               console.log('📞 Processing call request...');
@@ -359,7 +359,7 @@ export default function RealTimeMessaging() {
         const otherUserId = conv.senderId === user?.id ? conv.receiverId : conv.senderId;
         return otherUserId === targetUserId;
       });
-      
+
       if (conversation) {
         const otherUser = conversation.senderId === user?.id ? conversation.receiver : conversation.sender;
         setSelectedConversation(otherUser);
@@ -373,21 +373,21 @@ export default function RealTimeMessaging() {
         // Upload files first
         const uploadPromises = data.files.map(file => uploadFile(file));
         const uploadResults = await Promise.all(uploadPromises);
-        
+
         // Filter out failed uploads
         const successfulUploads = uploadResults.filter(result => result !== null);
-        
+
         if (successfulUploads.length === 0) {
           throw new Error('Failed to upload files');
         }
-        
+
         // Determine message type based on uploaded files
         const imageUrl = successfulUploads.find(result => result!.fileType === 'image')?.url;
         const videoUrl = successfulUploads.find(result => result!.fileType === 'video')?.url;
         const audioUrl = successfulUploads.find(result => result!.fileType === 'audio')?.url;
-        
+
         const firstFile = successfulUploads[0]!;
-        
+
         // Send message with file URLs
         const response = await fetch('/api/messages', {
           method: 'POST',
@@ -406,11 +406,11 @@ export default function RealTimeMessaging() {
             fileSize: firstFile.fileSize,
           }),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to send message with files');
         }
-        
+
         return response.json();
       } else {
         // Handle text message
@@ -439,10 +439,10 @@ export default function RealTimeMessaging() {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     const content = messageText.trim();
-    
+
     // Check if we have either content or files
     if ((!content && selectedFiles.length === 0) || !selectedConversation || sendMessageMutation.isPending) return;
-    
+
     sendMessageMutation.mutate({ content, files: selectedFiles.length > 0 ? selectedFiles : undefined });
   };
 
@@ -456,7 +456,7 @@ export default function RealTimeMessaging() {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       setSelectedFiles(files);
-      
+
       // Generate previews for all selected files
       const previews: string[] = [];
       files.forEach((file, index) => {
@@ -492,12 +492,12 @@ export default function RealTimeMessaging() {
           const video = document.createElement('video');
           video.srcObject = stream;
           video.play();
-          
+
           toast({
             title: "Camera access granted",
             description: "Camera functionality will be available in the next update",
           });
-          
+
           // Stop the stream for now
           stream.getTracks().forEach(track => track.stop());
         })
@@ -520,18 +520,18 @@ export default function RealTimeMessaging() {
   // Voice recording functions
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           sampleRate: 44100,
           channelCount: 1, // Mono recording for smaller file size
-        } 
+        }
       });
-      
+
       audioStreamRef.current = stream;
       audioChunksRef.current = [];
-      
+
       // Try different MIME types for better browser compatibility and duration support
       let mimeType = 'audio/mp4';
       if (!MediaRecorder.isTypeSupported(mimeType)) {
@@ -540,38 +540,38 @@ export default function RealTimeMessaging() {
           mimeType = 'audio/webm';
         }
       }
-      
+
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
-      
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
-      
+
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setAudioBlob(audioBlob);
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
         setShowVoiceRecorder(true);
-        
+
         // Clean up stream
         if (audioStreamRef.current) {
           audioStreamRef.current.getTracks().forEach(track => track.stop());
           audioStreamRef.current = null;
         }
       };
-      
+
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
       setRecordingDuration(0);
-      
+
       // Start timer
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => {
@@ -584,12 +584,12 @@ export default function RealTimeMessaging() {
         });
         setRecordingDuration(prev => prev + 1);
       }, 1000);
-      
+
       toast({
         title: "Recording started",
         description: "Tap and hold to record, release to stop",
       });
-      
+
     } catch (error) {
       console.error('Error starting recording:', error);
       toast({
@@ -599,37 +599,37 @@ export default function RealTimeMessaging() {
       });
     }
   };
-  
+
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setIsPaused(false);
-      
+
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
     }
   };
-  
+
   const pauseRecording = () => {
     if (mediaRecorderRef.current && isRecording && !isPaused) {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
-      
+
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
     }
   };
-  
+
   const resumeRecording = () => {
     if (mediaRecorderRef.current && isRecording && isPaused) {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
-      
+
       // Resume timer
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
@@ -637,12 +637,12 @@ export default function RealTimeMessaging() {
       }, 1000);
     }
   };
-  
+
   const cancelRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
     }
-    
+
     setIsRecording(false);
     setIsPaused(false);
     setRecordingTime(0);
@@ -650,28 +650,28 @@ export default function RealTimeMessaging() {
     setAudioBlob(null);
     setAudioUrl(null);
     setShowVoiceRecorder(false);
-    
+
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
       recordingIntervalRef.current = null;
     }
-    
+
     if (audioStreamRef.current) {
       audioStreamRef.current.getTracks().forEach(track => track.stop());
       audioStreamRef.current = null;
     }
-    
+
     audioChunksRef.current = [];
   };
-  
+
   const sendVoiceMessage = async () => {
     if (!audioBlob || !selectedConversation) return;
-    
+
     try {
       // Determine the correct file extension and MIME type
       let fileExtension = '.m4a';
       let mimeType = 'audio/mp4';
-      
+
       // Check if the blob has a different type
       if (audioBlob.type) {
         mimeType = audioBlob.type;
@@ -683,26 +683,26 @@ export default function RealTimeMessaging() {
           fileExtension = '.m4a';
         }
       }
-      
+
       // Create a File object from the blob
       const audioFile = new File([audioBlob], `voice-message-${Date.now()}${fileExtension}`, {
         type: mimeType
       });
-      
+
       console.log('Uploading voice message:', {
         fileName: audioFile.name,
         fileType: audioFile.type,
         fileSize: audioFile.size
       });
-      
+
       // Upload the audio file
       const uploadResult = await uploadFile(audioFile);
       if (!uploadResult) {
         throw new Error('Failed to upload voice message');
       }
-      
+
       console.log('Voice message uploaded successfully:', uploadResult);
-      
+
       // Send message with audio
       const response = await fetch('/api/messages', {
         method: 'POST',
@@ -719,23 +719,23 @@ export default function RealTimeMessaging() {
           fileSize: uploadResult.fileSize,
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to send voice message');
       }
-      
+
       // Reset voice recording state
       cancelRecording();
-      
+
       // Refresh messages
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversation.id] });
-      
+
       toast({
         title: "Voice message sent",
         description: "Your voice message has been delivered",
       });
-      
+
     } catch (error) {
       console.error('Error sending voice message:', error);
       toast({
@@ -745,13 +745,13 @@ export default function RealTimeMessaging() {
       });
     }
   };
-  
+
   const formatRecordingTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-  
+
   const handleMicClick = () => {
     if (isRecording) {
       stopRecording();
@@ -801,7 +801,7 @@ export default function RealTimeMessaging() {
         return res.json();
       },
     });
-    
+
     // Mark messages as read when conversation is opened
     if (message.receiverId === user?.id && !message.readAt) {
       markMessageAsRead(message.id);
@@ -833,17 +833,17 @@ export default function RealTimeMessaging() {
       // Handle self-messaging case
       const isSelfMessage = message.senderId === message.receiverId;
       const otherUserId = isSelfMessage ? user?.id : (message.senderId === user?.id ? message.receiverId : message.senderId);
-      
+
       const existing = acc.find(m => {
         const isExistingSelfMessage = m.senderId === m.receiverId;
         const existingOtherUserId = isExistingSelfMessage ? user?.id : (m.senderId === user?.id ? m.receiverId : m.senderId);
-        
+
         if (isSelfMessage && isExistingSelfMessage) {
           return true; // Both are self-messages, they belong to the same conversation
         }
         return existingOtherUserId === otherUserId;
       });
-      
+
       if (!existing || new Date(message.createdAt!) > new Date(existing.createdAt!)) {
         if (existing) {
           const index = acc.indexOf(existing);
@@ -860,16 +860,16 @@ export default function RealTimeMessaging() {
     // Handle self-messaging case for filtering
     const isSelfMessage = message.senderId === message.receiverId;
     const otherUser = isSelfMessage ? message.sender : (message.senderId === user?.id ? message.receiver : message.sender);
-    
+
     return otherUser.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
            otherUser.username.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <Card className="flex-1 m-4 overflow-hidden shadow-xl border-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
         <div className="flex h-full bg-transparent min-h-0">
-          
+
           {/* Conversations Sidebar */}
           <div className={`w-full md:w-80 border-r border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 flex flex-col h-full ${selectedConversation ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50">
@@ -882,7 +882,7 @@ export default function RealTimeMessaging() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => {
                         setShowMessagesMenu(false);
                         // Mark all conversations as read
@@ -901,7 +901,7 @@ export default function RealTimeMessaging() {
                       <Check className="w-4 h-4 mr-2" />
                       Mark all as read
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => {
                         setShowMessagesMenu(false);
                         setSearchQuery('');
@@ -915,7 +915,7 @@ export default function RealTimeMessaging() {
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Refresh messages
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => {
                         setShowMessagesMenu(false);
                         toast({
@@ -941,7 +941,7 @@ export default function RealTimeMessaging() {
                 />
               </div>
             </div>
-            
+
             <ScrollArea className="h-full">
               {conversationsLoading ? (
                 <div className="space-y-1">
@@ -963,9 +963,9 @@ export default function RealTimeMessaging() {
                     const otherUser = isSelfMessage ? message.sender : (message.senderId === user?.id ? message.receiver : message.sender);
                     const isSelected = selectedConversation?.id === otherUser.id;
                     const isUnread = !message.readAt && message.receiverId === user?.id;
-                    const isOnline = onlineUsers.has(otherUser.id) && 
+                    const isOnline = onlineUsers.has(otherUser.id) &&
                       (userPrivacySettings[otherUser.id]?.onlineStatus !== false);
-                    
+
                     return (
                       <div
                         key={`${message.senderId}-${message.receiverId}`}
@@ -1020,7 +1020,7 @@ export default function RealTimeMessaging() {
               )}
             </ScrollArea>
           </div>
-          
+
           {/* Chat Area */}
           <div className={`flex flex-col flex-1 min-h-0 h-full ${selectedConversation ? 'flex' : 'hidden md:flex'}`}>
             {selectedConversation ? (
@@ -1044,7 +1044,7 @@ export default function RealTimeMessaging() {
                             {selectedConversation.name?.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        {onlineUsers.has(selectedConversation.id) && 
+                        {onlineUsers.has(selectedConversation.id) &&
                          (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) && (
                           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm animate-pulse"></div>
                         )}
@@ -1054,7 +1054,7 @@ export default function RealTimeMessaging() {
                           {selectedConversation.name}
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {onlineUsers.has(selectedConversation.id) && 
+                          {onlineUsers.has(selectedConversation.id) &&
                            (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? (
                             <span className="text-green-600 dark:text-green-400 font-medium flex items-center">
                               <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
@@ -1067,18 +1067,18 @@ export default function RealTimeMessaging() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => sendCallRequest(selectedConversation, user!.id)}
                         disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
                         className="hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full p-3 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <Phone className="w-5 h-5" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => sendCallRequest(selectedConversation, user!.id)}
                         disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
                         className="hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full p-3 shadow-sm hover:shadow-md transition-all duration-200"
@@ -1113,12 +1113,12 @@ export default function RealTimeMessaging() {
                       {messages.map((message, index) => {
                         const isFromCurrentUser = message.senderId === user?.id;
                         const showAvatar = !isFromCurrentUser && (
-                          index === 0 || 
+                          index === 0 ||
                           messages[index - 1]?.senderId !== message.senderId
                         );
-                        const showTimestamp = index === 0 || 
+                        const showTimestamp = index === 0 ||
                           new Date(message.createdAt!).getTime() - new Date(messages[index - 1]?.createdAt!).getTime() > 300000; // 5 minutes
-                        
+
                         return (
                           <div key={message.id} className="space-y-1">
                             {showTimestamp && (
@@ -1169,7 +1169,7 @@ export default function RealTimeMessaging() {
                                           fileName={message.fileName || undefined}
                                         />
                                       )}
-                                      
+
                                       {/* Message content */}
                                       {message.content && (
                                         <p className="text-sm leading-relaxed whitespace-pre-wrap break-words break-all">{message.content}</p>
@@ -1275,9 +1275,9 @@ export default function RealTimeMessaging() {
                               Voice message ({formatRecordingTime(recordingDuration)})
                             </span>
                             <div className="flex items-center space-x-2 mt-1">
-                              <audio 
-                                src={audioUrl} 
-                                controls 
+                              <audio
+                                src={audioUrl}
+                                controls
                                 className="h-6 text-xs"
                                 preload="metadata"
                               />
@@ -1322,7 +1322,7 @@ export default function RealTimeMessaging() {
                     id="chat-file-input"
                     aria-label="Select files to attach"
                   />
-                  
+
                   {/* File previews */}
                   {filePreviews.length > 0 && (
                     <div className="mb-4">
@@ -1346,13 +1346,13 @@ export default function RealTimeMessaging() {
                           const isImage = file?.type.startsWith('image/');
                           const isVideo = file?.type.startsWith('video/');
                           const isAudio = file?.type.startsWith('audio/');
-                          
+
                           return (
                             <div key={index} className="relative flex-shrink-0">
                               {isImage ? (
-                                <img 
-                                  src={preview} 
-                                  alt={`Preview ${index + 1}`} 
+                                <img
+                                  src={preview}
+                                  alt={`Preview ${index + 1}`}
                                   className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md"
                                 />
                               ) : isVideo ? (
@@ -1383,12 +1383,12 @@ export default function RealTimeMessaging() {
                       </div>
                     </div>
                   )}
-                  
+
                   <form onSubmit={handleSendMessage} className={`flex items-end space-x-3 bg-white/70 dark:bg-gray-800/70 rounded-2xl p-3 shadow-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm ${isRecording ? 'opacity-50 pointer-events-none' : ''}`}>
                     <div className="flex items-center space-x-1">
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
+                      <Button
+                        type="button"
+                        variant="ghost"
                         size="sm"
                         onClick={handleAttachmentClick}
                         title="Attach file"
@@ -1396,9 +1396,9 @@ export default function RealTimeMessaging() {
                       >
                         <Paperclip className="w-5 h-5" />
                       </Button>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
+                      <Button
+                        type="button"
+                        variant="ghost"
                         size="sm"
                         onClick={triggerFileInput}
                         title="Select image or video"
@@ -1406,9 +1406,9 @@ export default function RealTimeMessaging() {
                       >
                         <ImageIcon className="w-5 h-5" />
                       </Button>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
+                      <Button
+                        type="button"
+                        variant="ghost"
                         size="sm"
                         onClick={handleCameraClick}
                         title="Take photo"
@@ -1417,7 +1417,7 @@ export default function RealTimeMessaging() {
                         <Camera className="w-5 h-5" />
                       </Button>
                     </div>
-                    
+
                     <div className="flex-1 relative">
                       <Textarea
                         ref={messageInputRef}
@@ -1454,12 +1454,12 @@ export default function RealTimeMessaging() {
                         </Popover>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       {messageText.trim() || selectedFiles.length > 0 ? (
-                        <Button 
-                          type="submit" 
-                          size="sm" 
+                        <Button
+                          type="submit"
+                          size="sm"
                           disabled={sendMessageMutation.isPending || isRecording}
                           className="rounded-full w-12 h-12 p-0 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg transition-all duration-200 hover:scale-105"
                         >
@@ -1467,22 +1467,22 @@ export default function RealTimeMessaging() {
                         </Button>
                       ) : (
                         <>
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
+                          <Button
+                            type="button"
+                            variant="ghost"
                             size="sm"
                             onClick={handleMicClick}
                             title={isRecording ? "Stop recording" : "Send voice message"}
                             className={`rounded-full p-2 transition-all duration-200 ${
-                              isRecording 
-                                ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 animate-pulse' 
+                              isRecording
+                                ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 animate-pulse'
                                 : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
                             <Mic className={`w-5 h-5 ${isRecording ? 'animate-pulse' : ''}`} />
                           </Button>
-                          <Button 
-                            type="button" 
+                          <Button
+                            type="button"
                             size="sm"
                             disabled={isRecording}
                             className="rounded-full w-12 h-12 p-0 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg transition-all duration-200 hover:scale-105"
@@ -1538,36 +1538,36 @@ export default function RealTimeMessaging() {
                   <h3 className="text-lg font-semibold">{selectedConversation.name}</h3>
                   <p className="text-sm text-muted-foreground">@{selectedConversation.username}</p>
                   <div className="flex items-center mt-1">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${onlineUsers.has(selectedConversation.id) && 
+                    <div className={`w-2 h-2 rounded-full mr-2 ${onlineUsers.has(selectedConversation.id) &&
                       (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
                     <span className="text-xs text-muted-foreground">
-                      {onlineUsers.has(selectedConversation.id) && 
+                      {onlineUsers.has(selectedConversation.id) &&
                        (userPrivacySettings[selectedConversation.id]?.onlineStatus !== false) ? 'Active now' : 'Offline'}
                     </span>
                   </div>
                 </div>
               </div>
-              
+
               {selectedConversation.bio && (
                 <div>
                   <h4 className="text-sm font-medium mb-2">Bio</h4>
                   <p className="text-sm text-muted-foreground">{selectedConversation.bio}</p>
                 </div>
               )}
-              
+
               {selectedConversation.location && (
                 <div>
                   <h4 className="text-sm font-medium mb-2">Location</h4>
                   <p className="text-sm text-muted-foreground">{selectedConversation.location}</p>
                 </div>
               )}
-              
+
               {selectedConversation.website && (
                 <div>
                   <h4 className="text-sm font-medium mb-2">Website</h4>
-                  <a 
-                    href={selectedConversation.website} 
-                    target="_blank" 
+                  <a
+                    href={selectedConversation.website}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline"
                   >
@@ -1575,10 +1575,10 @@ export default function RealTimeMessaging() {
                   </a>
                 </div>
               )}
-              
+
               <div className="flex space-x-2 pt-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex-1"
                   onClick={() => sendCallRequest(selectedConversation, user!.id)}
                   disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
@@ -1586,8 +1586,8 @@ export default function RealTimeMessaging() {
                   <Phone className="w-4 h-4 mr-2" />
                   Call
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex-1"
                   onClick={() => sendCallRequest(selectedConversation, user!.id)}
                   disabled={callState.isInCall || !wsConnection || wsConnection.readyState !== WebSocket.OPEN}
@@ -1596,7 +1596,7 @@ export default function RealTimeMessaging() {
                   Video Call
                 </Button>
               </div>
-              
+
               {/* WebSocket Status Indicator */}
               {(!wsConnection || wsConnection.readyState !== WebSocket.OPEN) && (
                 <div className="mt-3 text-center">

@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Heart, MessageCircle, Eye, Users, ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 interface PublicPost {
   id: number;
@@ -45,20 +46,28 @@ interface PublicComment {
 export default function PublicPostPage() {
   const { id } = useParams();
   const postId = parseInt(id || "0");
+  const { user } = useAuth();
+
+  const postEndpoint = user
+    ? `/api/posts/${postId}`
+    : `/api/posts/${postId}/public`;
+  const commentsEndpoint = user
+    ? `/api/posts/${postId}/comments`
+    : `/api/posts/${postId}/comments/public`;
 
   const { data: post, isLoading: postLoading, error: postError } = useQuery({
-    queryKey: [`/api/posts/${postId}/public`],
+    queryKey: [postEndpoint],
     enabled: !!postId,
   });
 
   const { data: comments = [], isLoading: commentsLoading } = useQuery({
-    queryKey: [`/api/posts/${postId}/comments/public`],
+    queryKey: [commentsEndpoint],
     enabled: !!postId,
   });
 
   if (postLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-[calc(100vh-3.5rem)] bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse space-y-4 w-full max-w-2xl mx-auto p-6">
           <div className="bg-white rounded-lg p-6 space-y-4">
             <div className="flex items-center space-x-3">
@@ -80,7 +89,7 @@ export default function PublicPostPage() {
 
   if (postError || !post) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-[calc(100vh-3.5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold text-gray-900">Post not found</h1>
           <p className="text-gray-600">This post may have been deleted or doesn't exist.</p>
@@ -96,7 +105,7 @@ export default function PublicPostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-[calc(100vh-3.5rem)] overflow-y-auto bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4">
@@ -180,9 +189,9 @@ export default function PublicPostPage() {
 
             {post.imageUrl && (
               <div className="rounded-lg overflow-hidden">
-                <img 
-                  src={post.imageUrl} 
-                  alt="Post content" 
+                <img
+                  src={post.imageUrl}
+                  alt="Post content"
                   className="w-full h-auto max-h-96 object-cover"
                 />
               </div>
@@ -190,8 +199,8 @@ export default function PublicPostPage() {
 
             {post.videoUrl && (
               <div className="rounded-lg overflow-hidden">
-                <video 
-                  controls 
+                <video
+                  controls
                   src={post.videoUrl}
                   className="w-full h-auto max-h-96"
                 >

@@ -11,10 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Users, 
-  Plus, 
-  Search, 
+import {
+  Users,
+  Plus,
+  Search,
   Filter,
   Calendar,
   FileText,
@@ -109,7 +109,7 @@ const groupCategories = [
 export default function GroupsPage() {
   const params = useParams();
   const groupId = params.id;
-  
+
   const [activeTab, setActiveTab] = useState('discover');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -142,7 +142,7 @@ export default function GroupsPage() {
       if (activeTab === 'my-groups') params.append('my', 'true');
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
       if (searchQuery) params.append('search', searchQuery);
-      
+
       return fetch(`/api/community-groups?${params}`).then(res => res.json());
     },
     enabled: !groupId, // Only fetch groups list when not viewing specific group
@@ -227,8 +227,8 @@ export default function GroupsPage() {
         {/* Group Header */}
         <div className="relative">
           {currentGroup.coverImage && (
-            <img 
-              src={currentGroup.coverImage} 
+            <img
+              src={currentGroup.coverImage}
               alt={currentGroup.name}
               className="w-full h-64 object-cover rounded-lg"
             />
@@ -437,7 +437,7 @@ export default function GroupsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-[calc(100vh-3.5rem)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading Groups...</p>
@@ -447,7 +447,7 @@ export default function GroupsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-[calc(100vh-3.5rem)] overflow-y-auto bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
@@ -639,7 +639,7 @@ export default function GroupsPage() {
                         <span>{group.memberCount} members</span>
                       </div>
                       <Badge variant={group.privacy === 'public' ? 'default' : 'secondary'}>
-                        {group.privacy === 'public' ? 'Public' : 
+                        {group.privacy === 'public' ? 'Public' :
                          group.privacy === 'private' ? 'Private' : 'Request to Join'}
                       </Badge>
                     </div>
@@ -666,14 +666,14 @@ export default function GroupsPage() {
                     </div>
                     <div className="flex space-x-2">
                       {group.membershipStatus === 'member' || group.isJoined ? (
-                        <Button 
-                          className="flex-1" 
+                        <Button
+                          className="flex-1"
                           onClick={() => setSelectedGroup(group)}
                         >
                           View Group
                         </Button>
                       ) : (
-                        <Button 
+                        <Button
                           className="flex-1"
                           onClick={() => joinGroupMutation.mutate(group.id)}
                           disabled={joinGroupMutation.isPending}
@@ -681,8 +681,8 @@ export default function GroupsPage() {
                           {group.privacy === 'public' ? 'Join' : 'Request to Join'}
                         </Button>
                       )}
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="icon"
                         onClick={() => {
                           // Navigate to messages with group context
@@ -703,8 +703,8 @@ export default function GroupsPage() {
                 <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold mb-2">No Groups Found</h2>
                 <p className="text-gray-600 mb-4">
-                  {searchQuery || selectedCategory !== 'all' 
-                    ? 'Try adjusting your search or filters.' 
+                  {searchQuery || selectedCategory !== 'all'
+                    ? 'Try adjusting your search or filters.'
                     : 'Be the first to create a group in your community!'}
                 </p>
                 <Button onClick={() => setShowCreateModal(true)}>
@@ -754,15 +754,15 @@ export default function GroupsPage() {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <Button 
+                      <Button
                         className="flex-1"
                         onClick={() => setSelectedGroup(group)}
                       >
                         View Group
                       </Button>
                       {group.membershipStatus === 'admin' && (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="icon"
                           onClick={() => {
                             toast({
@@ -850,7 +850,7 @@ export default function GroupsPage() {
                 )}
               </DialogTitle>
             </DialogHeader>
-            
+
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="overview">Overview</TabsTrigger>

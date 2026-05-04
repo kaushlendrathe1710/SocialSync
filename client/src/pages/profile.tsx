@@ -17,12 +17,12 @@ import { api } from '@/lib/api';
 import { User, PostWithUser } from '@shared/schema';
 import EnhancedPostCard from '@/components/enhanced-post-card';
 import CreatePostModal from '@/components/create-post-modal';
-import { 
-  Camera, 
-  MapPin, 
-  Link as LinkIcon, 
-  Calendar, 
-  Briefcase, 
+import {
+  Camera,
+  MapPin,
+  Link as LinkIcon,
+  Calendar,
+  Briefcase,
   GraduationCap,
   Heart,
   Users,
@@ -71,14 +71,14 @@ export default function ProfilePage() {
   // Add loading state for current user
   if (!currentUser && !id) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="w-full mx-auto px-4 py-6 dark:bg-gray-900 overflow-y-auto h-[calc(100vh-3.5rem)]">
         <div className="animate-pulse">
-          <div className="h-48 bg-muted rounded-lg mb-4"></div>
+          <div className="h-48 bg-muted rounded-lg mb-4 dark:bg-gray-800"></div>
           <div className="flex items-center space-x-4 mb-6">
-            <div className="w-32 h-32 bg-muted rounded-full"></div>
+            <div className="w-32 h-32 bg-muted rounded-full dark:bg-gray-800"></div>
             <div className="space-y-2">
-              <div className="h-6 bg-muted rounded w-48"></div>
-              <div className="h-4 bg-muted rounded w-32"></div>
+              <div className="h-6 bg-muted rounded w-48 dark:bg-gray-800"></div>
+              <div className="h-4 bg-muted rounded w-32 dark:bg-gray-800"></div>
             </div>
           </div>
         </div>
@@ -134,8 +134,8 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['/api/users', profileUserId, 'followers'] });
       toast({
         title: result.following ? "Following!" : "Unfollowed",
-        description: result.following 
-          ? `You are now following ${profileUser?.name}` 
+        description: result.following
+          ? `You are now following ${profileUser?.name}`
           : `You unfollowed ${profileUser?.name}`,
       });
     },
@@ -192,7 +192,7 @@ export default function ProfilePage() {
 
   const handleMessage = async () => {
     if (!profileUser || !currentUser) return;
-    
+
     try {
       // Create or get existing conversation
       const response = await fetch('/api/conversations', {
@@ -228,18 +228,18 @@ export default function ProfilePage() {
 
   if (userLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="w-full h-[calc(100vh-3.5rem)] mx-auto px-4 py-6">
         <Card className="overflow-hidden mb-6">
-          <div className="h-64 bg-gradient-to-r from-blue-400 to-purple-500">
+          <div className="h-64 bg-gradient-to-r from-blue-400 to-purple-500 dark:from-blue-600 dark:to-purple-700">
             <Skeleton className="w-full h-full" />
           </div>
           <div className="relative px-6 pb-6">
             <div className="flex flex-col md:flex-row md:items-end md:space-x-4 -mt-16">
               <Skeleton className="w-32 h-32 rounded-full mb-4 md:mb-0" />
               <div className="flex-1">
-                <Skeleton className="h-8 w-48 mb-2" />
-                <Skeleton className="h-4 w-64 mb-2" />
-                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-8 w-48 mb-2 dark:bg-gray-700" />
+                <Skeleton className="h-4 w-64 mb-2 dark:bg-gray-700" />
+                <Skeleton className="h-4 w-32 dark:bg-gray-700" />
               </div>
             </div>
           </div>
@@ -250,10 +250,10 @@ export default function ProfilePage() {
 
   if (!profileUser) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <Card className="p-8 text-center">
-          <h2 className="text-2xl font-bold mb-2">User not found</h2>
-          <p className="text-muted-foreground">
+      <div className="w-full h-[calc(100vh-3.5rem)] mx-auto px-4 py-6">
+        <Card className="p-8 text-center dark:bg-gray-800 dark:border-gray-700">
+          <h2 className="text-2xl font-bold mb-2 dark:text-white">User not found</h2>
+          <p className="text-muted-foreground dark:text-gray-400">
             This user doesn't exist or has been removed.
           </p>
         </Card>
@@ -262,37 +262,37 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="w-full mx-auto px-4 py-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)]">
       {/* Cover Photo and Profile Info */}
-      <Card className="overflow-hidden mb-6">
+      <Card className="overflow-hidden mb-6 dark:bg-gray-800 dark:border-gray-700">
         {/* Cover Photo */}
-        <div 
-          className="h-64 bg-gradient-to-r from-blue-400 to-purple-500 relative group cursor-pointer overflow-hidden"
+        <div
+          className="h-64 bg-gradient-to-r from-blue-400 to-purple-500 dark:from-blue-600 dark:to-purple-700 relative group cursor-pointer overflow-hidden"
           style={{
-            backgroundImage: profileUser.coverPhoto 
-              ? `url(${profileUser.coverPhoto})` 
+            backgroundImage: profileUser.coverPhoto
+              ? `url(${profileUser.coverPhoto})`
               : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         >
 
-          
+
           {/* Static Edit button for better visibility */}
           {isOwnProfile && (
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               size="sm"
               className="absolute bottom-4 right-4 bg-white/95 hover:bg-white text-gray-800 shadow-lg border-0 font-medium backdrop-blur-sm z-10"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
                 input.style.display = 'none';
-                
+
                 input.onchange = async (event) => {
                   const target = event.target as HTMLInputElement;
                   const file = target.files?.[0];
@@ -300,12 +300,12 @@ export default function ProfilePage() {
                     try {
                       const formData = new FormData();
                       formData.append('coverPhoto', file);
-                      
+
                       const response = await fetch(`/api/users/${profileUser.id}/cover-photo`, {
                         method: 'POST',
                         body: formData,
                       });
-                      
+
                       if (response.ok) {
                         const result = await response.json();
                         toast({
@@ -339,7 +339,7 @@ export default function ProfilePage() {
                     }
                   }
                 };
-                
+
                 document.body.appendChild(input);
                 input.click();
                 document.body.removeChild(input);
@@ -350,15 +350,15 @@ export default function ProfilePage() {
             </Button>
           )}
         </div>
-        
+
         {/* Profile Info */}
         <div className="relative px-6 pb-6">
           <div className="flex flex-col md:flex-row md:items-start md:space-x-6 -mt-16">
             {/* Profile Picture */}
             <div className="relative mb-4 md:mb-0 group">
-              <Avatar className="w-32 h-32 border-4 border-white shadow-lg cursor-pointer transition-transform hover:scale-105">
+              <Avatar className="w-32 h-32 border-4 border-white dark:border-gray-700 shadow-lg cursor-pointer transition-transform hover:scale-105">
                 <AvatarImage src={profileUser.avatar || undefined} />
-                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-400 to-purple-500 text-white">
+                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-400 to-purple-500 text-white dark:from-blue-500 dark:to-purple-600">
                   {profileUser.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -372,7 +372,7 @@ export default function ProfilePage() {
                     input.type = 'file';
                     input.accept = 'image/*';
                     input.style.display = 'none';
-                    
+
                     input.onchange = async (event) => {
                       const target = event.target as HTMLInputElement;
                       const file = target.files?.[0];
@@ -380,12 +380,12 @@ export default function ProfilePage() {
                         try {
                           const formData = new FormData();
                           formData.append('profilePicture', file);
-                          
+
                           const response = await fetch(`/api/users/${profileUser.id}/profile-picture`, {
                             method: 'POST',
                             body: formData,
                           });
-                          
+
                           if (response.ok) {
                             const result = await response.json();
                             toast({
@@ -411,7 +411,7 @@ export default function ProfilePage() {
                         }
                       }
                     };
-                    
+
                     document.body.appendChild(input);
                     input.click();
                     document.body.removeChild(input);
@@ -421,42 +421,42 @@ export default function ProfilePage() {
                 </Button>
               )}
             </div>
-            
+
             {/* Profile Details */}
             <div className="flex-1 mt-4 md:mt-0">
               <div className="flex items-center space-x-2 mb-2">
-                <h1 className="text-2xl md:text-3xl font-bold">{profileUser.name}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold dark:text-white">{profileUser.name}</h1>
                 {profileUser.isVerified && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                     ✓ Verified
                   </Badge>
                 )}
               </div>
-              
+
               {profileUser.bio && (
-                <p className="text-muted-foreground mb-3">{profileUser.bio}</p>
+                <p className="text-muted-foreground mb-3 max-w-[20ch] truncate dark:text-gray-400">{profileUser.bio}</p>
               )}
-              
+
               <div className="flex items-center flex-wrap gap-4 mb-4 mt-7">
-                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
-                  <span className="font-bold text-base text-gray-900">{posts?.length || 0}</span>
-                  <span className="text-gray-600">{posts?.length === 1 ? 'post' : 'posts'}</span>
+                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 rounded-md cursor-pointer transition-colors">
+                  <span className="font-bold text-base text-gray-900 dark:text-white">{posts?.length || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{posts?.length === 1 ? 'post' : 'posts'}</span>
                 </div>
-                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
-                  <span className="font-bold text-base text-gray-900">{followers?.length || 0}</span>
-                  <span className="text-gray-600">{followers?.length === 1 ? 'follower' : 'followers'}</span>
+                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 rounded-md cursor-pointer transition-colors">
+                  <span className="font-bold text-base text-gray-900 dark:text-white">{followers?.length || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{followers?.length === 1 ? 'follower' : 'followers'}</span>
                 </div>
-                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 px-2 py-1 rounded-md cursor-pointer transition-colors">
-                  <span className="font-bold text-base text-gray-900">{following?.length || 0}</span>
-                  <span className="text-gray-600">following</span>
+                <div className="flex items-center space-x-1 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 rounded-md cursor-pointer transition-colors">
+                  <span className="font-bold text-base text-gray-900 dark:text-white">{following?.length || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-400">following</span>
                 </div>
               </div>
-              
-              <div className="text-sm text-gray-500 flex items-center mb-4">
+
+              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center mb-4">
                 <Calendar className="w-4 h-4 mr-1" />
                 Joined {safeFormatDate(profileUser.createdAt)}
               </div>
-              
+
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
                 {isOwnProfile ? (
@@ -495,7 +495,7 @@ export default function ProfilePage() {
                         </>
                       )}
                     </Button>
-                    <Button 
+                    <Button
                       variant="secondary"
                       onClick={handleMessage}
                       className="hover:bg-blue-50 hover:text-blue-600 transition-colors"
@@ -513,87 +513,87 @@ export default function ProfilePage() {
 
       {/* Profile Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left Column - About & Photos */}
         <div className="space-y-6">
           {/* About Section */}
-          <Card className="p-4">
-            <h3 className="font-semibold mb-3">About</h3>
+          <Card className="p-4 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="font-semibold mb-3 dark:text-white">About</h3>
             <div className="space-y-3 text-sm">
               {profileUser.bio && (
                 <div className="flex items-start space-x-3">
                   <Heart className="w-4 h-4 text-muted-foreground mt-0.5" />
-                  <span>{profileUser.bio}</span>
+                  <span className="text-muted-foreground truncate max-w-[20ch] dark:text-gray-400">{profileUser.bio}</span>
                 </div>
               )}
-              
+
               {profileUser.location && (
                 <div className="flex items-start space-x-3">
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
-                  <span>Lives in <strong>{profileUser.location}</strong></span>
+                  <span className="dark:text-gray-300">Lives in <strong>{profileUser.location}</strong></span>
                 </div>
               )}
-              
+
               {profileUser.website && (
                 <div className="flex items-start space-x-3">
                   <LinkIcon className="w-4 h-4 text-muted-foreground mt-0.5" />
-                  <a 
-                    href={profileUser.website} 
-                    target="_blank" 
+                  <a
+                    href={profileUser.website}
+                    target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-600 hover:underline dark:text-blue-400"
                   >
                     {profileUser.website}
                   </a>
                 </div>
               )}
-              
+
               <div className="flex items-start space-x-3">
                 <Calendar className="w-4 h-4 text-muted-foreground mt-0.5" />
-                <span>
+                <span className="dark:text-gray-300">
                   Joined {safeFormatDate(profileUser.createdAt)}
                 </span>
               </div>
             </div>
           </Card>
-          
+
           {/* Photos Section */}
-          <Card className="p-4">
+          <Card className="p-4 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold">Photos</h3>
-              <Button variant="ghost" size="sm">
+              <h3 className="font-semibold dark:text-white">Photos</h3>
+              <Button variant="ghost" size="sm" className="dark:text-gray-300">
                 See all photos
               </Button>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {posts?.filter(post => post.imageUrl).slice(0, 9).map((post) => (
                 <div key={post.id} className="aspect-square">
-                  <img 
-                    src={post.imageUrl!} 
-                    alt="Photo" 
+                  <img
+                    src={post.imageUrl!}
+                    alt="Photo"
                     className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                   />
                 </div>
               ))}
-              
+
               {(!posts || posts.filter(post => post.imageUrl).length === 0) && (
-                <div className="col-span-3 text-center py-8 text-muted-foreground">
+                <div className="col-span-3 text-center py-8 text-muted-foreground dark:text-gray-400">
                   <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No photos yet</p>
                 </div>
               )}
             </div>
           </Card>
-          
+
           {/* Friends Section */}
-          <Card className="p-4">
+          <Card className="p-4 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold">Friends</h3>
-              <Button variant="ghost" size="sm">
+              <h3 className="font-semibold dark:text-white">Friends</h3>
+              <Button variant="ghost" size="sm" className="dark:text-gray-300">
                 See all friends
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mb-3">
+            <p className="text-sm text-muted-foreground mb-3 dark:text-gray-400">
               {followers?.length || 0} followers
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -601,16 +601,16 @@ export default function ProfilePage() {
                 <div key={follower.id} className="text-center">
                   <Avatar className="w-full aspect-square mb-1">
                     <AvatarImage src={follower.avatar || undefined} />
-                    <AvatarFallback>
+                    <AvatarFallback className="dark:bg-gray-700 dark:text-white">
                       {follower.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <p className="text-xs font-medium truncate">{follower.name}</p>
+                  <p className="text-xs font-medium truncate dark:text-white">{follower.name}</p>
                 </div>
               ))}
-              
+
               {(!followers || followers.length === 0) && (
-                <div className="col-span-3 text-center py-8 text-muted-foreground">
+                <div className="col-span-3 text-center py-8 text-muted-foreground dark:text-gray-400">
                   <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No followers yet</p>
                 </div>
@@ -618,31 +618,31 @@ export default function ProfilePage() {
             </div>
           </Card>
         </div>
-        
+
         {/* Right Column - Posts */}
         <div className="lg:col-span-2">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="posts">Posts</TabsTrigger>
-              <TabsTrigger value="about">About</TabsTrigger>
-              <TabsTrigger value="friends">Friends</TabsTrigger>
-              <TabsTrigger value="photos">Photos</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 dark:bg-gray-800">
+              <TabsTrigger value="posts" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700">Posts</TabsTrigger>
+              <TabsTrigger value="about" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700">About</TabsTrigger>
+              <TabsTrigger value="friends" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700">Friends</TabsTrigger>
+              <TabsTrigger value="photos" className="dark:text-gray-300 dark:data-[state=active]:bg-gray-700">Photos</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="posts" className="space-y-6">
               {/* Create Post for Profile */}
               {isOwnProfile && (
-                <Card className="p-4">
+                <Card className="p-4 dark:bg-gray-800 dark:border-gray-700">
                   <div className="flex items-center space-x-3">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={currentUser?.avatar || undefined} />
-                      <AvatarFallback>
+                      <AvatarFallback className="dark:bg-gray-700 dark:text-white">
                         {currentUser?.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <Button
                       variant="outline"
-                      className="flex-1 justify-start text-muted-foreground"
+                      className="flex-1 justify-start text-muted-foreground dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700"
                       onClick={() => setShowCreatePost(true)}
                     >
                       What's on your mind?
@@ -650,21 +650,21 @@ export default function ProfilePage() {
                   </div>
                 </Card>
               )}
-              
+
               {/* Posts */}
               {postsLoading ? (
                 <div className="space-y-6">
                   {[...Array(3)].map((_, i) => (
-                    <Card key={i} className="p-4">
+                    <Card key={i} className="p-4 dark:bg-gray-800 dark:border-gray-700">
                       <div className="flex items-center space-x-3 mb-4">
-                        <Skeleton className="w-10 h-10 rounded-full" />
+                        <Skeleton className="w-10 h-10 rounded-full dark:bg-gray-700" />
                         <div className="space-y-2">
-                          <Skeleton className="h-4 w-32" />
-                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-32 dark:bg-gray-700" />
+                          <Skeleton className="h-3 w-24 dark:bg-gray-700" />
                         </div>
                       </div>
-                      <Skeleton className="h-4 w-full mb-2" />
-                      <Skeleton className="h-64 w-full" />
+                      <Skeleton className="h-4 w-full mb-2 dark:bg-gray-700" />
+                      <Skeleton className="h-64 w-full dark:bg-gray-700" />
                     </Card>
                   ))}
                 </div>
@@ -675,12 +675,12 @@ export default function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <Card className="p-8 text-center">
-                  <div className="text-muted-foreground">
+                <Card className="p-8 text-center dark:bg-gray-800 dark:border-gray-700">
+                  <div className="text-muted-foreground dark:text-gray-400">
                     <p className="text-lg mb-2">No posts yet</p>
                     <p>
-                      {isOwnProfile 
-                        ? "Share your first post with the community!" 
+                      {isOwnProfile
+                        ? "Share your first post with the community!"
                         : `${profileUser.name} hasn't posted anything yet.`
                       }
                     </p>
@@ -688,35 +688,35 @@ export default function ProfilePage() {
                 </Card>
               )}
             </TabsContent>
-            
+
             <TabsContent value="about">
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-4">About {profileUser.name}</h3>
+              <Card className="p-6 dark:bg-gray-800 dark:border-gray-700">
+                <h3 className="font-semibold text-lg mb-4 dark:text-white">About {profileUser.name}</h3>
                 <div className="space-y-4">
                   {profileUser.bio ? (
                     <div>
-                      <h4 className="font-medium mb-1">Bio</h4>
-                      <p className="text-muted-foreground">{profileUser.bio}</p>
+                      <h4 className="font-medium mb-1 dark:text-gray-200">Bio</h4>
+                      <p className="text-muted-foreground dark:text-gray-400 truncate">{profileUser.bio}</p>
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">No bio added yet.</p>
+                    <p className="text-muted-foreground dark:text-gray-400">No bio added yet.</p>
                   )}
-                  
+
                   {profileUser.location && (
                     <div>
-                      <h4 className="font-medium mb-1">Location</h4>
-                      <p className="text-muted-foreground">{profileUser.location}</p>
+                      <h4 className="font-medium mb-1 dark:text-gray-200">Location</h4>
+                      <p className="text-muted-foreground dark:text-gray-400">{profileUser.location}</p>
                     </div>
                   )}
-                  
+
                   {profileUser.website && (
                     <div>
-                      <h4 className="font-medium mb-1">Website</h4>
-                      <a 
-                        href={profileUser.website} 
-                        target="_blank" 
+                      <h4 className="font-medium mb-1 dark:text-gray-200">Website</h4>
+                      <a
+                        href={profileUser.website}
+                        target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-600 hover:underline dark:text-blue-400"
                       >
                         {profileUser.website}
                       </a>
@@ -725,56 +725,56 @@ export default function ProfilePage() {
                 </div>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="friends">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {followers?.map((follower) => (
-                  <Card key={follower.id} className="p-4">
+                  <Card key={follower.id} className="p-4 dark:bg-gray-800 dark:border-gray-700">
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-12 h-12">
                         <AvatarImage src={follower.avatar || undefined} />
-                        <AvatarFallback>
+                        <AvatarFallback className="dark:bg-gray-700 dark:text-white">
                           {follower.name?.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <h4 className="font-semibold">{follower.name}</h4>
-                        <p className="text-sm text-muted-foreground">
+                        <h4 className="font-semibold dark:text-white">{follower.name}</h4>
+                        <p className="text-sm text-muted-foreground dark:text-gray-400">
                           {follower.bio || 'No bio'}
                         </p>
                       </div>
                       <Link href={`/profile/${follower.id}`}>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" className="dark:border-gray-600 dark:text-gray-200">
                           View
                         </Button>
                       </Link>
                     </div>
                   </Card>
                 ))}
-                
+
                 {(!followers || followers.length === 0) && (
-                  <div className="col-span-2 text-center py-12 text-muted-foreground">
+                  <div className="col-span-2 text-center py-12 text-muted-foreground dark:text-gray-400">
                     <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
                     <p className="text-lg">No followers yet</p>
                   </div>
                 )}
               </div>
             </TabsContent>
-            
+
             <TabsContent value="photos">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {posts?.filter(post => post.imageUrl).map((post) => (
                   <div key={post.id} className="aspect-square">
-                    <img 
-                      src={post.imageUrl!} 
-                      alt="Photo" 
+                    <img
+                      src={post.imageUrl!}
+                      alt="Photo"
                       className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                     />
                   </div>
                 ))}
-                
+
                 {(!posts || posts.filter(post => post.imageUrl).length === 0) && (
-                  <div className="col-span-3 text-center py-12 text-muted-foreground">
+                  <div className="col-span-3 text-center py-12 text-muted-foreground dark:text-gray-400">
                     <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
                     <p className="text-lg">No photos yet</p>
                   </div>
@@ -786,73 +786,78 @@ export default function ProfilePage() {
       </div>
 
       {/* Modals */}
-      <CreatePostModal 
+      <CreatePostModal
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
       />
-      
+
       {/* Edit Profile Modal */}
       <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md dark:bg-gray-800 dark:border-gray-700">
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle className="dark:text-white">Edit Profile</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name" className="dark:text-gray-200">Name</Label>
               <Input
                 id="name"
                 value={editForm.name}
                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                 required
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+              <Label htmlFor="bio" className="dark:text-gray-200">Bio</Label>
               <Textarea
                 id="bio"
                 value={editForm.bio}
                 onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell us about yourself..."
                 rows={3}
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location" className="dark:text-gray-200">Location</Label>
               <Input
                 id="location"
                 value={editForm.location}
                 onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
                 placeholder="Where do you live?"
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
+              <Label htmlFor="website" className="dark:text-gray-200">Website</Label>
               <Input
                 id="website"
                 type="url"
                 value={editForm.website}
                 onChange={(e) => setEditForm(prev => ({ ...prev, website: e.target.value }))}
                 placeholder="https://your-website.com"
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
-            
+
             <div className="flex space-x-2">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="flex-1 facebook-blue"
                 disabled={updateProfileMutation.isPending}
               >
                 {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setShowEditProfile(false)}
+                className="dark:border-gray-600 dark:text-gray-200"
               >
                 Cancel
               </Button>

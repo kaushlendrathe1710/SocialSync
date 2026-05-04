@@ -113,23 +113,23 @@ export default function FeedPage() {
 
   if (postsLoading) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="w-full mx-auto p-6 dark:bg-gray-900 h-[calc(100vh-3.5rem)]">
         <div className="space-y-6">
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
                   <div className="space-y-1">
-                    <div className="w-24 h-4 bg-gray-200 rounded"></div>
-                    <div className="w-16 h-3 bg-gray-200 rounded"></div>
+                    <div className="w-24 h-4 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                    <div className="w-16 h-3 bg-gray-200 dark:bg-gray-800 rounded"></div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div className="w-full h-4 bg-gray-200 rounded"></div>
-                  <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
+                  <div className="w-full h-4 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                  <div className="w-3/4 h-4 bg-gray-200 dark:bg-gray-800 rounded"></div>
                 </div>
               </CardContent>
             </Card>
@@ -140,19 +140,19 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="h-[calc(100vh-3.5rem)] overflow-y-auto p-6 dark:bg-gray-900">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Stories Section */}
         {stories.length > 0 && (
-          <Card className="shadow-sm">
+          <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
             <CardContent className="p-4">
               <div className="flex space-x-4 overflow-x-auto pb-2">
                 {/* Add Story Button */}
                 <div className="flex-shrink-0 text-center">
-                  <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors bg-gray-50">
-                    <Plus className="h-8 w-8 text-gray-400" />
+                  <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors bg-gray-50 dark:bg-gray-700">
+                    <Plus className="h-8 w-8 text-gray-400 dark:text-gray-300" />
                   </div>
-                  <p className="text-xs mt-2 text-muted-foreground font-medium">
+                  <p className="text-xs mt-2 text-muted-foreground font-medium dark:text-gray-400">
                     Create Story
                   </p>
                 </div>
@@ -165,19 +165,19 @@ export default function FeedPage() {
                     onClick={() => handleStoryClick(story, index)}
                   >
                     <div className="w-20 h-20 rounded-2xl p-1 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500">
-                      <div className="w-full h-full rounded-xl bg-white p-1">
+                      <div className="w-full h-full rounded-xl bg-white dark:bg-gray-800 p-1">
                         <Avatar className="w-full h-full">
                           <AvatarImage
                             src={story.user?.avatar || ""}
                             className="rounded-xl"
                           />
-                          <AvatarFallback className="bg-blue-100 text-blue-600 text-sm rounded-xl">
+                          <AvatarFallback className="bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-sm rounded-xl">
                             {getUserInitials(story.user)}
                           </AvatarFallback>
                         </Avatar>
                       </div>
                     </div>
-                    <p className="text-xs mt-2 text-muted-foreground font-medium truncate max-w-[80px]">
+                    <p className="text-xs mt-2 text-muted-foreground font-medium truncate max-w-[80px] dark:text-gray-300">
                       {story.user?.name || story.user?.username}
                     </p>
                   </div>
@@ -189,15 +189,15 @@ export default function FeedPage() {
 
         {/* Live Streams Section */}
         {liveStreams.length > 0 && (
-          <Card className="shadow-sm">
+          <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-gray-900 flex items-center">
+                <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
                   <Video className="w-5 h-5 mr-2 text-red-500" />
                   Live Now
                 </h4>
                 <Link href="/live-streams">
-                  <Button variant="ghost" size="sm" className="text-blue-600">
+                  <Button variant="ghost" size="sm" className="text-blue-600 dark:text-blue-400">
                     See All
                   </Button>
                 </Link>
@@ -208,7 +208,7 @@ export default function FeedPage() {
                 {liveStreams.slice(0, 3).map((stream: any) => (
                   <div
                     key={stream.id}
-                    className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                     onClick={() => {
                       // Open live stream viewer
                       setSelectedStream(stream);
@@ -218,7 +218,7 @@ export default function FeedPage() {
                     <div className="relative">
                       <Avatar className="w-12 h-12">
                         <AvatarImage src={stream.user.avatar || undefined} />
-                        <AvatarFallback className="bg-red-500 text-white">
+                        <AvatarFallback className="bg-red-500 text-white dark:bg-red-600">
                           {stream.user.name?.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -227,14 +227,14 @@ export default function FeedPage() {
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-gray-900 truncate">
+                      <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
                         {stream.title}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {stream.user.name} • {stream.viewerCount} watching
                       </p>
                     </div>
-                    <Button size="sm" className="bg-red-500 hover:bg-red-600">
+                    <Button size="sm" className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700">
                       Join
                     </Button>
                   </div>

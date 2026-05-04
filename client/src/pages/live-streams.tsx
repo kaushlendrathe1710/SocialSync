@@ -107,15 +107,15 @@ export default function LiveStreamsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <div className="container mx-auto px-4 py-6 w-full dark:bg-gray-900 overflow-y-auto h-[calc(100vh-3.5rem)]">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Live Streams
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               Discover and join live streams from creators around the world
             </p>
           </div>
@@ -124,7 +124,7 @@ export default function LiveStreamsPage() {
               const event = new CustomEvent("openLiveVideo");
               window.dispatchEvent(event);
             }}
-            className="bg-red-500 hover:bg-red-600"
+            className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
           >
             <Video className="w-4 h-4 mr-2" />
             Go Live
@@ -134,18 +134,19 @@ export default function LiveStreamsPage() {
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 dark:text-gray-400" />
             <Input
               placeholder="Search live streams..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400"
             />
           </div>
           <div className="flex gap-2">
             <Button
               variant={filter === "all" ? "default" : "outline"}
               size="sm"
+              className="dark:border-gray-600 dark:text-gray-200"
               onClick={() => setFilter("all")}
             >
               All
@@ -174,11 +175,11 @@ export default function LiveStreamsPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <div className="aspect-video bg-gray-200 rounded-t-lg"></div>
+            <Card key={i} className="animate-pulse dark:bg-gray-800 dark:border-gray-700">
+              <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-t-lg"></div>
               <CardContent className="p-4">
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
               </CardContent>
             </Card>
           ))}
@@ -186,10 +187,10 @@ export default function LiveStreamsPage() {
       ) : filteredStreams.length === 0 ? (
         <div className="text-center py-12">
           <Video className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             {searchQuery ? "No streams found" : "No live streams right now"}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {searchQuery
               ? "Try adjusting your search terms or filters"
               : "Be the first to start a live stream!"}
@@ -200,7 +201,7 @@ export default function LiveStreamsPage() {
                 const event = new CustomEvent("openLiveVideo");
                 window.dispatchEvent(event);
               }}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
             >
               <Video className="w-4 h-4 mr-2" />
               Start Your First Stream
@@ -212,7 +213,7 @@ export default function LiveStreamsPage() {
           {filteredStreams.map((stream: LiveStream) => (
             <Card
               key={stream.id}
-              className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer dark:bg-gray-800 dark:border-gray-700"
             >
               <div
                 className="relative aspect-video bg-gradient-to-br from-red-500 to-pink-500 cursor-pointer"
@@ -220,11 +221,11 @@ export default function LiveStreamsPage() {
               >
                 {/* Live indicator */}
                 <div className="absolute top-3 left-3 flex items-center space-x-2">
-                  <Badge variant="destructive" className="bg-red-500">
+                  <Badge variant="destructive" className="bg-red-500 dark:bg-red-600">
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-1"></div>
                     LIVE
                   </Badge>
-                  <Badge variant="secondary" className="bg-black/50 text-white">
+                  <Badge variant="secondary" className="bg-black/50 text-white dark:bg-black/70">
                     <Eye className="w-3 h-3 mr-1" />
                     {getViewerCountText(stream.viewerCount)}
                   </Badge>
@@ -232,7 +233,7 @@ export default function LiveStreamsPage() {
 
                 {/* Duration */}
                 <div className="absolute top-3 right-3">
-                  <Badge variant="secondary" className="bg-black/50 text-white">
+                  <Badge variant="secondary" className="bg-black/50 text-white dark:bg-black/70">
                     <Clock className="w-3 h-3 mr-1" />
                     {formatDuration(stream.startedAt)}
                   </Badge>
@@ -247,9 +248,9 @@ export default function LiveStreamsPage() {
 
                 {/* Host info overlay */}
                 <div className="absolute bottom-3 left-3 flex items-center space-x-2">
-                  <Avatar className="w-8 h-8 border-2 border-white">
+                  <Avatar className="w-8 h-8 border-2 border-white dark:border-gray-700">
                     <AvatarImage src={stream.user.avatar || undefined} />
-                    <AvatarFallback className="bg-gray-600 text-white text-xs">
+                    <AvatarFallback className="bg-gray-600 text-white text-xs dark:bg-gray-700">
                       {stream.user.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -261,16 +262,16 @@ export default function LiveStreamsPage() {
               </div>
 
               <CardContent className="p-4">
-                <CardTitle className="text-lg mb-2 line-clamp-2">
+                <CardTitle className="text-lg mb-2 line-clamp-2 dark:text-white">
                   {stream.title}
                 </CardTitle>
                 {stream.description && (
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2 dark:text-gray-400">
                     {stream.description}
                   </p>
                 )}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                     <span className="flex items-center">
                       <Eye className="w-4 h-4 mr-1" />
                       {getViewerCountText(stream.viewerCount)} watching
@@ -283,7 +284,7 @@ export default function LiveStreamsPage() {
                   <Button
                     size="sm"
                     onClick={() => handleJoinStream(stream)}
-                    className="bg-red-500 hover:bg-red-600"
+                    className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
                   >
                     Join
                   </Button>

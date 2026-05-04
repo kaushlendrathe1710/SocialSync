@@ -5,7 +5,7 @@ import { Link } from "wouter";
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="h-[calc(100vh-3.5rem)] overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">

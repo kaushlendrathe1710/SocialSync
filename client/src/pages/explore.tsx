@@ -12,10 +12,10 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 import { PostWithUser, User } from '@shared/schema';
-import { 
-  Search, 
-  Heart, 
-  MessageCircle, 
+import {
+  Search,
+  Heart,
+  MessageCircle,
   TrendingUp,
   Users,
   Hash,
@@ -147,39 +147,39 @@ export default function ExplorePage() {
   const filteredPosts = trendingPosts?.filter(post => post.imageUrl || post.videoUrl) || [];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="w-full mx-auto px-4 py-6 dark:bg-gray-900 overflow-y-auto h-[calc(100vh-3.5rem)]">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-4">Explore</h2>
-        
+        <h2 className="text-2xl font-bold mb-4 dark:text-white">Explore</h2>
+
         {/* Search and Filters */}
-        <Card className="p-4 mb-6">
+        <Card className="p-4 mb-6 dark:bg-gray-800 dark:border-gray-700">
           <form onSubmit={handleSearch} className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 dark:text-gray-400" />
               <Input
                 type="text"
                 placeholder="Search posts, people, hashtags..."
-                className="pl-10"
+                className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <div className="flex space-x-2">
               <Select value={searchType} onValueChange={setSearchType}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="posts">Posts</SelectItem>
                   <SelectItem value="users">People</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                   <SelectItem value="latest">Latest</SelectItem>
                   <SelectItem value="popular">Popular</SelectItem>
                   <SelectItem value="trending">Trending</SelectItem>
@@ -192,19 +192,19 @@ export default function ExplorePage() {
         {/* Search Results */}
         {searchQuery.trim() && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4">Search Results</h3>
-            
+            <h3 className="text-lg font-semibold mb-4 dark:text-white">Search Results</h3>
+
             {searchLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[...Array(6)].map((_, i) => (
-                  <Card key={i} className="overflow-hidden">
-                    <Skeleton className="w-full h-64" />
+                  <Card key={i} className="overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+                    <Skeleton className="w-full h-64 dark:bg-gray-700" />
                     <div className="p-3">
                       <div className="flex items-center space-x-2 mb-2">
-                        <Skeleton className="w-6 h-6 rounded-full" />
-                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="w-6 h-6 rounded-full dark:bg-gray-700" />
+                        <Skeleton className="h-4 w-24 dark:bg-gray-700" />
                       </div>
-                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full dark:bg-gray-700" />
                     </div>
                   </Card>
                 ))}
@@ -214,34 +214,34 @@ export default function ExplorePage() {
                 {/* User Results */}
                 {searchResults.users.length > 0 && (
                   <div>
-                    <h4 className="font-medium mb-3 flex items-center">
+                    <h4 className="font-medium mb-3 flex items-center dark:text-white">
                       <Users className="w-4 h-4 mr-2" />
                       People ({searchResults.users.length})
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {searchResults.users.map((user) => (
-                        <Card 
-                          key={user.id} 
-                          className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                        <Card
+                          key={user.id}
+                          className="p-4 cursor-pointer hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700"
                           onClick={() => handleUserClick(user)}
                         >
                           <div className="flex items-center space-x-3">
                             <Avatar className="w-12 h-12">
                               <AvatarImage src={user.avatar || undefined} />
-                              <AvatarFallback>
+                              <AvatarFallback className="dark:bg-gray-700 dark:text-white">
                                 {user.name?.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-1">
-                                <h5 className="font-semibold truncate">{user.name}</h5>
+                                <h5 className="font-semibold truncate dark:text-white">{user.name}</h5>
                                 {user.isVerified && (
-                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">
                                     ✓
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-muted-foreground truncate">
+                              <p className="text-sm text-muted-foreground truncate dark:text-gray-400">
                                 @{user.username}
                               </p>
                               {user.bio && (
@@ -266,21 +266,21 @@ export default function ExplorePage() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {searchResults.posts.map((post) => (
-                        <Card 
-                          key={post.id} 
+                        <Card
+                          key={post.id}
                           className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                           onClick={() => handlePostClick(post)}
                         >
                           <div className="relative">
                             {post.imageUrl ? (
-                              <img 
-                                src={post.imageUrl} 
-                                alt="Post content" 
+                              <img
+                                src={post.imageUrl}
+                                alt="Post content"
                                 className="w-full h-64 object-cover"
                               />
                             ) : post.videoUrl ? (
-                              <video 
-                                src={post.videoUrl} 
+                              <video
+                                src={post.videoUrl}
                                 className="w-full h-64 object-cover"
                                 muted
                               />
@@ -343,7 +343,7 @@ export default function ExplorePage() {
               <TrendingUp className="w-5 h-5" />
               <h3 className="text-lg font-semibold">Trending Posts</h3>
             </div>
-            
+
             {trendingLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[...Array(9)].map((_, i) => (
@@ -362,21 +362,21 @@ export default function ExplorePage() {
             ) : filteredPosts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredPosts.map((post) => (
-                  <Card 
-                    key={post.id} 
+                  <Card
+                    key={post.id}
                     className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => handlePostClick(post)}
                   >
                     <div className="relative">
                       {post.imageUrl ? (
-                        <img 
-                          src={post.imageUrl} 
-                          alt="Post content" 
+                        <img
+                          src={post.imageUrl}
+                          alt="Post content"
                           className="w-full h-64 object-cover"
                         />
                       ) : post.videoUrl ? (
-                        <video 
-                          src={post.videoUrl} 
+                        <video
+                          src={post.videoUrl}
                           className="w-full h-64 object-cover"
                           muted
                         />
@@ -442,14 +442,14 @@ export default function ExplorePage() {
             {/* Media Section */}
             <div className="flex-1 bg-black flex items-center justify-center relative">
               {selectedPost?.imageUrl ? (
-                <img 
-                  src={selectedPost.imageUrl} 
-                  alt="Post content" 
+                <img
+                  src={selectedPost.imageUrl}
+                  alt="Post content"
                   className="max-w-full max-h-full object-contain"
                 />
               ) : selectedPost?.videoUrl ? (
                 <div className="relative w-full h-full flex items-center justify-center">
-                  <video 
+                  <video
                     ref={(el) => setVideoRef(el)}
                     src={selectedPost.videoUrl}
                     className="max-w-full max-h-full object-contain"
@@ -497,7 +497,7 @@ export default function ExplorePage() {
                   <ImageIcon className="w-16 h-16 text-muted-foreground" />
                 </div>
               )}
-              
+
               {/* Close Button */}
               <Button
                 variant="ghost"
@@ -539,7 +539,7 @@ export default function ExplorePage() {
                 {selectedPost?.content && (
                   <p className="text-sm leading-relaxed mb-4">{selectedPost.content}</p>
                 )}
-                
+
                 {/* Engagement Stats */}
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
                   <span className="flex items-center">

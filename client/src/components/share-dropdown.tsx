@@ -61,6 +61,28 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
     },
   });
 
+  const savePostMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', `/api/posts/${post.id}/save`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/saved-posts'] });
+      toast({
+        title: "Post saved!",
+        description: "Post has been saved to your collection.",
+      });
+      setIsOpen(false);
+    },
+    onError: (error) => {
+      console.error('Error saving post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save post.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(postUrl);
@@ -129,12 +151,7 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
   };
 
   const handleSavePost = () => {
-    // This would integrate with a save/bookmark feature
-    toast({
-      title: "Post saved!",
-      description: "Post has been saved to your collection.",
-    });
-    setIsOpen(false);
+    savePostMutation.mutate();
   };
 
   const handleShareToTimeline = () => {
@@ -156,7 +173,7 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
         {/* Share to Timeline - only show for other users' posts */}
         {!isOwnPost && (
           <>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={handleShareToTimeline}
               disabled={shareToTimelineMutation.isPending}
               data-testid="menuitem-share-timeline"
@@ -167,7 +184,7 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
             <DropdownMenuSeparator />
           </>
         )}
-        
+
         {/* Quick share options */}
         {typeof navigator !== 'undefined' && 'share' in navigator && (
           <>
@@ -178,14 +195,14 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
             <DropdownMenuSeparator />
           </>
         )}
-        
+
         <DropdownMenuItem onClick={handleCopyLink}>
           <Copy className="h-4 w-4 mr-3" />
           Copy link
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
+
         {/* Social media platforms */}
         <DropdownMenuItem onClick={handleFacebookShare}>
           <div className="h-4 w-4 mr-3 bg-blue-600 rounded flex items-center justify-center">
@@ -193,30 +210,33 @@ export default function ShareDropdown({ post, className }: ShareDropdownProps) {
           </div>
           Share to Facebook
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={handleTwitterShare}>
           <div className="h-4 w-4 mr-3 bg-black rounded flex items-center justify-center">
             <span className="text-white text-xs font-bold">X</span>
           </div>
           Share to X
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={handleWhatsAppShare}>
           <MessageCircle className="h-4 w-4 mr-3 text-green-500" />
           Share to WhatsApp
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={handleEmailShare}>
           <Mail className="h-4 w-4 mr-3" />
           Share via Email
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
+
         {/* Additional actions */}
-        <DropdownMenuItem onClick={handleSavePost}>
+        <DropdownMenuItem
+          onClick={handleSavePost}
+          disabled={savePostMutation.isPending}
+        >
           <Bookmark className="h-4 w-4 mr-3" />
-          Save post
+          {savePostMutation.isPending ? 'Saving...' : 'Save post'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

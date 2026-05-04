@@ -160,7 +160,7 @@ export default function StatusPage() {
   console.log("Status updates loading:", isLoading);
   console.log("Status updates error:", error);
 
-  // Create status mutation
+// Create status mutation
   const createStatusMutation = useMutation({
     mutationFn: async (statusData: FormData) => {
       return apiRequest("POST", "/api/status", statusData);
@@ -351,10 +351,10 @@ export default function StatusPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-[calc(100vh-3.5rem)] flex items-center justify-center dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading Status...</p>
+          <p className="text-muted-foreground dark:text-gray-400">Loading Status...</p>
         </div>
       </div>
     );
@@ -363,7 +363,7 @@ export default function StatusPage() {
   if (error) {
     console.error("Status error:", error);
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center dark:bg-gray-900">
         <div className="text-center">
           <p className="text-red-500 mb-4">Failed to load status updates</p>
           <Button onClick={() => window.location.reload()}>Reload</Button>
@@ -373,12 +373,12 @@ export default function StatusPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="overflow-y-auto h-[calc(100vh-3.5rem)] bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Status</h1>
+            <h1 className="text-2xl font-bold dark:text-white">Status</h1>
             <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
               <DialogTrigger asChild>
                 <Button>
@@ -386,28 +386,28 @@ export default function StatusPage() {
                   Add Status
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md dark:bg-gray-800 dark:border-gray-700">
                 <DialogHeader>
-                  <DialogTitle>Create Status</DialogTitle>
+                  <DialogTitle className="dark:text-white">Create Status</DialogTitle>
                 </DialogHeader>
                 <Tabs
                   value={createType}
                   onValueChange={(value: any) => setCreateType(value)}
                 >
-                  <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="text" className="p-2">
+                  <TabsList className="grid w-full grid-cols-5 dark:bg-gray-700">
+                    <TabsTrigger value="text" className="p-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-600">
                       <Type className="w-4 h-4" />
                     </TabsTrigger>
-                    <TabsTrigger value="photo" className="p-2">
+                    <TabsTrigger value="photo" className="p-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-600">
                       <ImageIcon className="w-4 h-4" />
                     </TabsTrigger>
-                    <TabsTrigger value="video" className="p-2">
+                    <TabsTrigger value="video" className="p-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-600">
                       <Video className="w-4 h-4" />
                     </TabsTrigger>
-                    <TabsTrigger value="poll" className="p-2">
+                    <TabsTrigger value="poll" className="p-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-600">
                       <BarChart3 className="w-4 h-4" />
                     </TabsTrigger>
-                    <TabsTrigger value="question" className="p-2">
+                    <TabsTrigger value="question" className="p-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-600">
                       <HelpCircle className="w-4 h-4" />
                     </TabsTrigger>
                   </TabsList>
@@ -602,7 +602,7 @@ export default function StatusPage() {
           {statusUpdates.map((status: StatusUpdate) => (
             <Card
               key={status.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow aspect-[9/16] relative overflow-hidden"
+              className="cursor-pointer hover:shadow-lg transition-shadow aspect-[9/16] relative overflow-hidden dark:bg-gray-800 dark:border-gray-700"
               onClick={() => openStatusViewer(status)}
             >
               <CardContent className="p-0 h-full">
@@ -641,9 +641,9 @@ export default function StatusPage() {
 
                 {/* User Avatar */}
                 <div className="absolute top-2 left-2">
-                  <Avatar className="w-8 h-8 border-2 border-white">
+                  <Avatar className="w-8 h-8 border-2 border-white dark:border-gray-700">
                     <AvatarImage src={status.user.avatar} />
-                    <AvatarFallback className="text-xs">
+                    <AvatarFallback className="text-xs dark:bg-gray-700 dark:text-white">
                       {status.user.name[0]}
                     </AvatarFallback>
                   </Avatar>
@@ -676,8 +676,8 @@ export default function StatusPage() {
         {statusUpdates && statusUpdates.length === 0 && (
           <div className="text-center py-12">
             <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No Status Updates</h2>
-            <p className="text-gray-600 mb-4">
+            <h2 className="text-xl font-semibold mb-2 dark:text-white">No Status Updates</h2>
+            <p className="text-gray-600 mb-4 dark:text-gray-400">
               Share your moments with status updates!
             </p>
             <Button onClick={() => setShowCreateModal(true)}>
@@ -695,7 +695,7 @@ export default function StatusPage() {
           onOpenChange={() => setSelectedStatus(null)}
         >
           <DialogContent
-            className="max-w-md p-0 h-[80vh] overflow-hidden"
+            className="max-w-md p-0 h-[80vh] overflow-hidden dark:bg-gray-800 dark:border-gray-700"
             aria-describedby="status-viewer-description"
           >
             <div id="status-viewer-description" className="sr-only">
@@ -835,14 +835,6 @@ export default function StatusPage() {
                     {selectedStatus.user.username}
                   </span>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-white hover:bg-white/20"
-                  onClick={() => setSelectedStatus(null)}
-                >
-                  <X className="w-5 h-5" />
-                </Button>
               </div>
 
               {/* Reaction Bar */}
